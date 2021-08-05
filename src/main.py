@@ -52,7 +52,7 @@ fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fast
 output_path = '/Users/marjanfaizi/Documents/Postdoc/Code/output/'
 output_plots_name = 'TDMS_07_03_2021.pdf'
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.8#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.7#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 2.0 #Da
 calculate_mass_shifts = True
@@ -67,8 +67,8 @@ top_results = 1
 #####################################################################################################
 def adaptive_window_sizes(distribution):
     intensities = distribution[:,1] 
-    most_abundant_masses_25percent = distribution[intensities > intensities.max()*0.75, 0]
-    most_abundant_masses_95percent = distribution[intensities > intensities.max()*0.05, 0]
+    most_abundant_masses_25percent = distribution[intensities > intensities.max()*0.8, 0]
+    most_abundant_masses_95percent = distribution[intensities > intensities.max()*0.1, 0]
     lower_window_size = round((most_abundant_masses_25percent[-1]-most_abundant_masses_25percent[0])/2)
     upper_window_size = np.ceil((most_abundant_masses_95percent[-1]-most_abundant_masses_95percent[0])/2)
     window_sizes = np.arange(lower_window_size, upper_window_size, 1)
@@ -184,8 +184,8 @@ if __name__ == '__main__':
             plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
           
         else:
-            mean = np.array(list(fitting_results.keys()))
-            amplitude = np.array(list(fitting_results.values()))[:,0]
+            mean = np.array(list(best_fitting_results_refitted.keys()))
+            amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
             plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, gaussian_model.stddev, sample_name)
        
         pp.savefig()
