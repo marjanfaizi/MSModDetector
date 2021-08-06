@@ -40,24 +40,25 @@ path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/06_22_2021/'
 file_names = [file for file in glob.glob(path+'*.mzml')]
 regex_extract_output_name = 'MCF7_(.*)_Profile'
 #protein_id = 'P04637'
-protein_id = 'P01286'
+protein_id =  'Q8N726' # 'P01286', 'Q8N726'
+# too fat: 'P01824'
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
-max_mass_shift = 25.0 # 900.0 #Da
-start_mass_range = 12435.0 # 43700.0 #Da
-unmodified_species_mass_init = 12445.0 # 43770.0 #Da
+max_mass_shift = 700.0 # 370.0 # 900.0 #Da
+start_mass_range = 11200.0 #13650.0 # 43700.0 #Da
+unmodified_species_mass_init = 13903.0 # 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
 
 
 fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
 output_path = '../output/'
-output_plots_name = 'TDMS_07_03_2021.pdf'
+output_plots_name = 'identified_masses_CDKN2A.pdf'
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.8#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.5#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 2.0 #Da
 calculate_mass_shifts = False
 determine_ptm_patterns = False
-# TODO: bessere beschriftgun
+
 top_results = 1
 ##################################################################################################### 
 
@@ -67,8 +68,8 @@ top_results = 1
 #####################################################################################################
 def adaptive_window_sizes(distribution):
     intensities = distribution[:,1] 
-    most_abundant_masses_25percent = distribution[intensities > intensities.max()*0.8, 0]
-    most_abundant_masses_95percent = distribution[intensities > intensities.max()*0.1, 0]
+    most_abundant_masses_25percent = distribution[intensities > intensities.max()*0.75, 0]
+    most_abundant_masses_95percent = distribution[intensities > intensities.max()*0.05, 0]
     lower_window_size = round((most_abundant_masses_25percent[-1]-most_abundant_masses_25percent[0])/2)
     upper_window_size = np.ceil((most_abundant_masses_95percent[-1]-most_abundant_masses_95percent[0])/2)
     window_sizes = np.arange(lower_window_size, upper_window_size, 1)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         all_peaks_trimmed  = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
         all_peaks_in_search_window = data.determine_search_window(all_peaks_trimmed)
         # TODO: is there another way to calculate th s/n ratio?
-        sn_threshold = all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
+        sn_threshold = 10.0 #all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
         
         peaks_above_sn = data.get_peaks(min_peak_height=sn_threshold)
         peaks_above_sn_trimmed  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
@@ -174,19 +175,19 @@ if __name__ == '__main__':
             unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(best_fitting_results_refitted, unmodified_species_mass_init, unmodified_species_mass_tol)
         
             if unmodified_species_mass == 0:
-                plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
+                plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
                 print('\nUnmodified species could not be determined for following condition: ' + sample_name)
                 continue
 
             mass_shifts.set_unmodified_species_mass(unmodified_species_mass)
             mass_shifts.calculate_mass_shifts()
             
-            plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
+            plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
           
         else:
             mean = np.array(list(best_fitting_results_refitted.keys()))
             amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
-            plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, gaussian_model.stddev, sample_name)
+            plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, gaussian_model.stddev, sample_name)
        
         pp.savefig()
         
@@ -224,8 +225,7 @@ if __name__ == '__main__':
 
     print(80*'-'+'\n\n')
 
-
-
+    
 
 """
 
@@ -235,13 +235,21 @@ if __name__ == '__main__':
 import matplotlib.pyplot as plt
 
 
+
+protein_id =  'A0A5C2GAN7'
+fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
+protein = Protein(fasta_name)
+theoretical_distribution = protein.get_theoretical_isotope_distribution(fasta_name)
+    
+    
+    
 peaks = data.get_peaks(min_peak_height=0.0)
 peaks2 = data.remove_adjacent_peaks(peaks, 0.6)
 
 
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color='gray')
-#plt.plot(theoretical_distribution[:,0]+1, 4.5*theoretical_distribution[:,1], '--',  color='green')
-plt.plot(peaks[:,0], peaks[:,1], '.',  color='red')
+plt.plot(theoretical_distribution[:,0], theoretical_distribution[:,1]*450, '--',  color='green')
+#plt.plot(peaks[:,0], peaks[:,1], '.',  color='red')
 plt.plot(peaks2[:,0], peaks2[:,1], '.',  color='blue')
 #plt.plot(np.array(list(fitting_results_reduced.keys())), np.array(list(fitting_results_reduced.values()))[:,0], '.b')
 #plt.plot(np.array(list(fitting_results_reduced2.keys())), np.array(list(fitting_results_reduced2.values()))[:,0], '.g')
