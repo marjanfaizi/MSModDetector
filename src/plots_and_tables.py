@@ -33,28 +33,29 @@ class PlotsAndTables(object):
         return self.identified_masses_table
     
     
-    def plot_mass_shifts(self, spectrum, peaks, mass_shifts, mass_range_start, mass_range_end, stddev, title):
-        self.__plot_spectra(spectrum, peaks, mass_range_start, mass_range_end, mass_shifts.mean, mass_shifts.amplitude, stddev, title)
+    def plot_mass_shifts(self, spectrum, all_peaks, trimmed_peaks, mass_shifts, mass_range_start, mass_range_end, stddev, title):
+        self.__plot_spectra(spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mass_shifts.mean, mass_shifts.amplitude, stddev, title)
         self.__add_labels(mass_shifts.mass_shifts, mass_shifts.mean, mass_shifts.amplitude)
 
-    def plot_masses(self, spectrum, peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
-        self.__plot_spectra(spectrum, peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title)
+    def plot_masses(self, spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
+        self.__plot_spectra(spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title)
         self.__add_labels(mean, mean, amplitude)
 
 
-    def __plot_spectra(self, spectrum, peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
+    def __plot_spectra(self, spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
         x = np.arange(mass_range_start, mass_range_end)
         y = multi_gaussian(x, amplitude, mean, stddev)
         masses = spectrum[:,0]
         intensities = spectrum[:,1]
         plt.figure(figsize=(16,4))
         plt.plot(masses, intensities, color='gray')
-        plt.plot(peaks[:,0], peaks[:,1], '.b')
+        plt.plot(all_peaks[:,0], all_peaks[:,1], '.g')
+        plt.plot(trimmed_peaks[:,0], trimmed_peaks[:,1], '.b')
         plt.plot(mean, amplitude, '.r')
         plt.plot(x, y, color='firebrick')
-        plt.xlim((mass_range_start, mass_range_end))
-        plt.ylim((-1, peaks[:,1].max()*1.2))
-        plt.title('Sample: '+title)
+        plt.xlim((mass_range_start-10, mass_range_end+10))
+        plt.ylim((-1, trimmed_peaks[:,1].max()*1.3))
+        plt.title('Sample: '+title+'\n\n')
         plt.xlabel('mass (Da)')
         plt.ylabel('relative intensity (%)')
         plt.legend(['I2MS data', 'Mass shifts', 'Fitted normal distributions'])
