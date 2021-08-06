@@ -133,13 +133,16 @@ class FitGaussianModel(object):
                 best_mean = current_mean
                 best_amplitude = value[0]
                 best_pvalue = pvalue
-        
-            elif np.abs(best_mean-current_mean) > window_size or best_mean == last_mean:
+            
+            elif np.abs(best_mean-current_mean) > window_size:
                 fitting_results_reduced[best_mean] = [best_amplitude, best_pvalue]
                 best_mean = current_mean
                 best_amplitude = value[0]
-                best_pvalue = pvalue
-        
+                best_pvalue = pvalue    
+                
+                if best_mean == last_mean:
+                    fitting_results_reduced[best_mean] = [best_amplitude, best_pvalue]
+
         return fitting_results_reduced
 
 

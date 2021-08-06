@@ -42,20 +42,20 @@ regex_extract_output_name = 'MCF7_(.*)_Profile'
 #protein_id = 'P04637'
 protein_id = 'P01286'
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
-max_mass_shift = 200.0 # 900.0 #Da
-start_mass_range = 12400.0 # 43700.0 #Da
+max_mass_shift = 25.0 # 900.0 #Da
+start_mass_range = 12435.0 # 43700.0 #Da
 unmodified_species_mass_init = 12445.0 # 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
 
 
 fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
-output_path = '/Users/marjanfaizi/Documents/Postdoc/Code/output/'
+output_path = '../output/'
 output_plots_name = 'TDMS_07_03_2021.pdf'
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.7#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.8#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 2.0 #Da
-calculate_mass_shifts = True
+calculate_mass_shifts = False
 determine_ptm_patterns = False
 # TODO: bessere beschriftgun
 top_results = 1
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         peaks_above_sn_trimmed  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
         peaks_above_sn_in_search_window = data.determine_search_window(peaks_above_sn_trimmed)
     
-        print('\nMass shifts are calculated.') 
+        print('\nMasses are detected.') 
     
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
@@ -148,10 +148,10 @@ if __name__ == '__main__':
         plots_tables_obj.create_table_identified_masses(best_fitting_results, sample_name, bin_size_identified_masses)
         
         if len(best_fitting_results) == 0:
-            print('\nNo mass shift detected for following condition: ' + sample_name)
+            print('\nNo masses detected for following condition: ' + sample_name)
             continue
   
-        print('\n'+str(len(best_fitting_results))+' mass shifts are found.')  
+        print('\n'+str(len(best_fitting_results))+' masses are identified.')  
             
         """
         mass_shifts = MassShifts(best_fitting_results)
@@ -225,8 +225,8 @@ if __name__ == '__main__':
     print(80*'-'+'\n\n')
 
 
-    
-    
+
+
 """
 
 
