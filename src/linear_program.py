@@ -127,4 +127,3 @@ class LinearProgram(object):
         solver_status = lp_model.solve(solver=GLPK(msg=False))
         return solver_status
     
-
