@@ -48,3 +48,4 @@ class Modifications(object):
         mod = pyopenms.ModificationsDB().getModification(modification_type)
         monoisotopic_mass = mod.getDiffMonoMass()
         return monoisotopic_mass
+   
