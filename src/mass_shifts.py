@@ -7,11 +7,10 @@ Created on Tue Jul 6 2021
 """
 
 import numpy as np
-import sys
 #from scipy.optimize import least_squares
 #from fit_gaussian_model import multi_gaussian
 from linear_program import LinearProgram
-
+import utils
 
 
 class MassShifts(object): 
@@ -75,7 +74,7 @@ class MassShifts(object):
                 if len(ptm_patterns) > 0:
                     all_ptm_patterns[ix] = ptm_patterns
 
-            self.__progress(ix+1, len(self.mass_shifts))
+            utils.progress(ix+1, len(self.mass_shifts))
         return all_ptm_patterns
 
 
@@ -91,7 +90,7 @@ class MassShifts(object):
                 if len(ptm_patterns) > 0:
                     all_ptm_patterns[mass_shifts[ix]] = ptm_patterns
 
-            self.__progress(ix+1, len(mass_shifts))
+            utils.progress(ix+1, len(mass_shifts))
         return all_ptm_patterns
 
 
@@ -114,12 +113,3 @@ class MassShifts(object):
         return ptm_patterns
 
    
-    def __progress(self, count, total, status=''):
-        bar_len = 50
-        filled_len = int(round(bar_len * count / float(total)))
-
-        percents = round(100.0 * count / float(total), 1)
-        bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-        sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
-        sys.stdout.flush() 
