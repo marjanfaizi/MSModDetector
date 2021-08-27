@@ -54,9 +54,12 @@ class MassSpecData(object):
 
     def determine_search_window(self, peaks):
         start_indices = self.__find_peaks_by_mass(peaks, self.search_window_start_mass)
-        end_indices =  self.__find_peaks_by_mass(peaks, self.search_window_end_mass)
-        search_window_indices = np.arange(start_indices[0], end_indices[-1]+1)
-        peaks_in_search_window = peaks[search_window_indices]
+        if len(start_indices) != 0:
+            end_indices =  self.__find_peaks_by_mass(peaks, self.search_window_end_mass)
+            search_window_indices = np.arange(start_indices[0], end_indices[-1]+1)
+            peaks_in_search_window = peaks[search_window_indices]
+        else:
+            peaks_in_search_window = []
         return peaks_in_search_window
 
 
@@ -64,7 +67,7 @@ class MassSpecData(object):
         masses = peaks[:,0]
         mass_tolerance_Da = mass*self.mass_error*1.0e-6
         found_masses_indices = []
-        while ( len(found_masses_indices) == 0 ):
+        while ( len(found_masses_indices) == 0  and mass_tolerance_Da < self.max_mass_shift):
             found_masses_indices = np.argwhere((masses<=mass+mass_tolerance_Da) & (masses>=mass-mass_tolerance_Da))[:,0]
             mass_tolerance_Da = mass_tolerance_Da*1.1
 
