@@ -10,32 +10,16 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
 from sklearn.metrics import r2_score
-
-  
-def gaussian(x, amplitude, mean, stddev):
-    return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
-    
-    
-def multi_gaussian(x, amplitude, mean, stddev):
-    y = np.zeros(len(x))
-    for i in range(len(mean)):
-        y += gaussian(x, amplitude[i], mean[i], stddev)
-
-    return y  
-
+import utils
 
 
 class FitGaussianModel(object): 
     
     def __init__(self):
-        self.stddev = 1.0
         self.maxfev = 100000
         self.chi_square_dof = 1
         self.sample_size_threshold = 5
 
-
-    def set_standard_deviation(self, stddev):
-        self.stddev = stddev
 
 
     def fit_gaussian(self, peaks, amplitude=None, mean=None, stddev=None):
@@ -44,36 +28,41 @@ class FitGaussianModel(object):
         
         index_most_abundant_peak = intensities.argmax()
         initial_amplitude = intensities[index_most_abundant_peak]
-        intial_stddev = self.stddev
         initial_mean = masses[index_most_abundant_peak]
+        intial_stddev = utils.mapping_mass_to_stddev(initial_mean)
         
         if amplitude==None and mean==None and stddev==None:
-            optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=self.maxfev,
+            optimized_param, _ = optimize.curve_fit(utils.gaussian, masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude, initial_mean, intial_stddev])
             
         elif amplitude==None and mean==None and stddev!=None:
-            optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: gaussian(x, amplitude, mean, stddev), 
+            optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, stddev), 
                                                     masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude, initial_mean])
 
         elif amplitude==None and mean!=None and stddev!=None:
-            optimized_param, _ = optimize.curve_fit(lambda x, amplitude: gaussian(x, amplitude, mean, stddev), 
+            optimized_param, _ = optimize.curve_fit(lambda x, amplitude: utils.gaussian(x, amplitude, mean, stddev), 
                                                     masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude])
         
         return optimized_param
 
 
-    def fit_gaussian_to_single_peaks(self, all_peaks, peaks_above_sn, fitting_window_sizes):
+    def fit_gaussian_to_single_peaks(self, all_peaks, peaks_above_sn):
         masses = peaks_above_sn[:,0]
+        intensities = peaks_above_sn[:,1] 
         fitting_results = {}
-        for mass in masses:
+        for ix in range(len(masses)):
+            mass = masses[ix]
+            intensity = intensities[ix]
+            stddev = utils.mapping_mass_to_stddev(mass)
+            fitting_window_sizes = self.determine_adaptive_window_sizes(intensity, mass, stddev)
             best_pvalue = -1.0
             for window_size in fitting_window_sizes:
                 selected_region = self.select_region_to_fit(all_peaks, mass, window_size)
                 sample_size = selected_region.shape[0]          
                 if sample_size >= self.sample_size_threshold:
-                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass, stddev=self.stddev)[0]               
+                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass, stddev=stddev)[0]               
                     pvalue = self.chi_square_test(selected_region, fitted_amplitude, mass)
                 else:
                     pvalue = 0.0
@@ -94,11 +83,23 @@ class FitGaussianModel(object):
         selected_region = peaks[selected_region_ix]
         return selected_region
         
+    
+    def determine_adaptive_window_sizes(self, amplitude, mean, stddev):
+        masses = np.arange(mean-100, mean+100)
+        intensities = utils.gaussian(masses, amplitude, mean, stddev) 
+        most_abundant_masses_25percent = masses[intensities > intensities.max()*0.8]
+        most_abundant_masses_95percent = masses[intensities > intensities.max()*0.1]
+        lower_window_size = round((most_abundant_masses_25percent[-1]-most_abundant_masses_25percent[0])/2)
+        upper_window_size = np.ceil((most_abundant_masses_95percent[-1]-most_abundant_masses_95percent[0])/2)
+        window_sizes = np.arange(lower_window_size, upper_window_size, 1)
+        return window_sizes
+
 
     def chi_square_test(self, selected_region, amplitude, mean):
         observed_masses = selected_region[:,0]
         observed_intensities = selected_region[:,1]
-        predicted_intensities = gaussian(observed_masses, amplitude, mean, self.stddev)
+        stddev = utils.mapping_mass_to_stddev(mean)
+        predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, stddev)
         chi_square_score = chisquare(observed_intensities, f_exp=predicted_intensities, ddof=self.chi_square_dof)
         return chi_square_score.pvalue
     
@@ -151,10 +152,11 @@ class FitGaussianModel(object):
         y_true = peaks[:,1]
         mean = np.array(list(fitting_results.keys()))
         amplitude = np.array(list(fitting_results.values()))[:,0]
-        y_pred = multi_gaussian(masses, amplitude, mean, self.stddev)
+        stddev = utils.mapping_mass_to_stddev(mean)
+        y_pred = utils.multi_gaussian(masses, amplitude, mean, stddev)
         r_square_value = r2_score(y_true, y_pred) 
         number_data_points = len(peaks) 
-        number_variables = 1 + len(fitting_results)*2
+        number_variables = len(fitting_results)*3
         adjusted_r_squared = 1.0 - ( (1.0-r_square_value)*(number_data_points-1.0)/(number_data_points-number_variables-1.0) )
         return adjusted_r_squared
     
@@ -180,8 +182,9 @@ class FitGaussianModel(object):
         intensities = peaks[:,1]
         mean = np.array(list(fitting_results.keys()))
         amplitude = np.array(list(fitting_results.values()))[:,0]
+        stddev = utils.mapping_mass_to_stddev(mean)
         refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
-                                                     x0=amplitude, args=(mean, self.stddev, masses, intensities))
+                                                     x0=amplitude, args=(mean, stddev, masses, intensities))
         ix = 0
         for key, values in fitting_results.items():
             
@@ -195,8 +198,6 @@ class FitGaussianModel(object):
 
     
     def __error_func(self, amplitude, mean, stddev, x, y):
-        return multi_gaussian(x, amplitude, mean, stddev) - y   
+        return utils.multi_gaussian(x, amplitude, mean, stddev) - y   
 
-    
-
-
+   
