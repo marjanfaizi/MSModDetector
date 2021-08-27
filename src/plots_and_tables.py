@@ -7,7 +7,7 @@ Created on Tue Jul 27 2021
 """
 
 import numpy as np
-from fit_gaussian_model import multi_gaussian
+import utils
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -44,7 +44,7 @@ class PlotsAndTables(object):
 
     def __plot_spectra(self, spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
         x = np.arange(mass_range_start, mass_range_end)
-        y = multi_gaussian(x, amplitude, mean, stddev)
+        y = utils.multi_gaussian(x, amplitude, mean, stddev)
         masses = spectrum[:,0]
         intensities = spectrum[:,1]
         plt.figure(figsize=(16,4))
@@ -125,13 +125,4 @@ class PlotsAndTables(object):
         for ix, row in output_df.iterrows():
             row_index = self.identified_masses_table[self.identified_masses_table['mass shift']==row['mass shift']].index.values[0] 
             self.identified_masses_table.loc[row_index,'best '+column_name] = str(row[column_name])
-
-
-
-
-
-
-
-
-
 
