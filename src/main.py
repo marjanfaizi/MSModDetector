@@ -6,6 +6,8 @@ Created on Wed Mar 10 2021
 @author: Marjan Faizi
 """
 
+#%matplotlib auto
+
 import numpy as np
 import glob
 import re
@@ -13,10 +15,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from i2ms_data import MassSpecData
 from fit_gaussian_model import FitGaussianModel
-from protein import Protein
 from mass_shifts import MassShifts
 from modifications import Modifications
 from plots_and_tables import PlotsAndTables
+import utils
 
 
 ##################################################################################################### 
@@ -36,61 +38,48 @@ regex_extract_output_name = 'wt_(.*)_Profile'
 #file_names =  ['/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/05_04_2021/I2MS_20210504_bsd0560_p53_MCF7_7hr-sustained_MS1_Profile.txt']
 #file_names =  ['/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/05_04_2021/I2MS_20210504_bsd0560_p53_MCF7_2hr_MS1_Profile.txt']
 #file_names =  ['/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/06_22_2021/I2MS_20210622_bsd0560_p53_MCF7_nutlin_7hr_rep1_MS1_02_Profile.mzml']
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/06_22_2021/'
-file_names = [file for file in glob.glob(path+'*.mzml')]
+#path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/06_22_2021/'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
+# *_01_Profile.mzml, *_02_Profile.mzml, *_01_CentPlus1.mzml, *_02_CentPlus1.mzml
+# *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml, *_01_CentPlus1_MultiIonFiltered.mzml, *_02_CentPlus1_MultiIonFiltered.mzml
+
+file_names = [file for file in glob.glob(path+'*_02_Profile.mzml')] 
 regex_extract_output_name = 'MCF7_(.*)_Profile'
 #protein_id = 'P04637'
-protein_id =  'Q8N726' # 'P01286', 'Q8N726'
+#protein_id =  'Q8N726' # 'P01286', 'Q8N726'
 # too fat: 'P01824'
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
-max_mass_shift = 700.0 # 370.0 # 900.0 #Da
-start_mass_range = 11200.0 #13650.0 # 43700.0 #Da
-unmodified_species_mass_init = 13903.0 # 43770.0 #Da
+max_mass_shift = 900.0 #Da
+start_mass_range = 43750.0 #Da
+unmodified_species_mass_init = 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
 
 
-fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
+#fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
 output_path = '../output/'
-output_plots_name = 'identified_masses_CDKN2A.pdf'
+output_plots_name = 'identified_masses.pdf'
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.5#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.9#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
-bin_size_identified_masses = 2.0 #Da
-calculate_mass_shifts = False
-determine_ptm_patterns = False
+bin_size_identified_masses = 5.0 #Da
+calculate_mass_shifts = True
+determine_ptm_patterns = True
 
 top_results = 1
 ##################################################################################################### 
 
-
-#####################################################################################################
-######################################### HELPER FUNCTIONS  #########################################
-#####################################################################################################
-def adaptive_window_sizes(distribution):
-    intensities = distribution[:,1] 
-    most_abundant_masses_25percent = distribution[intensities > intensities.max()*0.75, 0]
-    most_abundant_masses_95percent = distribution[intensities > intensities.max()*0.05, 0]
-    lower_window_size = round((most_abundant_masses_25percent[-1]-most_abundant_masses_25percent[0])/2)
-    upper_window_size = np.ceil((most_abundant_masses_95percent[-1]-most_abundant_masses_95percent[0])/2)
-    window_sizes = np.arange(lower_window_size, upper_window_size, 1)
-    return window_sizes
-#####################################################################################################
 
 
 if __name__ == '__main__':
     
     print('\n'+'-'*80)  
     
-    protein = Protein(fasta_name)
-    theoretical_distribution = protein.get_theoretical_isotope_distribution(fasta_name)
-    average_protein_mass = protein.get_average_mass()
-
     mod = Modifications(modfication_file_name)
     mod.get_modification_masses()
  
     plots_tables_obj = PlotsAndTables()
     
-    window_sizes = adaptive_window_sizes(theoretical_distribution)
+ #   window_sizes = [9.0,10.0,11.0,12.0]#adaptive_window_sizes(theoretical_distribution)
  
     pp = PdfPages(output_path+output_plots_name)
     
@@ -114,22 +103,25 @@ if __name__ == '__main__':
         all_peaks_trimmed  = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
         all_peaks_in_search_window = data.determine_search_window(all_peaks_trimmed)
         # TODO: is there another way to calculate th s/n ratio?
-        sn_threshold = 10.0 #all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
+        sn_threshold = all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
         
         peaks_above_sn = data.get_peaks(min_peak_height=sn_threshold)
         peaks_above_sn_trimmed  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
         peaks_above_sn_in_search_window = data.determine_search_window(peaks_above_sn_trimmed)
     
+        if len(peaks_above_sn_in_search_window) == 0:
+            print('\nNo peaks could be detected within the search window for following condition: ' + sample_name)
+            continue
+        
         print('\nMasses are detected.') 
     
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
         gaussian_model = FitGaussianModel()
-        optimized_param_theorerical_distribution = gaussian_model.fit_gaussian(theoretical_distribution)
-        gaussian_model.set_standard_deviation(optimized_param_theorerical_distribution[2])    
-        fitting_results = gaussian_model.fit_gaussian_to_single_peaks(all_peaks_trimmed, peaks_above_sn_in_search_window, window_sizes)
+        fitting_results = gaussian_model.fit_gaussian_to_single_peaks(all_peaks_trimmed, peaks_above_sn_in_search_window)
         
         best_fitting_results = gaussian_model.filter_fitting_results(fitting_results, pvalue_threshold)
+        best_fitting_results_refitted = gaussian_model.refit_amplitudes(all_peaks_in_search_window, best_fitting_results, sn_threshold)
         """
         # optimize window size for fitting the gaussian model
         best_score = -10.0
@@ -145,14 +137,13 @@ if __name__ == '__main__':
         
         print('\nBest results were found with r_square =', best_score)    
         """   
+        plots_tables_obj.create_table_identified_masses(best_fitting_results_refitted, sample_name, bin_size_identified_masses)
         
-        plots_tables_obj.create_table_identified_masses(best_fitting_results, sample_name, bin_size_identified_masses)
-        
-        if len(best_fitting_results) == 0:
+        if len(best_fitting_results_refitted) == 0:
             print('\nNo masses detected for following condition: ' + sample_name)
             continue
   
-        print('\n'+str(len(best_fitting_results))+' masses are identified.')  
+        print('\n'+str(len(best_fitting_results_refitted))+' masses are identified.')  
             
         """
         mass_shifts = MassShifts(best_fitting_results)
@@ -168,26 +159,26 @@ if __name__ == '__main__':
         mass_shifts.refit_amplitudes(all_peaks_in_search_window, gaussian_model.stddev, sn_threshold)
         """
         
-        best_fitting_results_refitted = gaussian_model.refit_amplitudes(all_peaks_in_search_window, best_fitting_results, sn_threshold)
-
+        mean = np.array(list(best_fitting_results_refitted.keys()))
+        stddev = utils.mapping_mass_to_stddev(mean)
+        
         if calculate_mass_shifts == True:
             mass_shifts = MassShifts(best_fitting_results_refitted)
             unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(best_fitting_results_refitted, unmodified_species_mass_init, unmodified_species_mass_tol)
         
             if unmodified_species_mass == 0:
-                plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
+                plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
                 print('\nUnmodified species could not be determined for following condition: ' + sample_name)
                 continue
 
             mass_shifts.set_unmodified_species_mass(unmodified_species_mass)
             mass_shifts.calculate_mass_shifts()
-            
-            plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.stddev, sample_name)
+
+            plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
           
         else:
-            mean = np.array(list(best_fitting_results_refitted.keys()))
             amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
-            plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, gaussian_model.stddev, sample_name)
+            plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
        
         pp.savefig()
         
@@ -234,14 +225,6 @@ if __name__ == '__main__':
 ###
 import matplotlib.pyplot as plt
 
-
-
-protein_id =  'A0A5C2GAN7'
-fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
-protein = Protein(fasta_name)
-theoretical_distribution = protein.get_theoretical_isotope_distribution(fasta_name)
-    
-    
     
 peaks = data.get_peaks(min_peak_height=0.0)
 peaks2 = data.remove_adjacent_peaks(peaks, 0.6)
@@ -258,4 +241,3 @@ plt.plot(peaks2[:,0], peaks2[:,1], '.',  color='blue')
 plt.ylabel('relative intensity (%)')
 plt.show()
 """
-
