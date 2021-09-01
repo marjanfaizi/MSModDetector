@@ -43,21 +43,15 @@ path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
 # *_01_Profile.mzml, *_02_Profile.mzml, *_01_CentPlus1.mzml, *_02_CentPlus1.mzml
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml, *_01_CentPlus1_MultiIonFiltered.mzml, *_02_CentPlus1_MultiIonFiltered.mzml
 
-file_names = [file for file in glob.glob(path+'*_02_Profile.mzml')] 
+file_names = [file for file in glob.glob(path+'*_01_Profile.mzml')] 
 regex_extract_output_name = 'MCF7_(.*)_Profile'
-#protein_id = 'P04637'
-#protein_id =  'Q8N726' # 'P01286', 'Q8N726'
-# too fat: 'P01824'
+
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
 max_mass_shift = 900.0 #Da
 start_mass_range = 43750.0 #Da
 unmodified_species_mass_init = 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
 
-
-#fasta_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/'+protein_id+'.fasta'
-output_path = '../output/'
-output_plots_name = 'identified_masses.pdf'
 mass_error = 5.0 #ppm
 pvalue_threshold = 0.05#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
@@ -78,20 +72,13 @@ if __name__ == '__main__':
     mod.get_modification_masses()
  
     plots_tables_obj = PlotsAndTables()
+     
+    pp = PdfPages('../output/identified_masses.pdf')
     
- #   window_sizes = [9.0,10.0,11.0,12.0]#adaptive_window_sizes(theoretical_distribution)
- 
-    pp = PdfPages(output_path+output_plots_name)
-    
-    count_progress = 0
-    #file_count = 1
+    progress_bar_mass_shifts = 0
+
     for file_name in file_names:
-        
-        #print('\n'+'#'*20) 
-        #print(file_count, '/', len(file_names)) 
-        #print('#'*20) 
-        #file_count+=1
-        
+                
         sample_name = re.search(regex_extract_output_name, file_name).group(1).lower()
     
         data = MassSpecData(file_name)
@@ -99,8 +86,9 @@ if __name__ == '__main__':
         data.set_max_mass_shift(max_mass_shift)
         data.set_search_window_mass_range(start_mass_range)  
         
-        #max_intensity = data.raw_spectrum[:,1].max()
-        #data.convert_to_relative_intensities(max_intensity)
+ 
+        max_intensity = data.raw_spectrum[:,1].max()
+        data.convert_to_relative_intensities(max_intensity)
         
         all_peaks = data.get_peaks()
         all_peaks_trimmed  = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
@@ -184,8 +172,8 @@ if __name__ == '__main__':
             amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
             plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
        
-        count_progress+=1        
-        utils.progress(count_progress, len(file_names))
+        progress_bar_mass_shifts += 1        
+        utils.progress(progress_bar_mass_shifts, len(file_names))
         
         pp.savefig()
     
@@ -194,9 +182,9 @@ if __name__ == '__main__':
 
     if calculate_mass_shifts == True:
         plots_tables_obj.add_mass_shifts()   
-        plots_tables_obj.save_table_identified_masses(output_path)
+        plots_tables_obj.save_table_identified_masses('../output/')
     else:
-        plots_tables_obj.save_table_identified_masses(output_path)
+        plots_tables_obj.save_table_identified_masses('../output/')
 
 
     identified_masses_table = plots_tables_obj.get_table_identified_masses()
@@ -214,11 +202,11 @@ if __name__ == '__main__':
         
         print('\n\nPTM patterns were found for', len(all_ptm_patterns), 'mass shifts.\n')  
         
-        output_df, output_top_df = plots_tables_obj.save_identified_patterns(all_ptm_patterns, mod, output_path, top=top_results)
+        output_df, output_top_df = plots_tables_obj.save_identified_patterns(all_ptm_patterns, mod, '../output/', top=top_results)
 
         plots_tables_obj.add_ptm_patterns(all_ptm_patterns, output_top_df, mod)
         
-        plots_tables_obj.save_table_identified_masses(output_path)
+        plots_tables_obj.save_table_identified_masses('../output/')
 
 
     print(80*'-'+'\n\n')
