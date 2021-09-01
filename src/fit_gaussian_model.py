@@ -31,6 +31,8 @@ class FitGaussianModel(object):
         initial_mean = masses[index_most_abundant_peak]
         intial_stddev = utils.mapping_mass_to_stddev(initial_mean)
         
+        #print(initial_amplitude)
+        
         if amplitude==None and mean==None and stddev==None:
             optimized_param, _ = optimize.curve_fit(utils.gaussian, masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude, initial_mean, intial_stddev])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar 10 2021
+Created on Mar 10 2021
 
 @author: Marjan Faizi
 """
@@ -59,11 +59,11 @@ unmodified_species_mass_tol = 5.0 #Da
 output_path = '../output/'
 output_plots_name = 'identified_masses.pdf'
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.9#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.05#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 5.0 #Da
 calculate_mass_shifts = True
-determine_ptm_patterns = True
+determine_ptm_patterns = False
 
 top_results = 1
 ##################################################################################################### 
@@ -83,25 +83,29 @@ if __name__ == '__main__':
  
     pp = PdfPages(output_path+output_plots_name)
     
-    file_count = 1
+    count_progress = 0
+    #file_count = 1
     for file_name in file_names:
         
-        print('\n'+'#'*20) 
-        print(file_count, '/', len(file_names)) 
-        print('#'*20) 
-        file_count+=1
+        #print('\n'+'#'*20) 
+        #print(file_count, '/', len(file_names)) 
+        #print('#'*20) 
+        #file_count+=1
         
         sample_name = re.search(regex_extract_output_name, file_name).group(1).lower()
     
         data = MassSpecData(file_name)
-        data.convert_to_relative_intensities()
         data.set_mass_error(mass_error)
         data.set_max_mass_shift(max_mass_shift)
         data.set_search_window_mass_range(start_mass_range)  
         
+        #max_intensity = data.raw_spectrum[:,1].max()
+        #data.convert_to_relative_intensities(max_intensity)
+        
         all_peaks = data.get_peaks()
         all_peaks_trimmed  = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
         all_peaks_in_search_window = data.determine_search_window(all_peaks_trimmed)
+                
         # TODO: is there another way to calculate th s/n ratio?
         sn_threshold = all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
         
@@ -113,7 +117,7 @@ if __name__ == '__main__':
             print('\nNo peaks could be detected within the search window for following condition: ' + sample_name)
             continue
         
-        print('\nMasses are detected.') 
+        #print('\nMasses are detected.') 
     
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
@@ -143,7 +147,7 @@ if __name__ == '__main__':
             print('\nNo masses detected for following condition: ' + sample_name)
             continue
   
-        print('\n'+str(len(best_fitting_results_refitted))+' masses are identified.')  
+        #print('\n'+str(len(best_fitting_results_refitted))+' masses are identified.')  
             
         """
         mass_shifts = MassShifts(best_fitting_results)
@@ -175,13 +179,16 @@ if __name__ == '__main__':
             mass_shifts.calculate_mass_shifts()
 
             plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
-          
+            
         else:
             amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
             plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
        
-        pp.savefig()
+        count_progress+=1        
+        utils.progress(count_progress, len(file_names))
         
+        pp.savefig()
+    
     pp.close()
     
 
@@ -231,7 +238,7 @@ peaks2 = data.remove_adjacent_peaks(peaks, 0.6)
 
 
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color='gray')
-plt.plot(theoretical_distribution[:,0], theoretical_distribution[:,1]*450, '--',  color='green')
+#plt.plot(theoretical_distribution[:,0], theoretical_distribution[:,1]*450, '--',  color='green')
 #plt.plot(peaks[:,0], peaks[:,1], '.',  color='red')
 plt.plot(peaks2[:,0], peaks2[:,1], '.',  color='blue')
 #plt.plot(np.array(list(fitting_results_reduced.keys())), np.array(list(fitting_results_reduced.values()))[:,0], '.b')

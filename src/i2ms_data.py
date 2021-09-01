@@ -74,9 +74,9 @@ class MassSpecData(object):
         return found_masses_indices
 
 
-    def convert_to_relative_intensities(self):
+    def convert_to_relative_intensities(self, max_intensity):
         intensities = self.raw_spectrum[:,1]
-        max_intensity = intensities.max()
+        #max_intensity = intensities.max()
         relative_intensities = 100 * intensities / max_intensity
         self.raw_spectrum[:,1] = relative_intensities
 
