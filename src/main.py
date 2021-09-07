@@ -97,7 +97,7 @@ if __name__ == '__main__':
         trimmed_peaks = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
         trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
                 
-        if not trimmed_peaks_in_search_window:
+        if not trimmed_peaks_in_search_window.size:
             print('\nNo peaks could be detected within the search window for the following condition: ' + sample_name)
             continue
     
@@ -108,12 +108,10 @@ if __name__ == '__main__':
         trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
         trimmed_peaks_above_sn_in_search_window = data.determine_search_window(trimmed_peaks_above_sn)
     
-        if not trimmed_peaks_above_sn_in_search_window:
+        if not trimmed_peaks_above_sn_in_search_window.size:
             print('\nNo peaks above the SN threshold could be detected within the search window for the following condition: ' + sample_name)
             continue
-        
-        #print('\nMasses are detected.') 
-    
+            
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
         gaussian_model = FitGaussianModel()

@@ -72,7 +72,7 @@ class MassSpecData(object):
             search_window_indices = np.arange(start_indices[0], end_indices[-1]+1)
             peaks_in_search_window = peaks[search_window_indices]
         else:
-            peaks_in_search_window = []
+            peaks_in_search_window = np.array([])
         return peaks_in_search_window
 
 
