@@ -6,6 +6,7 @@ Created on Fri Jul 2 2021
 @author: Marjan Faizi
 """
 
+import sys
 import pyopenms
 import pandas as pd
 import numpy as np
@@ -13,12 +14,17 @@ from scipy.signal import find_peaks
 
 class MassSpecData(object):
     """
-    This class reads .txt, .csv, and .mzMl formats 
+    This class reads mass spectra in the following formats: .txt, .csv, and .mzMl 
+    Pekas are picked from the raw mass spectrum. All subsequent analyses is performed using peaks.
+    'Shoulder' peaks are removed to improve analyses.    
     """
     
     def __init__(self, data_file_name):
         self.data_file_seperator = ","
         self.raw_spectrum  = self.__read_data(data_file_name)
+        self.masses = self.raw_spectrum[:,0]
+        self.intensities = self.raw_spectrum[:,1]
+        
         self.mass_error = 3.0
         self.search_window_start_mass = self.raw_spectrum[0,0]
         self.search_window_end_mass = self.raw_spectrum[-1,0]
@@ -27,16 +33,23 @@ class MassSpecData(object):
 
     def __read_data(self, data_file_name):
         if ".txt" in data_file_name or ".csv" in data_file_name:
-            spectrum = pd.read_csv(data_file_name, sep=self.data_file_seperator, header=None)
-            spectrum_asarray = np.asarray(spectrum)
-            
+            try:
+                spectrum = pd.read_csv(data_file_name, sep=self.data_file_seperator, header=None)
+                spectrum_asarray = np.asarray(spectrum)
+                return spectrum_asarray
+            except FileNotFoundError:
+                print('File does not exist.')
+                sys.exit()
         elif ".mzml" in data_file_name:
-            openms_object = pyopenms.MSExperiment()
-            pyopenms.MzMLFile().load(data_file_name, openms_object)
-            spectrum = openms_object.getSpectrum(0).get_peaks()  
-            spectrum_asarray = np.transpose(np.asarray(spectrum))
-        
-        return spectrum_asarray
+            try:
+                openms_object = pyopenms.MSExperiment()
+                pyopenms.MzMLFile().load(data_file_name, openms_object)
+                spectrum = openms_object.getSpectrum(0).get_peaks()  
+                spectrum_asarray = np.transpose(np.asarray(spectrum))
+                return spectrum_asarray
+            except FileNotFoundError:
+                print('File does not exist.')
+                sys.exit()
 
 
     def set_mass_error(self, mass_error):
@@ -64,30 +77,29 @@ class MassSpecData(object):
 
 
     def __find_peaks_by_mass(self, peaks, mass):
-        masses = peaks[:,0]
+        peaks_mass = peaks[:,0]
         mass_tolerance_Da = mass*self.mass_error*1.0e-6
         found_masses_indices = []
         while ( len(found_masses_indices) == 0  and mass_tolerance_Da < self.max_mass_shift):
-            found_masses_indices = np.argwhere((masses<=mass+mass_tolerance_Da) & (masses>=mass-mass_tolerance_Da))[:,0]
+            found_masses_indices = np.argwhere((peaks_mass<=mass+mass_tolerance_Da) & (peaks_mass>=mass-mass_tolerance_Da))[:,0]
             mass_tolerance_Da = mass_tolerance_Da*1.1
 
         return found_masses_indices
 
 
     def convert_to_relative_intensities(self, max_intensity):
-        intensities = self.raw_spectrum[:,1]
-        #max_intensity = intensities.max()
-        relative_intensities = 100 * intensities / max_intensity
-        self.raw_spectrum[:,1] = relative_intensities
+        relative_intensities = 100 * self.intensities / max_intensity
+        self.intensities = relative_intensities
 
 
-    def get_peaks(self, min_peak_height=None):
-        intensities = self.raw_spectrum[:,1]
-        peaks_index, _ = find_peaks(intensities, height=min_peak_height)
-        peaks = self.raw_spectrum[peaks_index]
+    def picking_peaks(self, min_peak_height=None):
+        peaks_index, _ = find_peaks(self.intensities, height=min_peak_height)
+        peaks_intensity = self.intensities[peaks_index]
+        peaks_mass = self.masses[peaks_index]
+        peaks = np.transpose(np.vstack((peaks_mass, peaks_intensity)))
         return peaks
 
-    
+
     def remove_adjacent_peaks(self, peaks, distance_threshold):
         peaks_shifted = np.vstack((peaks[1:], peaks[0]))
         distances = np.abs(peaks_shifted[:,0] - peaks[:,0])

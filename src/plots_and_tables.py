@@ -33,20 +33,18 @@ class PlotsAndTables(object):
         return self.identified_masses_table
     
     
-    def plot_mass_shifts(self, spectrum, all_peaks, trimmed_peaks, mass_shifts, mass_range_start, mass_range_end, stddev, title):
-        self.__plot_spectra(spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mass_shifts.mean, mass_shifts.amplitude, stddev, title)
+    def plot_mass_shifts(self, masses, intensities, all_peaks, trimmed_peaks, mass_shifts, mass_range_start, mass_range_end, stddev, title):
+        self.__plot_spectra(masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mass_shifts.mean, mass_shifts.amplitude, stddev, title)
         self.__add_labels(mass_shifts.mass_shifts, mass_shifts.mean, mass_shifts.amplitude)
 
-    def plot_masses(self, spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
-        self.__plot_spectra(spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title)
+    def plot_masses(self, masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
+        self.__plot_spectra(masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title)
         self.__add_labels(mean, mean, amplitude)
 
 
-    def __plot_spectra(self, spectrum, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
+    def __plot_spectra(self, masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
         x = np.arange(mass_range_start, mass_range_end)
         y = utils.multi_gaussian(x, amplitude, mean, stddev)
-        masses = spectrum[:,0]
-        intensities = spectrum[:,1]
         plt.figure(figsize=(16,4))
         plt.plot(masses, intensities, color='gray')
         plt.plot(all_peaks[:,0], all_peaks[:,1], '.g')

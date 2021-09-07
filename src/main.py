@@ -10,10 +10,11 @@ Created on Mar 10 2021
 
 import numpy as np
 import glob
+import sys
 import re
 from matplotlib.backends.backend_pdf import PdfPages
 
-from i2ms_data import MassSpecData
+from mass_spec_data import MassSpecData
 from fit_gaussian_model import FitGaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
@@ -42,10 +43,9 @@ regex_extract_output_name = 'wt_(.*)_Profile'
 path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
 # *_01_Profile.mzml, *_02_Profile.mzml, *_01_CentPlus1.mzml, *_02_CentPlus1.mzml
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml, *_01_CentPlus1_MultiIonFiltered.mzml, *_02_CentPlus1_MultiIonFiltered.mzml
-
+ 
 file_names = [file for file in glob.glob(path+'*_01_Profile.mzml')] 
 regex_extract_output_name = 'MCF7_(.*)_Profile'
-
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
 max_mass_shift = 900.0 #Da
 start_mass_range = 43750.0 #Da
@@ -56,7 +56,7 @@ mass_error = 5.0 #ppm
 pvalue_threshold = 0.05#np.arange(0.9, 0.999, 0.01)
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 5.0 #Da
-calculate_mass_shifts = True
+calculate_mass_shifts = False
 determine_ptm_patterns = False
 
 top_results = 1
@@ -66,7 +66,11 @@ top_results = 1
 
 if __name__ == '__main__':
     
-    print('\n'+'-'*80)  
+    print('\n'+'-'*80) 
+        
+    if not file_names:
+        print('\nFile does not exist.')
+        sys.exit()
     
     mod = Modifications(modfication_file_name)
     mod.get_modification_masses()
@@ -86,23 +90,26 @@ if __name__ == '__main__':
         data.set_max_mass_shift(max_mass_shift)
         data.set_search_window_mass_range(start_mass_range)  
         
- 
-        max_intensity = data.raw_spectrum[:,1].max()
+        max_intensity = data.intensities.max()
         data.convert_to_relative_intensities(max_intensity)
         
-        all_peaks = data.get_peaks()
-        all_peaks_trimmed  = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
-        all_peaks_in_search_window = data.determine_search_window(all_peaks_trimmed)
+        all_peaks = data.picking_peaks()
+        trimmed_peaks = data.remove_adjacent_peaks(all_peaks, distance_threshold_adjacent_peaks)   
+        trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
                 
-        # TODO: is there another way to calculate th s/n ratio?
-        sn_threshold = all_peaks_in_search_window[:,1].mean()/all_peaks_in_search_window[:,1].std()   
-        
-        peaks_above_sn = data.get_peaks(min_peak_height=sn_threshold)
-        peaks_above_sn_trimmed  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
-        peaks_above_sn_in_search_window = data.determine_search_window(peaks_above_sn_trimmed)
+        if not trimmed_peaks_in_search_window:
+            print('\nNo peaks could be detected within the search window for the following condition: ' + sample_name)
+            continue
     
-        if len(peaks_above_sn_in_search_window) == 0:
-            print('\nNo peaks could be detected within the search window for following condition: ' + sample_name)
+        # TODO: is there another way to calculate th s/n ratio?
+        sn_threshold = trimmed_peaks_in_search_window[:,1].mean()/trimmed_peaks_in_search_window[:,1].std()   
+        
+        peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
+        trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, distance_threshold_adjacent_peaks)  
+        trimmed_peaks_above_sn_in_search_window = data.determine_search_window(trimmed_peaks_above_sn)
+    
+        if not trimmed_peaks_above_sn_in_search_window:
+            print('\nNo peaks above the SN threshold could be detected within the search window for the following condition: ' + sample_name)
             continue
         
         #print('\nMasses are detected.') 
@@ -110,10 +117,10 @@ if __name__ == '__main__':
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
         gaussian_model = FitGaussianModel()
-        fitting_results = gaussian_model.fit_gaussian_to_single_peaks(all_peaks_trimmed, peaks_above_sn_in_search_window)
+        fitting_results = gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
         
         best_fitting_results = gaussian_model.filter_fitting_results(fitting_results, pvalue_threshold)
-        best_fitting_results_refitted = gaussian_model.refit_amplitudes(all_peaks_in_search_window, best_fitting_results, sn_threshold)
+        best_fitting_results_refitted = gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, best_fitting_results, sn_threshold)
         """
         # optimize window size for fitting the gaussian model
         best_score = -10.0
@@ -131,7 +138,7 @@ if __name__ == '__main__':
         """   
         plots_tables_obj.create_table_identified_masses(best_fitting_results_refitted, sample_name, bin_size_identified_masses)
         
-        if len(best_fitting_results_refitted) == 0:
+        if not best_fitting_results_refitted:
             print('\nNo masses detected for following condition: ' + sample_name)
             continue
   
@@ -159,18 +166,18 @@ if __name__ == '__main__':
             unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(best_fitting_results_refitted, unmodified_species_mass_init, unmodified_species_mass_tol)
         
             if unmodified_species_mass == 0:
-                plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
+                plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
                 print('\nUnmodified species could not be determined for following condition: ' + sample_name)
                 continue
 
             mass_shifts.set_unmodified_species_mass(unmodified_species_mass)
             mass_shifts.calculate_mass_shifts()
 
-            plots_tables_obj.plot_mass_shifts(data.raw_spectrum, all_peaks, all_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
+            plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
             
         else:
             amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
-            plots_tables_obj.plot_masses(data.raw_spectrum, all_peaks, all_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
+            plots_tables_obj.plot_masses(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
        
         progress_bar_mass_shifts += 1        
         utils.progress(progress_bar_mass_shifts, len(file_names))
