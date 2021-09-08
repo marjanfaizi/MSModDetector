@@ -14,6 +14,9 @@ import utils
 
 
 class FitGaussianModel(object): 
+    """
+    This class ...
+    """
     
     def __init__(self):
         self.maxfev = 100000
