@@ -15,7 +15,7 @@ import re
 from matplotlib.backends.backend_pdf import PdfPages
 
 from mass_spec_data import MassSpecData
-from fit_gaussian_model import FitGaussianModel
+from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 from plots_and_tables import PlotsAndTables
@@ -114,54 +114,22 @@ if __name__ == '__main__':
             
         # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
         # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-        gaussian_model = FitGaussianModel()
-        fitting_results = gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
+        gaussian_model = GaussianModel()
+        gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
+        gaussian_model.filter_fitting_results(pvalue_threshold)
+        gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
+
+        plots_tables_obj.create_table_identified_masses(gaussian_model.fitting_results, sample_name, bin_size_identified_masses)
         
-        best_fitting_results = gaussian_model.filter_fitting_results(fitting_results, pvalue_threshold)
-        best_fitting_results_refitted = gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, best_fitting_results, sn_threshold)
-        """
-        # optimize window size for fitting the gaussian model
-        best_score = -10.0
-        best_fitting_results = {}
-        for pvalue in pvalue_threshold:
-            fitting_results_reduced = gaussian_model.filter_fitting_results(fitting_results, pvalue)
-            if len(fitting_results_reduced) == 0:
-                continue
-            adjusted_r2_score = gaussian_model.adjusted_r_squared(peaks_above_sn_in_search_window, fitting_results_reduced)
-            if adjusted_r2_score >= best_score:
-                best_score = adjusted_r2_score
-                best_fitting_results = fitting_results_reduced
-        
-        print('\nBest results were found with r_square =', best_score)    
-        """   
-        plots_tables_obj.create_table_identified_masses(best_fitting_results_refitted, sample_name, bin_size_identified_masses)
-        
-        if not best_fitting_results_refitted:
+        if not gaussian_model.fitting_results:
             print('\nNo masses detected for following condition: ' + sample_name)
             continue
-  
-        #print('\n'+str(len(best_fitting_results_refitted))+' masses are identified.')  
-            
-        """
-        mass_shifts = MassShifts(best_fitting_results)
-        
-
-        unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(best_fitting_results, unmodified_species_mass_init, unmodified_species_mass_tol)
-        if unmodified_species_mass == 0:
-            print('\nUnmodified species could not be determined for following condition: ' + sample_name)
-            continue
-
-        mass_shifts.set_unmodified_species_mass(unmodified_species_mass)
-        mass_shifts.calculate_mass_shifts()
-        mass_shifts.refit_amplitudes(all_peaks_in_search_window, gaussian_model.stddev, sn_threshold)
-        """
-        
-        mean = np.array(list(best_fitting_results_refitted.keys()))
-        stddev = utils.mapping_mass_to_stddev(mean)
+          
+        stddev = utils.mapping_mass_to_stddev(gaussian_model.means)
         
         if calculate_mass_shifts == True:
-            mass_shifts = MassShifts(best_fitting_results_refitted)
-            unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(best_fitting_results_refitted, unmodified_species_mass_init, unmodified_species_mass_tol)
+            mass_shifts = MassShifts(gaussian_model.fitting_results)
+            unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(unmodified_species_mass_init, unmodified_species_mass_tol)
         
             if unmodified_species_mass == 0:
                 plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
@@ -174,8 +142,7 @@ if __name__ == '__main__':
             plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
             
         else:
-            amplitude = np.array(list(best_fitting_results_refitted.values()))[:,0]
-            plots_tables_obj.plot_masses(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, mean, amplitude, stddev, sample_name)
+            plots_tables_obj.plot_masses(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.means, gaussian_model.amplitudes, stddev, sample_name)
        
         progress_bar_mass_shifts += 1        
         utils.progress(progress_bar_mass_shifts, len(file_names))
