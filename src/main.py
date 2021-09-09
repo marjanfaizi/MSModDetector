@@ -7,8 +7,7 @@ Created on Mar 10 2021
 """
 
 #%matplotlib auto
-
-import numpy as np
+ 
 import glob
 import sys
 import re
@@ -18,7 +17,6 @@ from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
-from plots_and_tables import PlotsAndTables
 import utils
 
 
@@ -53,16 +51,13 @@ unmodified_species_mass_init = 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
 
 mass_error = 5.0 #ppm
-pvalue_threshold = 0.05#np.arange(0.9, 0.999, 0.01)
+pvalue_threshold = 0.99
 distance_threshold_adjacent_peaks = 0.6
 bin_size_identified_masses = 5.0 #Da
-calculate_mass_shifts = False
-determine_ptm_patterns = False
+calculate_mass_shifts = True
+determine_ptm_patterns = True
 
-top_results = 1
 ##################################################################################################### 
-
-
 
 if __name__ == '__main__':
     
@@ -74,8 +69,8 @@ if __name__ == '__main__':
     
     mod = Modifications(modfication_file_name)
     mod.get_modification_masses()
- 
-    plots_tables_obj = PlotsAndTables()
+
+    mass_shifts = MassShifts()
      
     pp = PdfPages('../output/identified_masses.pdf')
     
@@ -119,31 +114,25 @@ if __name__ == '__main__':
         gaussian_model.filter_fitting_results(pvalue_threshold)
         gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
 
-        plots_tables_obj.create_table_identified_masses(gaussian_model.fitting_results, sample_name, bin_size_identified_masses)
+        mass_shifts.create_table_identified_masses(gaussian_model.means, sample_name, bin_size_identified_masses)
         
         if not gaussian_model.fitting_results:
-            print('\nNo masses detected for following condition: ' + sample_name)
+            print('\nNo masses detected for the following condition: ' + sample_name)
             continue
-          
-        stddev = utils.mapping_mass_to_stddev(gaussian_model.means)
         
         if calculate_mass_shifts == True:
-            mass_shifts = MassShifts(gaussian_model.fitting_results)
-            unmodified_species_mass = gaussian_model.determine_unmodified_species_mass(unmodified_species_mass_init, unmodified_species_mass_tol)
+            unmodified_species_mass = utils.determine_unmodified_species_mass(gaussian_model.means, unmodified_species_mass_init, unmodified_species_mass_tol)
         
             if unmodified_species_mass == 0:
-                plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
-                print('\nUnmodified species could not be determined for following condition: ' + sample_name)
+                utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name)
+                print('\nUnmodified species could not be determined for the following condition: ' + sample_name)
                 continue
 
-            mass_shifts.set_unmodified_species_mass(unmodified_species_mass)
-            mass_shifts.calculate_mass_shifts()
-
-            plots_tables_obj.plot_mass_shifts(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, mass_shifts, data.search_window_start_mass, data.search_window_end_mass, stddev, sample_name)
+            utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name, unmodified_species_mass)
             
         else:
-            plots_tables_obj.plot_masses(data.masses, data.intensities, all_peaks, trimmed_peaks_in_search_window, data.search_window_start_mass, data.search_window_end_mass, gaussian_model.means, gaussian_model.amplitudes, stddev, sample_name)
-       
+            utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name)
+        
         progress_bar_mass_shifts += 1        
         utils.progress(progress_bar_mass_shifts, len(file_names))
         
@@ -151,51 +140,39 @@ if __name__ == '__main__':
     
     pp.close()
     
-
     if calculate_mass_shifts == True:
-        plots_tables_obj.add_mass_shifts()   
-        plots_tables_obj.save_table_identified_masses('../output/')
+        masses_means = mass_shifts.identified_masses_table['mass mean'].values
+        unmodified_species_mass = utils.determine_unmodified_species_mass(masses_means, unmodified_species_mass_init, unmodified_species_mass_tol)        
+        mass_shifts.add_mass_shifts(unmodified_species_mass)   
+        mass_shifts.save_table_identified_masses('../output/')
     else:
-        plots_tables_obj.save_table_identified_masses('../output/')
-
-
-    identified_masses_table = plots_tables_obj.get_table_identified_masses()
+        mass_shifts.save_table_identified_masses('../output/')
 
     if (calculate_mass_shifts == True) and (determine_ptm_patterns == True):
+        maximal_mass_error = mass_shifts.estimate_maximal_mass_error(mass_error)
         
-        mass_mean = plots_tables_obj.identified_masses_table['mass mean'].values
-        mass_shifts_mean = plots_tables_obj.identified_masses_table['mass shift'].values
-        mass_std = plots_tables_obj.identified_masses_table['mass std'].values
-        maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
-    
         print('\nSearching for PTM combinations:')
     
-        all_ptm_patterns = mass_shifts.determine_all_ptm_patterns2(maximal_mass_error, mod, mass_shifts_mean)
+        mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)
         
-        print('\n\nPTM patterns were found for', len(all_ptm_patterns), 'mass shifts.\n')  
+        print('\n\nPTM patterns were found for', len(mass_shifts.ptm_patterns_table.shape[0]), 'mass shifts.\n')  
         
-        output_df, output_top_df = plots_tables_obj.save_identified_patterns(all_ptm_patterns, mod, '../output/', top=top_results)
-
-        plots_tables_obj.add_ptm_patterns(all_ptm_patterns, output_top_df, mod)
-        
-        plots_tables_obj.save_table_identified_masses('../output/')
-
-
+        mass_shifts.add_ptm_patterns_to_table()
+        mass_shifts.save_table_identified_masses('../output/')
+    
     print(80*'-'+'\n\n')
 
     
 
+#import multiprocessing as mp
+#print("Number of processors: ", mp.cpu_count())
+
+
 """
-
-
-
-###
 import matplotlib.pyplot as plt
 
-    
 peaks = data.get_peaks(min_peak_height=0.0)
 peaks2 = data.remove_adjacent_peaks(peaks, 0.6)
-
 
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color='gray')
 #plt.plot(theoretical_distribution[:,0], theoretical_distribution[:,1]*450, '--',  color='green')
@@ -204,7 +181,6 @@ plt.plot(peaks2[:,0], peaks2[:,1], '.',  color='blue')
 #plt.plot(np.array(list(fitting_results_reduced.keys())), np.array(list(fitting_results_reduced.values()))[:,0], '.b')
 #plt.plot(np.array(list(fitting_results_reduced2.keys())), np.array(list(fitting_results_reduced2.values()))[:,0], '.g')
 #plt.plot(mass_shifts.mean, mass_shifts.amplitude, '.g')
-
 plt.ylabel('relative intensity (%)')
 plt.show()
 """

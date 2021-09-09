@@ -159,22 +159,7 @@ class GaussianModel(object):
         number_variables = len(self.fitting_results)*3
         adjusted_r_squared = 1.0 - ( (1.0-r_square_value)*(number_data_points-1.0)/(number_data_points-number_variables-1.0) )
         return adjusted_r_squared
-    
-    
-    def determine_unmodified_species_mass(self, species_mass, mass_tolerance):
-        masses_in_interval = self.means[(self.means>=species_mass-mass_tolerance) & (self.means<=species_mass+mass_tolerance)]
         
-        if len(masses_in_interval) > 1:
-            closest_to_species_mass_ix = abs(masses_in_interval - species_mass).argmin()
-            unmodified_species_mass = masses_in_interval[closest_to_species_mass_ix]
-        elif len(masses_in_interval) == 1:
-            unmodified_species_mass = masses_in_interval[0]
-            
-        else:
-            unmodified_species_mass = 0
-        
-        return unmodified_species_mass
-    
     
     def refit_amplitudes(self, peaks, sn_threshold):
         fitting_results_refitted = {}

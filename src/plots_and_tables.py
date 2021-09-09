@@ -20,22 +20,13 @@ class PlotsAndTables(object):
         
         
     def __init__(self):
-        self.identified_masses_table = pd.DataFrame(columns=['mass mean', 'mass std']) 
-   
-        
-    def get_table_identified_masses(self):  
-        return self.identified_masses_table
-    
-        
-    def save_table_identified_masses(self, path_name):
-        self.identified_masses_table = self.identified_masses_table.sort_index(axis=1)
-        self.identified_masses_table.to_csv(path_name+'identified_masses_table.csv', sep=',')    
-        return self.identified_masses_table
+        self.identified_masses_table = pd.DataFrame(columns=['mass mean', 'mass std'])     
     
     
     def plot_mass_shifts(self, masses, intensities, all_peaks, trimmed_peaks, mass_shifts, mass_range_start, mass_range_end, stddev, title):
         self.__plot_spectra(masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mass_shifts.mean, mass_shifts.amplitude, stddev, title)
         self.__add_labels(mass_shifts.mass_shifts, mass_shifts.mean, mass_shifts.amplitude)
+
 
     def plot_masses(self, masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title):
         self.__plot_spectra(masses, intensities, all_peaks, trimmed_peaks, mass_range_start, mass_range_end, mean, amplitude, stddev, title)
@@ -66,8 +57,8 @@ class PlotsAndTables(object):
             label_str = "{:.2f}".format(label[ix])
             plt.annotate(label_str, (mean[ix], amplitude[ix]), textcoords="offset points", xytext=(5,25), 
                          ha='center', fontsize='small', rotation=45)
-     
-    
+  
+ 
     def save_identified_patterns(self, ptm_patterns, mod, output_name, top=3):
         ptm_column_name_separator = ', '
         ptm_column_name = ptm_column_name_separator.join(mod.acronyms)
@@ -86,33 +77,6 @@ class PlotsAndTables(object):
         output_top_df.to_csv(output_name+'_ptm_patterns_top_'+ str(top) +'.csv', sep=' ')    
         return output_df, output_top_df
 
-
-    def create_table_identified_masses(self, fitting_results, column_name, bin_size_identified_masses):
-        if len(fitting_results) == 0:
-            avg_masses = np.nan
-        else:
-            avg_masses = list(fitting_results.keys())
-        
-        if self.identified_masses_table.empty:
-            self.identified_masses_table[column_name] = avg_masses
-        else:
-            self.identified_masses_table[column_name] = np.nan
-            for mass in avg_masses:
-                row_index = self.identified_masses_table[(self.identified_masses_table['mass mean']<=mass+bin_size_identified_masses) & 
-                                                         (self.identified_masses_table['mass mean']>=mass-bin_size_identified_masses)].index.values
-                if len(row_index) > 0:
-                    self.identified_masses_table.loc[row_index[0]][column_name] = mass
-                else:
-                    self.identified_masses_table = self.identified_masses_table.append({column_name: mass}, ignore_index=True)
-        
-        self.identified_masses_table['mass mean'] = self.identified_masses_table.iloc[:,2:].mean(axis=1).values
-        self.identified_masses_table['mass std'] = self.identified_masses_table.iloc[:,2:].std(axis=1).values
-        self.identified_masses_table.sort_values(by='mass mean', inplace=True)
-
-
-    def add_mass_shifts(self):
-        self.identified_masses_table['mass shift'] = self.identified_masses_table['mass mean'] - self.identified_masses_table.loc[0]['mass mean']
-  
 
     def add_ptm_patterns(self, ptm_patterns, output_df, mod):
         ptm_column_name_separator = ', '

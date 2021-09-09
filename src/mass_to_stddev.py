@@ -23,7 +23,7 @@ fasta_file_object.load(fasta_file_name, fasta_file_entries)
 isotope_pattern_resolution = 100
 mapping_protein_mass_to_stddev = {}
 
-count_progess = 0
+progess_bar = 0
 print('\nCalculating the standard deviation for every protein in the human proteome database:')
 for entry in fasta_file_entries:
     protein_id = entry.identifier
@@ -39,8 +39,8 @@ for entry in fasta_file_entries:
             average_mass = sequence.getAverageWeight()
             stddev = utils.estimate_stddev_from_isotope_distribution(distribution)
             mapping_protein_mass_to_stddev[protein_id] = [average_mass, stddev]
-    count_progess += 1
-    utils.progress(count_progess, len(fasta_file_entries))
+    progess_bar += 1
+    utils.progress(progess_bar, len(fasta_file_entries))
 print('\n')
 
 
