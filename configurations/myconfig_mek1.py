@@ -1,0 +1,50 @@
+# myconfig_mek1.py:
+
+# Path to the mass spec data
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/03_10_2021/'
+
+# This regular expression specifies the ending of the file names that should be read all at once
+file_name_ending = '*_01_Profile.mzml'
+
+# Select a regular expression that is common for all samples, this is used as output names for the plots
+regex_extract_output_name = 'wt_(.*)_Profile'
+
+# Name and location of the modification file 
+modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_Q02750.csv'
+
+# Set the maximal mass shift to consider (in Da)
+max_mass_shift = 600.0
+
+# Set the start of the search window within the mass spectrum (in Da)
+start_mass_range = 43200.0
+
+# Initial guess for the mass of the unmodified species (in Da)
+unmodified_species_mass_init = 43310.0
+
+# Search for the mass of the unmodified species within this range -/+ mass_tol (in Da)
+unmodified_species_mass_tol = 5.0 
+
+# The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
+# A high p-value indicates a better fit; both distributions are less likely to differ from each other
+pvalue_threshold = 0.99
+
+# If two peaks are within this distance (given in Da) then the lower peak is removed  
+distance_threshold_adjacent_peaks = 0.6
+
+# Identified masses across different samples are binned together in the output table if they differ by this value (given in Da)
+bin_size_identified_masses = 5.0
+
+# Set this to be true if the mass shifts should be calculated and reported in the output table
+calculate_mass_shifts = True
+
+# This mass error in ppm is used as default for the linear programming problem 
+# Theoretical mass shifts are determined if their difference to the observed mass shift is within a specific mass error
+mass_error = 5.0
+
+# Set this to be true if the PTM patterns should be determined and reported in the output table
+# Only the PTM pattern with the least amount of PTMs will be selected to be displayed
+determine_ptm_patterns = True
+
+
+
+
