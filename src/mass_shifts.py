@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 from linear_program import LinearProgram
 import utils
-import multiprocessing as mp
 
 
 class MassShifts(object): 
@@ -56,50 +55,43 @@ class MassShifts(object):
         
     def save_table_identified_masses(self, path_name):
         self.identified_masses_table = self.identified_masses_table.sort_index(axis=1)
-        self.identified_masses_table.to_csv(path_name+'identified_masses_table.csv', sep=',')    
+        self.identified_masses_table.to_csv(path_name+'identified_masses_table.csv', sep=',', index=False)    
 
 
-    def determine_ptm_patterns(self, modifications, maximal_mass_error_list):
+    def determine_ptm_patterns(self, modifications, maximal_mass_error_array):
         self.ptm_patterns_table = self.__create_ptm_pattern_table(modifications)
         lp_model = LinearProgram()
         lp_model.set_ptm_mass_shifts(modifications.modification_masses)
         lp_model.set_upper_bounds(modifications.upper_bounds)
         minimal_mass_shift = min(np.abs(modifications.modification_masses))
-        
-        pool = mp.Pool(mp.cpu_count())
+
         for ix in range(len(self.mass_shifts)):
             mass_shift = self.mass_shifts[ix]
-            maximal_mass_error = maximal_mass_error_list[ix]
+            maximal_mass_error = maximal_mass_error_array[ix]
 
             if mass_shift >= minimal_mass_shift:
-                pool.apply(self.run_lp(), args=(mass_shift, lp_model, maximal_mass_error))
+                mass_error = 0.0     
+                lp_model.reset_mass_error()
+                lp_model.set_observed_mass_shift(mass_shift) 
+                while abs(mass_error) < maximal_mass_error:            
+                    lp_model.solve_linear_program_for_objective_with_absolute_value()
+                    mass_error = lp_model.get_objective_value()
+                    lp_model.set_minimal_mass_error(abs(mass_error))
+                    ptm_pattern = lp_model.get_x_values()
+                    number_ptm_types = np.array(ptm_pattern).sum()
+                    if abs(mass_error) < maximal_mass_error:
+                        row_entry = [mass_shift, mass_error, ptm_pattern, number_ptm_types]
+                        row_entry_as_series = pd.Series(row_entry, index = self.ptm_patterns_table.columns)
+                        self.ptm_patterns_table = self.ptm_patterns_table.append(row_entry_as_series, ignore_index=True)
 
             utils.progress(ix+1, len(self.mass_shifts))
-
-        pool.close()
-
-
-    def run_lp(self, mass_shift, lp_model, maximal_mass_error):
-        mass_error = 0.0     
-        lp_model.reset_mass_error()
-        lp_model.set_observed_mass_shift(mass_shift) 
-        while abs(mass_error) < maximal_mass_error:            
-            lp_model.solve_linear_program_for_objective_with_absolute_value()
-            mass_error = lp_model.get_objective_value()
-            lp_model.set_minimal_mass_error(abs(mass_error))
-            ptm_pattern = lp_model.get_x_values()
-            number_ptm_types = np.array(ptm_pattern).sum()
-            if abs(mass_error) < maximal_mass_error:
-                row_entry = [mass_shift, mass_error, ptm_pattern, number_ptm_types]
-                self.ptm_patterns_table.append(row_entry)
-
 
 
     def estimate_maximal_mass_error(self, mass_error):
         mass_mean = self.identified_masses_table['mass mean'].values
         mass_std = self.identified_masses_table['mass std'].values
         maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
-        return maximal_mass_error
+        return np.array(maximal_mass_error)
         
     
     def __create_ptm_pattern_table(self, modifications):
@@ -111,60 +103,10 @@ class MassShifts(object):
     
     
     def add_ptm_patterns_to_table(self):
-        by_min_amount_ptms = self.ptm_patterns_table.groupby('mass shift', 'PTM pattern ('+self.ptm_column_name+')')['amount of PTMs'].min()
-        
-        
-        
-        
-        
-    """
-    def estimate_ptm_patterns(self, mass_shift, lp_model, maximal_mass_error):
-        ptm_patterns = {}
-        ix = 0
-        mass_error = 0.0     
-        lp_model.reset_mass_error()
-        lp_model.set_observed_mass_shift(mass_shift) 
-        while abs(mass_error) < maximal_mass_error:            
-            lp_model.solve_linear_program_for_objective_with_absolute_value()
-            mass_error = lp_model.get_objective_value()
-            lp_model.set_minimal_mass_error(abs(mass_error))
-            pattern = lp_model.get_x_values()
-            number_ptm_types = np.array(pattern).sum()
-            if abs(mass_error) < maximal_mass_error:
-                ptm_patterns[ix] = [mass_shift, mass_error, pattern, number_ptm_types]
-                ix += 1
+        self.ptm_patterns_table['amount of PTMs'] = pd.to_numeric(self.ptm_patterns_table['amount of PTMs'])
+        best_ptm_patterns = self.ptm_patterns_table.loc[self.ptm_patterns_table.groupby('mass shift')['amount of PTMs'].idxmin()]
+        self.identified_masses_table = pd.merge(best_ptm_patterns[['mass shift', 'PTM pattern ('+self.ptm_column_name+')']], 
+                                                self.identified_masses_table, how='outer', left_on=['mass shift'], 
+                                                right_on=['mass shift'])
+        self.identified_masses_table.sort_values(by=['mass shift'], inplace=True)
 
-        return ptm_patterns
-    """
-   
-"""
-    def save_identified_patterns(self, ptm_patterns, mod, output_name, top=3):
-        ptm_column_name_separator = ', '
-        ptm_column_name = ptm_column_name_separator.join(mod.acronyms)
-        column_names = ['mass shift', 'mass error (Da)', 'PTM pattern ('+ptm_column_name+')', 'amount of PTMs']
-        output_df = pd.DataFrame(columns=column_names)
-        output_top_df = pd.DataFrame(columns=column_names)
-        for key, values in ptm_patterns.items():
-            intermediate_df = pd.DataFrame.from_dict(values, orient='index', columns=column_names)
-            intermediate_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], key=abs, inplace=True)      
-            output_df = output_df.append(intermediate_df)
-            output_top_df = output_top_df.append(intermediate_df.iloc[:top,:])
-
-        output_df.reset_index(drop=True, inplace=True)
-        output_top_df.reset_index(drop=True, inplace=True)
-        output_df.to_csv(output_name+'_ptm_patterns.csv', sep=' ')
-        output_top_df.to_csv(output_name+'_ptm_patterns_top_'+ str(top) +'.csv', sep=' ')    
-        return output_df, output_top_df
-
-
-    def add_ptm_patterns_to_table(self, ptm_patterns, output_df, mod):
-        ptm_column_name_separator = ', '
-        ptm_column_name = ptm_column_name_separator.join(mod.acronyms)
-        column_name = 'PTM pattern ('+ptm_column_name+')'
-        self.identified_masses_table['best '+column_name] = np.nan
-        
-        for ix, row in output_df.iterrows():
-            row_index = self.identified_masses_table[self.identified_masses_table['mass shift']==row['mass shift']].index.values[0] 
-            self.identified_masses_table.loc[row_index,'best '+column_name] = str(row[column_name])
-
-"""

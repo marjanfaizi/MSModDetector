@@ -19,6 +19,7 @@ from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
 
+import numpy as np
 
 ##################################################################################################### 
 ############################################### INPUT ############################################### 
@@ -45,7 +46,7 @@ path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
 file_names = [file for file in glob.glob(path+'*_01_Profile.mzml')] 
 regex_extract_output_name = 'MCF7_(.*)_Profile'
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
-max_mass_shift = 900.0 #Da
+max_mass_shift = 400.0# 800.0 #Da
 start_mass_range = 43750.0 #Da
 unmodified_species_mass_init = 43770.0 #Da
 unmodified_species_mass_tol = 5.0 #Da
@@ -153,19 +154,12 @@ if __name__ == '__main__':
         
         print('\nSearching for PTM combinations:')
     
-        mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)
-        
-        print('\n\nPTM patterns were found for', len(mass_shifts.ptm_patterns_table.shape[0]), 'mass shifts.\n')  
-        
+        mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
         mass_shifts.add_ptm_patterns_to_table()
         mass_shifts.save_table_identified_masses('../output/')
     
     print(80*'-'+'\n\n')
 
-    
-
-#import multiprocessing as mp
-#print("Number of processors: ", mp.cpu_count())
 
 
 """
