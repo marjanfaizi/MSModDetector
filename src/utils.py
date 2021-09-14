@@ -105,6 +105,7 @@ def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=Non
     plt.figure(figsize=(16,4))
     plt.plot(data.masses, data.intensities, color='gray')
     plt.plot(gaussian_model.means, gaussian_model.amplitudes, '.r')
+    plt.plot(peaks[:,0], peaks[:,1], '.b')
     plt.plot(x, y, color='firebrick')
     plt.xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
     plt.ylim((-0.5, peaks[:,1].max()*1.3))

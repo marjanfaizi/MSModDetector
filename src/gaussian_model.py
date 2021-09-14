@@ -36,21 +36,18 @@ class GaussianModel(object):
 
     def fit_gaussian_to_single_peaks(self, all_peaks, peaks_above_sn):
         all_masses = all_peaks[:,0]
-        masses_above_sn = peaks_above_sn[:,0]; intensities_above_sn = peaks_above_sn[:,1] 
+        masses_above_sn = peaks_above_sn[:,0]
 
-        for ix in range(len(masses_above_sn)):
-            mass = masses_above_sn[ix]; intensity = intensities_above_sn[ix]
-            fitting_window_sizes = self.determine_adaptive_window_sizes(intensity, mass)
-            
+        for mass in masses_above_sn:      
             best_pvalue = -1.0
             
-            for window_size in fitting_window_sizes:
+            for window_size in self.fitting_window_sizes:
                 selected_region_ix = np.argwhere((all_masses<=mass+window_size) & (all_masses>=mass-window_size))[:,0]
                 selected_region = all_peaks[selected_region_ix]
                 sample_size = selected_region.shape[0]          
                 
                 if sample_size >= self.sample_size_threshold:
-                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]               
+                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]        
                     pvalue = self.chi_square_test(selected_region, fitted_amplitude, mass)
                 else:
                     pvalue = 0.0
@@ -62,7 +59,6 @@ class GaussianModel(object):
                     best_window_size = window_size
                           
             self.fitting_results[mass] = [best_fitted_amplitude, best_pvalue, best_window_size]
-            
         self.means = np.array(list(self.fitting_results.keys()))
         self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
 
@@ -87,16 +83,17 @@ class GaussianModel(object):
         return optimized_param
      
     
-    def determine_adaptive_window_sizes(self, amplitude, mean):
+    def determine_adaptive_window_sizes(self, mean):
+        amplitude = 1
         masses = np.arange(mean-100, mean+100)
         stddev = utils.mapping_mass_to_stddev(mean)
         intensities = utils.gaussian(masses, amplitude, mean, stddev) 
-        most_abundant_20percent_masses = masses[intensities > intensities.max()*0.8]
+        most_abundant_50percent_masses = masses[intensities > intensities.max()*0.5]
         most_abundant_90percent_masses = masses[intensities > intensities.max()*0.1]
-        lower_window_size = round((most_abundant_20percent_masses[-1]-most_abundant_20percent_masses[0])/2)
+        lower_window_size = round((most_abundant_50percent_masses[-1]-most_abundant_50percent_masses[0])/2)
         upper_window_size = np.ceil((most_abundant_90percent_masses[-1]-most_abundant_90percent_masses[0])/2)
         window_sizes = np.arange(lower_window_size, upper_window_size, 1)
-        return window_sizes
+        self.fitting_window_sizes = window_sizes
 
 
     def chi_square_test(self, selected_region, amplitude, mean):
@@ -115,8 +112,8 @@ class GaussianModel(object):
 
     def __select_best_pvalues(self, pvalue_threshold):
         self.fitting_results = dict(filter(lambda elem: elem[1][1] >= pvalue_threshold, self.fitting_results.items()))
-        self.means = np.array(list(self.fitting_results.keys()))
-        self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
+        self.__check_if_dict_empty()
+
 
     def __remove_overlapping_fitting_results(self):
         fitting_results_reduced = {}
@@ -146,8 +143,7 @@ class GaussianModel(object):
                     fitting_results_reduced[best_mean] = [best_amplitude, best_pvalue]
 
         self.fitting_results = fitting_results_reduced
-        self.means = np.array(list(self.fitting_results.keys()))
-        self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
+        self.__check_if_dict_empty()
 
 
     def adjusted_r_squared(self, peaks):  
@@ -162,23 +158,35 @@ class GaussianModel(object):
         
     
     def refit_amplitudes(self, peaks, sn_threshold):
-        fitting_results_refitted = {}
-        masses = peaks[:,0]; intensities = peaks[:,1]
-        stddev = utils.mapping_mass_to_stddev(self.means)
-        refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
-                                                     x0=self.amplitudes, args=(self.means, stddev, masses, intensities))
-        ix = 0
-        for key, values in self.fitting_results.items():
-            
-            if (refitted_amplitudes.x[ix] > sn_threshold) and (refitted_amplitudes.x[ix] > self.amplitudes[ix]*0.5):
-                pvalue = values[1]
-                fitting_results_refitted[key] = [refitted_amplitudes.x[ix], pvalue]
-          
-            ix += 1
-    
-        self.fitting_results = fitting_results_refitted
-        self.means = np.array(list(self.fitting_results.keys()))
-        self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
+        is_empty = self.__check_if_dict_empty()
+        if not is_empty:
+            fitting_results_refitted = {}
+            masses = peaks[:,0]; intensities = peaks[:,1]
+            stddev = utils.mapping_mass_to_stddev(self.means)
+            refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
+                                                         x0=self.amplitudes, args=(self.means, stddev, masses, intensities))
+            ix = 0
+            for key, values in self.fitting_results.items():
+                
+                if (refitted_amplitudes.x[ix] > sn_threshold) and (refitted_amplitudes.x[ix] > self.amplitudes[ix]*0.5):
+                    pvalue = values[1]
+                    fitting_results_refitted[key] = [refitted_amplitudes.x[ix], pvalue]
+              
+                ix += 1
+        
+            self.fitting_results = fitting_results_refitted
+            self.__check_if_dict_empty()
+
+
+    def __check_if_dict_empty(self):
+        if not self.fitting_results:
+            self.means = []
+            self.amplitudes = []
+            return True
+        else:
+            self.means = np.array(list(self.fitting_results.keys()))
+            self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
+            return False
 
     
     def __error_func(self, amplitude, mean, stddev, x, y):

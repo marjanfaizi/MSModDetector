@@ -9,7 +9,8 @@ Created on Mar 10 2021
 import glob
 import sys
 import re
-from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+import numpy as np
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -24,8 +25,9 @@ file_names = [file for file in glob.glob(config.path+config.file_name_ending)]
  
 if __name__ == '__main__':
     
-    print('\n'+'-'*80) 
-        
+    print('\n'+'-'*80)     
+    print('\nLoad files...')
+    
     if not file_names:
         print('\nFile does not exist.')
         sys.exit()
@@ -35,7 +37,14 @@ if __name__ == '__main__':
 
     mass_shifts = MassShifts()
      
-    pp = PdfPages('../output/identified_masses.pdf')
+    output_fig = plt.figure(figsize=(14,7))
+    gs = output_fig.add_gridspec(len(file_names), hspace=0)
+    axes = gs.subplots(sharex=True, sharey=True)
+    ylim_max = 0
+    
+    print('\nDetect mass shifts:')
+    
+    stdout_text = []
     
     progress_bar_mass_shifts = 0
 
@@ -46,99 +55,100 @@ if __name__ == '__main__':
         data = MassSpecData(file_name)
         data.set_mass_error(config.mass_error)
         data.set_max_mass_shift(config.max_mass_shift)
-        data.set_search_window_mass_range(config.start_mass_range)  
-        
+        data.set_search_window_mass_range(config.start_mass_range)        
+  
         max_intensity = data.intensities.max()
+        rescaling_factor = max_intensity/100.0
         data.convert_to_relative_intensities(max_intensity)
-        
+      
         all_peaks = data.picking_peaks()
         trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
         trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+  
+        color_of_sample = [value for key, value in config.color_palette.items() if key in sample_name][0]
+        axes[progress_bar_mass_shifts].plot(data.masses, data.intensities*rescaling_factor, label=sample_name, color=color_of_sample)
+
+        if trimmed_peaks_in_search_window.size:
+            # TODO: is there another way to calculate th s/n ratio?
+            sn_threshold = 0.5*trimmed_peaks_in_search_window[:,1].std()   
+            
+            ### TODO: remove later
+            axes[progress_bar_mass_shifts].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
+            
+            peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
+            trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, config.distance_threshold_adjacent_peaks)  
+            trimmed_peaks_above_sn_in_search_window = data.determine_search_window(trimmed_peaks_above_sn)
+        
+            if trimmed_peaks_above_sn_in_search_window.size:  
+                # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
+                # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
+                gaussian_model = GaussianModel()
+                gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
+                gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
+                gaussian_model.filter_fitting_results(config.pvalue_threshold)
+                gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
+                        
+                mass_shifts.create_table_identified_masses(gaussian_model.means, sample_name, config.bin_size_identified_masses)
                 
-        if not trimmed_peaks_in_search_window.size:
-            print('\nNo peaks could be detected within the search window for the following condition: ' + sample_name)
-            continue
-    
-        # TODO: is there another way to calculate th s/n ratio?
-        sn_threshold = trimmed_peaks_in_search_window[:,1].mean()/trimmed_peaks_in_search_window[:,1].std()   
-        
-        peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
-        trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, config.distance_threshold_adjacent_peaks)  
-        trimmed_peaks_above_sn_in_search_window = data.determine_search_window(trimmed_peaks_above_sn)
-    
-        if not trimmed_peaks_above_sn_in_search_window.size:
-            print('\nNo peaks above the SN threshold could be detected within the search window for the following condition: ' + sample_name)
-            continue
-            
-        # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
-        # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-        gaussian_model = GaussianModel()
-        gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
-        gaussian_model.filter_fitting_results(config.pvalue_threshold)
-        gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
+                if gaussian_model.fitting_results:
+                    x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
+                    stddev = utils.mapping_mass_to_stddev(gaussian_model.means)
+                    y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.amplitudes, gaussian_model.means, stddev)
+                    axes[progress_bar_mass_shifts].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
+                    axes[progress_bar_mass_shifts].plot(gaussian_model.means, gaussian_model.amplitudes*rescaling_factor, '.', color='0.3')
+                    
+                    if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
+                        ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor
+                    
+                else:
+                    stdout_text.append('No masses detected for the following condition: ' + sample_name)
+            else:
+                stdout_text.append('No peaks above the SN threshold could be detected within the search window for the following condition: ' + sample_name)
 
-        mass_shifts.create_table_identified_masses(gaussian_model.means, sample_name, config.bin_size_identified_masses)
-        
-        if not gaussian_model.fitting_results:
-            print('\nNo masses detected for the following condition: ' + sample_name)
-            continue
-        
-        if config.calculate_mass_shifts == True:
-            unmodified_species_mass = utils.determine_unmodified_species_mass(gaussian_model.means, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)
-        
-            if unmodified_species_mass == 0:
-                utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name)
-                print('\nUnmodified species could not be determined for the following condition: ' + sample_name)
-                continue
-
-            utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name, unmodified_species_mass)
-            
         else:
-            utils.plot_spectra(data, trimmed_peaks_in_search_window, gaussian_model, sample_name)
-        
+            stdout_text.append('No peaks could be detected within the search window for the following condition: ' + sample_name)
+
         progress_bar_mass_shifts += 1        
         utils.progress(progress_bar_mass_shifts, len(file_names))
         
-        pp.savefig()
+    print('\n')
+    seperator_stdout_text = '\n'
+    print(seperator_stdout_text.join(stdout_text))
     
-    pp.close()
-    
-    if config.calculate_mass_shifts == True:
-        masses_means = mass_shifts.identified_masses_table['mass mean'].values
-        unmodified_species_mass = utils.determine_unmodified_species_mass(masses_means, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)        
-        mass_shifts.add_mass_shifts(unmodified_species_mass)   
-        mass_shifts.save_table_identified_masses('../output/')
+    if mass_shifts.identified_masses_table.empty:
+        print('\nNo masses detected.')
     else:
-        mass_shifts.save_table_identified_masses('../output/')
-
-    if (config.calculate_mass_shifts == True) and (config.determine_ptm_patterns == True):
-        maximal_mass_error = mass_shifts.estimate_maximal_mass_error(config.mass_error)
-        
-        print('\nSearching for PTM combinations:')
+        if config.calculate_mass_shifts == True:
+            masses_means = mass_shifts.identified_masses_table['mass mean'].values
+            unmodified_species_mass = utils.determine_unmodified_species_mass(masses_means, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)        
+            mass_shifts.add_mass_shifts(unmodified_species_mass)   
+            mass_shifts.save_table_identified_masses('../output/')
+        else:
+            mass_shifts.save_table_identified_masses('../output/')
     
-        mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
-        mass_shifts.add_ptm_patterns_to_table()
-        mass_shifts.save_table_identified_masses('../output/')
+        if (config.calculate_mass_shifts == True) and (config.determine_ptm_patterns == True):
+            maximal_mass_error = mass_shifts.estimate_maximal_mass_error(config.mass_error)
+            
+            print('\nSearching for PTM combinations:')
+        
+            mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
+            mass_shifts.add_ptm_patterns_to_table()
+            mass_shifts.save_table_identified_masses('../output/')
+            
+            
+    means = mass_shifts.identified_masses_table['mass mean'].values
+    for ax in axes:
+        ax.set_xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
+        ax.set_ylim((-10, ylim_max*1.1))
+        ax.yaxis.grid()
+        ax.legend(fontsize=11, loc='upper right')
+        for m in means:
+            ax.axvline(x=m, c='0.3', ls='--', lw=0.3, zorder=0)
+        ax.label_outer()
+
+    output_fig.tight_layout()
+    plt.savefig('../output/identified_masses.pdf', dpi=800)
+    plt.show()
     
     print(80*'-'+'\n\n')
 
-
-
-"""
-import matplotlib.pyplot as plt
-
-%matplotlib auto
-
-peaks = data.get_peaks(min_peak_height=0.0)
-peaks2 = data.remove_adjacent_peaks(peaks, 0.6)
-
-plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color='gray')
-#plt.plot(theoretical_distribution[:,0], theoretical_distribution[:,1]*450, '--',  color='green')
-#plt.plot(peaks[:,0], peaks[:,1], '.',  color='red')
-plt.plot(peaks2[:,0], peaks2[:,1], '.',  color='blue')
-#plt.plot(np.array(list(fitting_results_reduced.keys())), np.array(list(fitting_results_reduced.values()))[:,0], '.b')
-#plt.plot(np.array(list(fitting_results_reduced2.keys())), np.array(list(fitting_results_reduced2.values()))[:,0], '.g')
-#plt.plot(mass_shifts.mean, mass_shifts.amplitude, '.g')
-plt.ylabel('relative intensity (%)')
-plt.show()
-"""
