@@ -29,7 +29,7 @@ if __name__ == '__main__':
     print('\nLoad files...')
     
     if not file_names:
-        print('\nFile does not exist.')
+        print('\nFile does not exist.\n')
         sys.exit()
     
     mod = Modifications(config.modfication_file_name)
@@ -38,11 +38,11 @@ if __name__ == '__main__':
     mass_shifts = MassShifts()
      
     output_fig = plt.figure(figsize=(14,7))
-    gs = output_fig.add_gridspec(len(file_names), hspace=0)
+    gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
     axes = gs.subplots(sharex=True, sharey=True)
     ylim_max = 0
     
-    print('\nDetect mass shifts:')
+    print('\nStart detecting mass shifts...')
     
     stdout_text = []
     
@@ -50,8 +50,13 @@ if __name__ == '__main__':
 
     for file_name in file_names:
                 
-        sample_name = re.search(config.regex_extract_output_name, file_name).group(1).lower()
-    
+        text_extract = re.search(config.regex_extract_output_name, file_name)
+        if not text_extract:
+            print('\nRegular expression could not be found in file names.\n')
+            sys.exit()
+        else: 
+            sample_name = text_extract.group(1).lower()
+
         data = MassSpecData(file_name)
         data.set_mass_error(config.mass_error)
         data.set_max_mass_shift(config.max_mass_shift)
@@ -65,15 +70,16 @@ if __name__ == '__main__':
         trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
         trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
   
-        color_of_sample = [value for key, value in config.color_palette.items() if key in sample_name][0]
-        axes[progress_bar_mass_shifts].plot(data.masses, data.intensities*rescaling_factor, label=sample_name, color=color_of_sample)
+        color_of_sample = [value[0] for key, value in config.color_palette.items() if key in '\_'+sample_name][0]
+        order_in_plot = [value[1] for key, value in config.color_palette.items() if key in '\_'+sample_name][0]
+        axes[order_in_plot].plot(data.masses, data.intensities*rescaling_factor, label=sample_name, color=color_of_sample)
 
         if trimmed_peaks_in_search_window.size:
             # TODO: is there another way to calculate th s/n ratio?
             sn_threshold = 0.5*trimmed_peaks_in_search_window[:,1].std()   
             
             ### TODO: remove later
-            axes[progress_bar_mass_shifts].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
+            axes[order_in_plot].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
             
             peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
             trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, config.distance_threshold_adjacent_peaks)  
@@ -94,8 +100,8 @@ if __name__ == '__main__':
                     x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
                     stddev = utils.mapping_mass_to_stddev(gaussian_model.means)
                     y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.amplitudes, gaussian_model.means, stddev)
-                    axes[progress_bar_mass_shifts].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
-                    axes[progress_bar_mass_shifts].plot(gaussian_model.means, gaussian_model.amplitudes*rescaling_factor, '.', color='0.3')
+                    axes[order_in_plot].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
+                    axes[order_in_plot].plot(gaussian_model.means, gaussian_model.amplitudes*rescaling_factor, '.', color='0.3')
                     
                     if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
                         ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor
@@ -145,7 +151,7 @@ if __name__ == '__main__':
         for m in means:
             ax.axvline(x=m, c='0.3', ls='--', lw=0.3, zorder=0)
         ax.label_outer()
-
+    plt.xlabel('mass (Da)'); plt.ylabel('intensity')
     output_fig.tight_layout()
     plt.savefig('../output/identified_masses.pdf', dpi=800)
     plt.show()
