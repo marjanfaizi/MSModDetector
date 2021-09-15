@@ -8,7 +8,8 @@ Created on Tue Jul 6 2021
 
 import pandas as pd
 import numpy as np
-from linear_program import LinearProgram
+#from linear_program import LinearProgram
+from linear_program_cvxopt import LinearProgramCVXOPT
 import utils
 
 
@@ -22,6 +23,7 @@ class MassShifts(object):
     def __init__(self):
         self.identified_masses_table = pd.DataFrame(columns=['mass mean', 'mass std']) 
         self.mass_shifts = []
+        self.laps_run_lp = 5
         self.ptm_column_name = ''
 
 
@@ -58,11 +60,43 @@ class MassShifts(object):
         self.identified_masses_table.to_csv(path_name+'identified_masses_table.csv', sep=',', index=False)    
 
 
+    def save_table_ptm_patterns(self, path_name):
+        self.ptm_patterns_table = self.ptm_patterns_table.sort_index(axis=1)
+        self.ptm_patterns_table.to_csv(path_name+'ptm_patterns_table.csv', sep=',', index=False) 
+        
+        
+    # def determine_ptm_patterns(self, modifications, maximal_mass_error_array):
+    #     self.ptm_patterns_table = self.__create_ptm_pattern_table(modifications)
+    #     lp_model = LinearProgram()
+    #     lp_model.set_ptm_mass_shifts(modifications.modification_masses)
+    #     lp_model.set_upper_bounds(modifications.upper_bounds)
+    #     minimal_mass_shift = min(np.abs(modifications.modification_masses))
+
+    #     for ix in range(len(self.mass_shifts)):
+    #         mass_shift = self.mass_shifts[ix]
+    #         maximal_mass_error = 2*maximal_mass_error_array[ix]
+
+    #         if mass_shift >= minimal_mass_shift:
+    #             mass_error = 0.0     
+    #             lp_model.reset_mass_error()
+    #             lp_model.set_observed_mass_shift(mass_shift) 
+    #             while abs(mass_error) < maximal_mass_error:            
+    #                 lp_model.solve_linear_program_for_objective_with_absolute_value()
+    #                 mass_error = lp_model.get_objective_value()
+    #                 lp_model.set_minimal_mass_error(abs(mass_error))
+    #                 ptm_pattern = lp_model.get_x_values()
+    #                 number_ptm_types = np.array(ptm_pattern).sum()
+    #                 if abs(mass_error) < maximal_mass_error:
+    #                     row_entry = [mass_shift, mass_error, ptm_pattern, number_ptm_types]
+    #                     row_entry_as_series = pd.Series(row_entry, index = self.ptm_patterns_table.columns)
+    #                     self.ptm_patterns_table = self.ptm_patterns_table.append(row_entry_as_series, ignore_index=True)
+
+    #         utils.progress(ix+1, len(self.mass_shifts))
+    
+    
     def determine_ptm_patterns(self, modifications, maximal_mass_error_array):
         self.ptm_patterns_table = self.__create_ptm_pattern_table(modifications)
-        lp_model = LinearProgram()
-        lp_model.set_ptm_mass_shifts(modifications.modification_masses)
-        lp_model.set_upper_bounds(modifications.upper_bounds)
+        lp_model = LinearProgramCVXOPT(np.array(modifications.modification_masses), np.array(modifications.upper_bounds))
         minimal_mass_shift = min(np.abs(modifications.modification_masses))
 
         for ix in range(len(self.mass_shifts)):
@@ -70,27 +104,28 @@ class MassShifts(object):
             maximal_mass_error = maximal_mass_error_array[ix]
 
             if mass_shift >= minimal_mass_shift:
-                mass_error = 0.0     
-                lp_model.reset_mass_error()
-                lp_model.set_observed_mass_shift(mass_shift) 
-                while abs(mass_error) < maximal_mass_error:            
-                    lp_model.solve_linear_program_for_objective_with_absolute_value()
-                    mass_error = lp_model.get_objective_value()
-                    lp_model.set_minimal_mass_error(abs(mass_error))
-                    ptm_pattern = lp_model.get_x_values()
-                    number_ptm_types = np.array(ptm_pattern).sum()
-                    if abs(mass_error) < maximal_mass_error:
-                        row_entry = [mass_shift, mass_error, ptm_pattern, number_ptm_types]
+                lp_model.set_min_number_ptms(0)     
+                lp_model.set_observed_mass_shift(mass_shift)
+                lp_model.set_mass_error(maximal_mass_error)
+                for i in range(self.laps_run_lp):         
+                    status, solution = lp_model.solve_linear_program()
+                    if solution:
+                        number_ptms = sum(solution)
+                        lp_model.set_min_number_ptms(number_ptms+1)
+                        ptm_pattern = list(map(int, solution))
+                        error = lp_model.get_error(solution)
+                        row_entry = [mass_shift, error, ptm_pattern, number_ptms]
                         row_entry_as_series = pd.Series(row_entry, index = self.ptm_patterns_table.columns)
                         self.ptm_patterns_table = self.ptm_patterns_table.append(row_entry_as_series, ignore_index=True)
 
             utils.progress(ix+1, len(self.mass_shifts))
-
+            
 
     def estimate_maximal_mass_error(self, mass_error):
         mass_mean = self.identified_masses_table['mass mean'].values
         mass_std = self.identified_masses_table['mass std'].values
-        maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
+        #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
+        maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
         return np.array(maximal_mass_error)
         
     

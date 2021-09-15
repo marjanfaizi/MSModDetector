@@ -140,6 +140,7 @@ if __name__ == '__main__':
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.save_table_identified_masses('../output/')
+            mass_shifts.save_table_ptm_patterns('../output/')
             
             
     means = mass_shifts.identified_masses_table['mass mean'].values

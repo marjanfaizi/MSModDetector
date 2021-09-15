@@ -2,23 +2,23 @@
 
 
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/20210821_Bolt_Rep5_multiion/'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*_rep5_E1_01_data_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*_rep1_MS1_01_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'p53_(.*)_Profile'
+regex_extract_output_name = 'MCF7_(.*)_Profile'
 
 # Name and location of the modification file 
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
 
 # color coding for each condition and the order how it should be plotted
-color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
+color_palette = {'_nutlin': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
 				 'xray_7hr': ['lightseagreen', 2], 'xray-nutlin': ['chocolate', 3],
-				 'uv-1': ['mediumpurple', 4]}
+				 'uv': ['mediumpurple', 4]}
 				 
 # used to determine the number of subplots
 number_of_conditions = 5
@@ -50,7 +50,7 @@ calculate_mass_shifts = True
 
 # This mass error in ppm is used as default for the linear programming problem 
 # Theoretical mass shifts are determined if their difference to the observed mass shift is within a specific mass error
-mass_error = 5.0
+mass_error = 10.0
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed
