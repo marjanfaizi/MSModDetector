@@ -2,23 +2,23 @@
 
 
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/MultiIonFiteringComp/'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/20210821_Bolt_Rep5_multiion/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*_rep1_MS1_01_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'MCF7_(.*)_Profile'
+regex_extract_output_name = 'p53_(.*)_Profile'
 
 # Name and location of the modification file 
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
 
 # color coding for each condition and the order how it should be plotted
-color_palette = {'_nutlin': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
+color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
 				 'xray_7hr': ['lightseagreen', 2], 'xray-nutlin': ['chocolate', 3],
-				 'uv': ['mediumpurple', 4]}
+				 'uv-1': ['mediumpurple', 4]}
 				 
 # used to determine the number of subplots
 number_of_conditions = 5
