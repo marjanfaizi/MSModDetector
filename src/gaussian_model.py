@@ -29,6 +29,7 @@ class GaussianModel(object):
         self.fitting_results = {}
         self.means = []
         self.amplitudes = []
+        self.relative_abundances = []
         self.maxfev = 100000
         self.chi_square_dof = 1
         self.sample_size_threshold = 5
@@ -59,6 +60,7 @@ class GaussianModel(object):
                     best_window_size = window_size
                           
             self.fitting_results[mass] = [best_fitted_amplitude, best_pvalue, best_window_size]
+            
         self.means = np.array(list(self.fitting_results.keys()))
         self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
 
@@ -192,4 +194,19 @@ class GaussianModel(object):
     def __error_func(self, amplitude, mean, stddev, x, y):
         return utils.multi_gaussian(x, amplitude, mean, stddev) - y   
 
-   
+    
+    def calculate_relative_abundaces(self, start_mass, end_mass):
+        x_values = np.arange(start_mass, end_mass)
+        standard_deviations = utils.mapping_mass_to_stddev(self.means)
+        total_protein_abundance = np.trapz(utils.multi_gaussian(x_values, self.amplitudes, self.means, standard_deviations), x=x_values)
+        
+        relative_abundances = []
+        for ix in range(len(self.means)):
+            species_abundance = np.trapz(utils.gaussian(x_values, self.amplitudes[ix], self.means[ix], standard_deviations[ix]), x=x_values)
+            relative_abundances.append(species_abundance/total_protein_abundance)
+
+        self.relative_abundances = relative_abundances
+    
+    
+    
+    

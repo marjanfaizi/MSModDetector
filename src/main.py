@@ -90,11 +90,12 @@ if __name__ == '__main__':
                 # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                 gaussian_model = GaussianModel()
                 gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
-                gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks, trimmed_peaks_above_sn_in_search_window)
+                gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
                 gaussian_model.filter_fitting_results(config.pvalue_threshold)
                 gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
-                        
-                mass_shifts.create_table_identified_masses(gaussian_model.means, sample_name, config.bin_size_identified_masses)
+                gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+            
+                mass_shifts.create_table_identified_masses(gaussian_model.means, gaussian_model.relative_abundances, sample_name, config.bin_size_identified_masses)
                 
                 if gaussian_model.fitting_results:
                     x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
@@ -125,7 +126,7 @@ if __name__ == '__main__':
         print('\nNo masses detected.')
     else:
         if config.calculate_mass_shifts == True:
-            masses_means = mass_shifts.identified_masses_table['mass mean'].values
+            masses_means = mass_shifts.identified_masses_table['average mass'].values
             unmodified_species_mass = utils.determine_unmodified_species_mass(masses_means, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)        
             mass_shifts.add_mass_shifts(unmodified_species_mass)   
             mass_shifts.save_table_identified_masses('../output/')
@@ -143,7 +144,7 @@ if __name__ == '__main__':
             mass_shifts.save_table_ptm_patterns('../output/')
             
             
-    means = mass_shifts.identified_masses_table['mass mean'].values
+    means = mass_shifts.identified_masses_table['average mass'].values
     for ax in axes:
         ax.set_xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
         ax.set_ylim((-10, ylim_max*1.1))

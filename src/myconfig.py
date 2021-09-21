@@ -10,7 +10,7 @@ path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/20210821_Bolt_Rep5_mul
 file_name_ending = '*_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'p53_(.*)_Profile'
+regex_extract_output_name = 'p53_(.*)_rep5'
 
 # Name and location of the modification file 
 modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
@@ -37,7 +37,7 @@ unmodified_species_mass_tol = 5.0
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
-pvalue_threshold = 0.9
+pvalue_threshold = 0.99
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6

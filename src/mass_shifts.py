@@ -21,35 +21,43 @@ class MassShifts(object):
     """
     
     def __init__(self):
-        self.identified_masses_table = pd.DataFrame(columns=['mass mean', 'mass std']) 
+        self.identified_masses_table = pd.DataFrame(columns=['average mass', 'mass std']) 
         self.mass_shifts = []
         self.laps_run_lp = 5
         self.ptm_column_name = ''
 
 
-    def create_table_identified_masses(self, means, column_name, bin_size_identified_masses):
+    def create_table_identified_masses(self, means, relative_abundances, column_name, bin_size_identified_masses):
         if self.identified_masses_table.empty:
-            self.identified_masses_table[column_name] = means
+            self.identified_masses_table['masses '+column_name] = means
+            self.identified_masses_table['rel. abundances '+column_name] = relative_abundances     
         else:
-            self.identified_masses_table[column_name] = np.nan
-            for mass in means:
-                row_index = self.identified_masses_table[(self.identified_masses_table['mass mean']<=mass+bin_size_identified_masses) & 
-                                                         (self.identified_masses_table['mass mean']>=mass-bin_size_identified_masses)].index.values
+            self.identified_masses_table['masses '+column_name] = np.nan
+            self.identified_masses_table['rel. abundances '+column_name] = np.nan
+            for ix in range(len(means)):
+                mass = means[ix]
+                abundance = relative_abundances[ix]
+                row_index = self.identified_masses_table[(self.identified_masses_table['average mass']<=mass+bin_size_identified_masses) & 
+                                                         (self.identified_masses_table['average mass']>=mass-bin_size_identified_masses)].index.values
                 if len(row_index) > 0:
-                    self.identified_masses_table.loc[row_index[0]][column_name] = mass
+                    self.identified_masses_table.loc[row_index[0]]['masses '+column_name] = mass
+                    self.identified_masses_table.loc[row_index[0]]['rel. abundances '+column_name] = abundance
                 else:
-                    self.identified_masses_table = self.identified_masses_table.append({column_name: mass}, ignore_index=True)
+                    self.identified_masses_table = self.identified_masses_table.append({'masses '+column_name: mass,
+                                                                                        'rel. abundances '+column_name: abundance}, ignore_index=True)
         
-        self.identified_masses_table['mass mean'] = self.identified_masses_table.iloc[:,2:].mean(axis=1).values
-        self.identified_masses_table['mass std'] = self.identified_masses_table.iloc[:,2:].std(axis=1).values
-        self.identified_masses_table.sort_values(by='mass mean', inplace=True)
+        self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+        self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+        #self.identified_masses_table['average mass'] = self.identified_masses_table.iloc[:,2:].mean(axis=1).values
+        #self.identified_masses_table['mass std'] = self.identified_masses_table.iloc[:,2:].std(axis=1).values
+        self.identified_masses_table.sort_values(by='average mass', inplace=True)
 
 
     def add_mass_shifts(self, unmodified_species_mass):
         if unmodified_species_mass == 0:
-            self.identified_masses_table['mass shift'] = self.identified_masses_table['mass mean'] - self.identified_masses_table['mass mean'].iloc[0] 
+            self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - self.identified_masses_table['average mass'].iloc[0] 
         else:
-            self.identified_masses_table['mass shift'] = self.identified_masses_table['mass mean'] - unmodified_species_mass  
+            self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - unmodified_species_mass  
         
         self.identified_masses_table = self.identified_masses_table[self.identified_masses_table['mass shift'] >= 0]
         self.mass_shifts = self.identified_masses_table['mass shift'].values
@@ -104,10 +112,10 @@ class MassShifts(object):
             maximal_mass_error = maximal_mass_error_array[ix]
 
             if mass_shift >= minimal_mass_shift:
-                row_entries = []
-                min_number_ptms = 0 
                 lp_model.set_observed_mass_shift(mass_shift)
                 lp_model.set_max_mass_error(maximal_mass_error)
+                row_entries = []
+                min_number_ptms = 0
                 count_laps = 0 
                 while count_laps < self.laps_run_lp:         
                     status, solution_min_ptm = lp_model.solve_lp_min_ptms(min_number_ptms)
@@ -118,7 +126,6 @@ class MassShifts(object):
                         ptm_pattern = list(map(int, solution_min_ptm))
                         error = lp_model.get_error(solution_min_ptm)
                         row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
-                        ###### TODO change so that multiple solutions can be explored
                         min_error = 0
                         multiplier = 1
                         while count_laps < self.laps_run_lp and min_error <= maximal_mass_error:
@@ -129,6 +136,7 @@ class MassShifts(object):
                                 if not is_solution_in_list:
                                     count_laps += 1
                                     error = lp_model.get_error(solution_min_error[:-1])
+                                    number_ptms = int(sum(solution_min_error[:-1]))
                                     row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
                                     min_error = solution_min_error[-1] + 1e-3
                                 else:
@@ -136,7 +144,6 @@ class MassShifts(object):
                                     multiplier += 1
                                         
                                 break
-                        ################
                     else:
                         break
                         
@@ -149,7 +156,7 @@ class MassShifts(object):
             
 
     def estimate_maximal_mass_error(self, mass_error):
-        mass_mean = self.identified_masses_table['mass mean'].values
+        mass_mean = self.identified_masses_table['average mass'].values
         mass_std = self.identified_masses_table['mass std'].values
         #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
         maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
