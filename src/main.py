@@ -11,6 +11,8 @@ import sys
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from math import isnan 
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -46,6 +48,8 @@ if __name__ == '__main__':
     
     stdout_text = []
     
+    #store_all_fitting_results = pd.DataFrame()
+    
     progress_bar_mass_shifts = 0
 
     for file_name in file_names:
@@ -75,10 +79,9 @@ if __name__ == '__main__':
         axes[order_in_plot].plot(data.masses, data.intensities*rescaling_factor, label=sample_name, color=color_of_sample)
 
         if trimmed_peaks_in_search_window.size:
-            # TODO: is there another way to calculate th s/n ratio?
+            ### TODO: is there another way to calculate th s/n ratio?
             sn_threshold = 0.5*trimmed_peaks_in_search_window[:,1].std()   
-            
-            ### TODO: remove later
+            ### TODO: remove later, just to show sn threshold
             axes[order_in_plot].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
             
             peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
@@ -88,21 +91,25 @@ if __name__ == '__main__':
             if trimmed_peaks_above_sn_in_search_window.size:  
                 # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                 # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-                gaussian_model = GaussianModel()
+                gaussian_model = GaussianModel(sample_name)
                 gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
                 gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
+                gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+
+                #store_all_fitting_results = pd.concat([store_all_fitting_results, gaussian_model.fitting_results])
+                
                 gaussian_model.filter_fitting_results(config.pvalue_threshold)
                 gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
-                gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-            
-                mass_shifts.create_table_identified_masses(gaussian_model.means, gaussian_model.relative_abundances, sample_name, config.bin_size_identified_masses)
                 
-                if gaussian_model.fitting_results:
+                mass_shifts.create_table_identified_masses(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['relative_abundances'], 
+                                                           sample_name, config.bin_size_identified_masses)
+                
+                if not gaussian_model.fitting_results.empty:
                     x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
-                    stddev = utils.mapping_mass_to_stddev(gaussian_model.means)
-                    y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.amplitudes, gaussian_model.means, stddev)
+                    y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results['amplitudes'], gaussian_model.fitting_results['means'], 
+                                                        gaussian_model.fitting_results['stddevs'])
                     axes[order_in_plot].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
-                    axes[order_in_plot].plot(gaussian_model.means, gaussian_model.amplitudes*rescaling_factor, '.', color='0.3')
+                    axes[order_in_plot].plot(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['amplitudes']*rescaling_factor, '.', color='0.3')
                     
                     if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
                         ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor
@@ -117,7 +124,7 @@ if __name__ == '__main__':
 
         progress_bar_mass_shifts += 1        
         utils.progress(progress_bar_mass_shifts, len(file_names))
-        
+    
     print('\n')
     seperator_stdout_text = '\n'
     print(seperator_stdout_text.join(stdout_text))
@@ -159,4 +166,30 @@ if __name__ == '__main__':
     plt.show()
     
     print(80*'-'+'\n\n')
+
+
+
+"""
+sub_str = 'masses '
+regex = re.compile(sub_str)
+column_names = mass_shifts.identified_masses_table.columns
+sample_column_names = list(filter(regex.match, column_names))
+
+for index, row in mass_shifts.identified_masses_table.iterrows():
+    for sample in sample_column_names:
+        if isnan(row[sample]):
+            selected_fitting_results = store_all_fitting_results[(store_all_fitting_results['sample_name'] == sample[len(sub_str):]) & 
+                                                                 (store_all_fitting_results['means'] >= row['average mass']-2*row['mass std']) &
+                                                                 (store_all_fitting_results['means'] <= row['average mass']+2*row['mass std'])]
+            
+            if not selected_fitting_results.empty:
+                imputed_data = selected_fitting_results.loc[selected_fitting_results['p-values'].idxmax()]
+                mass_shifts.identified_masses_table.loc[index, sub_str+sample] = imputed_data['means']
+                mass_shifts.identified_masses_table.loc[index, 'rel. abundances '+sample] = imputed_data['relative_abundances']
+                
+                mass_shifts.identified_masses_table.loc[index, 'average mass'] = row.filter(regex=sub_str).mean()
+                mass_shifts.identified_masses_table.loc[index, 'mass std'] = row.filter(regex=sub_str).std()
+
+"""
+
 

@@ -6,6 +6,7 @@ Created on Fri Jul 2 2021
 @author: Marjan Faizi
 """
 
+import pandas as pd
 import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
@@ -19,17 +20,17 @@ class GaussianModel(object):
     The standard deviation is given by a function that maps protein mass to the standard deviation of the respective isotope cluster.
     This mapping function is determined by calculating the theoretical isotope distribution of every human proteome.
     The goodness of fit is measured with the chi-squared test: a high p-value indicates that both distributions are similar.
-    The dictionary fitting_results stores for every mean:
+    The dataframe fitting_results stores for every mean:
             - the fitted amplitude
+            - the standard deviation (stddev)
             - the corresponding pvalue
             - and the window size for which the best fit was achieved 
+            - and the corresponding relative abundance of the peak cluster
     """
 
-    def __init__(self):
-        self.fitting_results = {}
-        self.means = []
-        self.amplitudes = []
-        self.relative_abundances = []
+    def __init__(self, sample_name):
+        self.fitting_results = pd.DataFrame(columns=['sample_name', 'means', 'amplitudes', 'stddevs', 'p-values', 'window_sizes','relative_abundances']) 
+        self.sample_name = sample_name
         self.maxfev = 100000
         self.chi_square_dof = 1
         self.sample_size_threshold = 5
@@ -59,10 +60,9 @@ class GaussianModel(object):
                     best_fitted_amplitude = fitted_amplitude
                     best_window_size = window_size
                           
-            self.fitting_results[mass] = [best_fitted_amplitude, best_pvalue, best_window_size]
-            
-        self.means = np.array(list(self.fitting_results.keys()))
-        self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
+            stddev = utils.mapping_mass_to_stddev(mass)        
+            self.fitting_results = self.fitting_results.append({'sample_name': self.sample_name, 'means': mass, 'amplitudes': best_fitted_amplitude, 
+                                                                'stddevs': stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
 
 
     def fit_gaussian(self, peaks, mean=None, amplitude=None):
@@ -90,7 +90,7 @@ class GaussianModel(object):
         masses = np.arange(mean-100, mean+100)
         stddev = utils.mapping_mass_to_stddev(mean)
         intensities = utils.gaussian(masses, amplitude, mean, stddev) 
-        most_abundant_50percent_masses = masses[intensities > intensities.max()*0.5]
+        most_abundant_50percent_masses = masses[intensities > intensities.max()*0.4]
         most_abundant_90percent_masses = masses[intensities > intensities.max()*0.1]
         lower_window_size = round((most_abundant_50percent_masses[-1]-most_abundant_50percent_masses[0])/2)
         upper_window_size = np.ceil((most_abundant_90percent_masses[-1]-most_abundant_90percent_masses[0])/2)
@@ -107,51 +107,39 @@ class GaussianModel(object):
     
      
     def filter_fitting_results(self, pvalue_threshold):
-        self.__select_best_pvalues(pvalue_threshold)
-        if len(self.fitting_results) > 1:
+        self.fitting_results = self.fitting_results[self.fitting_results['p-values'] >= pvalue_threshold]
+        if not self.fitting_results.empty: 
+            self.fitting_results.reset_index(drop=True, inplace=True)
             self.__remove_overlapping_fitting_results()
 
 
-    def __select_best_pvalues(self, pvalue_threshold):
-        self.fitting_results = dict(filter(lambda elem: elem[1][1] >= pvalue_threshold, self.fitting_results.items()))
-        self.__check_if_dict_empty()
-
-
     def __remove_overlapping_fitting_results(self):
-        fitting_results_reduced = {}
+        ix_reduced_fitting_results = []
         best_pvalue = 0.0 
-        best_mean = self.means[0]   
-        last_mean = self.means[-1]   
-        all_window_sizes = np.append(0, np.array(list(self.fitting_results.values()))[:,2])
-        ix_window_size = 0
-
-        for current_mean, value in self.fitting_results.items():
-            pvalue = value[1]
-            window_size = max(all_window_sizes[ix_window_size], all_window_sizes[ix_window_size+1])
-            ix_window_size += 1
+        best_index = 0
+        last_mean = self.fitting_results.tail(1)['means'].values[0]
+        all_window_sizes = np.append(0, self.fitting_results['window_sizes'].values)
+        for index, row in self.fitting_results.iterrows():
+            window_size = max(all_window_sizes[index], all_window_sizes[index+1])
+            if np.abs(self.fitting_results.loc[best_index, 'means']-row['means']) <= window_size and row['p-values'] > best_pvalue:
+                best_index = index
+                best_pvalue = row['p-values']
             
-            if np.abs(best_mean-current_mean) <= window_size and pvalue > best_pvalue:
-                best_mean = current_mean
-                best_amplitude = value[0]
-                best_pvalue = pvalue
-            
-            elif np.abs(best_mean-current_mean) > window_size:
-                fitting_results_reduced[best_mean] = [best_amplitude, best_pvalue]
-                best_mean = current_mean
-                best_amplitude = value[0]
-                best_pvalue = pvalue    
+            elif np.abs(self.fitting_results.loc[best_index, 'means']-row['means']) > window_size:
+                ix_reduced_fitting_results.append(best_index)
+                best_index = index
+                best_pvalue = row['p-values']    
                 
-                if best_mean == last_mean:
-                    fitting_results_reduced[best_mean] = [best_amplitude, best_pvalue]
-
-        self.fitting_results = fitting_results_reduced
-        self.__check_if_dict_empty()
+                if self.fitting_results.loc[best_index, 'means'] == last_mean:
+                    ix_reduced_fitting_results.append(best_index)
+                
+        self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)
+        self.fitting_results.reset_index(drop=True, inplace=True)
 
 
     def adjusted_r_squared(self, peaks):  
         masses = peaks[:,0]; y_true = peaks[:,1]
-        stddev = utils.mapping_mass_to_stddev(self.means)
-        y_pred = utils.multi_gaussian(masses, self.amplitudes, self.means, stddev)
+        y_pred = utils.multi_gaussian(masses, self.fitting_results.amplitudes, self.fitting_results.means, self.fitting_results.stddevs)
         r_square_value = r2_score(y_true, y_pred) 
         number_data_points = len(peaks) 
         number_variables = len(self.fitting_results)*3
@@ -160,35 +148,19 @@ class GaussianModel(object):
         
     
     def refit_amplitudes(self, peaks, sn_threshold):
-        is_empty = self.__check_if_dict_empty()
-        if not is_empty:
-            fitting_results_refitted = {}
-            masses = peaks[:,0]; intensities = peaks[:,1]
-            stddev = utils.mapping_mass_to_stddev(self.means)
+        masses = peaks[:,0]; intensities = peaks[:,1]
+        if not self.fitting_results.empty: 
             refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
-                                                         x0=self.amplitudes, args=(self.means, stddev, masses, intensities))
-            ix = 0
-            for key, values in self.fitting_results.items():
-                
-                if (refitted_amplitudes.x[ix] > sn_threshold) and (refitted_amplitudes.x[ix] > self.amplitudes[ix]*0.5):
-                    pvalue = values[1]
-                    fitting_results_refitted[key] = [refitted_amplitudes.x[ix], pvalue]
-              
-                ix += 1
+                                                         x0=self.fitting_results.amplitudes.values, 
+                                                         args=(self.fitting_results.means.values, self.fitting_results.stddevs.values, masses, intensities))
+            ix_reduced_fitting_results = []
+            for index, row in self.fitting_results.iterrows():
+                if (refitted_amplitudes.x[index] > sn_threshold) and (refitted_amplitudes.x[index] > row['amplitudes']*0.33):
+                    ix_reduced_fitting_results.append(index)
         
-            self.fitting_results = fitting_results_refitted
-            self.__check_if_dict_empty()
-
-
-    def __check_if_dict_empty(self):
-        if not self.fitting_results:
-            self.means = []
-            self.amplitudes = []
-            return True
-        else:
-            self.means = np.array(list(self.fitting_results.keys()))
-            self.amplitudes = np.array(list(self.fitting_results.values()))[:,0]
-            return False
+            self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)
+            self.fitting_results.reset_index(drop=True, inplace=True)
+            self.fitting_results['amplitudes'] = refitted_amplitudes.x[ix_reduced_fitting_results]
 
     
     def __error_func(self, amplitude, mean, stddev, x, y):
@@ -197,15 +169,14 @@ class GaussianModel(object):
     
     def calculate_relative_abundaces(self, start_mass, end_mass):
         x_values = np.arange(start_mass, end_mass)
-        standard_deviations = utils.mapping_mass_to_stddev(self.means)
-        total_protein_abundance = np.trapz(utils.multi_gaussian(x_values, self.amplitudes, self.means, standard_deviations), x=x_values)
-        
+        total_protein_abundance = np.trapz(utils.multi_gaussian(x_values, self.fitting_results.amplitudes, self.fitting_results.means, 
+                                                                self.fitting_results.stddevs), x=x_values)
         relative_abundances = []
-        for ix in range(len(self.means)):
-            species_abundance = np.trapz(utils.gaussian(x_values, self.amplitudes[ix], self.means[ix], standard_deviations[ix]), x=x_values)
+        for index, row in self.fitting_results.iterrows():
+            species_abundance = np.trapz(utils.gaussian(x_values, row['amplitudes'], row['means'], row['stddevs']), x=x_values)
             relative_abundances.append(species_abundance/total_protein_abundance)
 
-        self.relative_abundances = relative_abundances
+        self.fitting_results['relative_abundances'] = relative_abundances
     
     
     

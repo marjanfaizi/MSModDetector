@@ -37,13 +37,13 @@ unmodified_species_mass_tol = 5.0
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
-pvalue_threshold = 0.99
+pvalue_threshold = 0.05
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
 
 # Identified masses across different samples are binned together in the output table if they differ by this value (given in Da)
-bin_size_identified_masses = 5.0
+bin_size_identified_masses = 2.5
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

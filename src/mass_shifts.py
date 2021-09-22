@@ -48,8 +48,6 @@ class MassShifts(object):
         
         self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
-        #self.identified_masses_table['average mass'] = self.identified_masses_table.iloc[:,2:].mean(axis=1).values
-        #self.identified_masses_table['mass std'] = self.identified_masses_table.iloc[:,2:].std(axis=1).values
         self.identified_masses_table.sort_values(by='average mass', inplace=True)
 
 
