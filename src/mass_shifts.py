@@ -11,6 +11,7 @@ import numpy as np
 #from linear_program import LinearProgram
 from linear_program_cvxopt import LinearProgramCVXOPT
 import utils
+import myconfig as config
 
 
 class MassShifts(object): 
@@ -21,45 +22,82 @@ class MassShifts(object):
     """
     
     def __init__(self):
-        self.identified_masses_table = pd.DataFrame(columns=['average mass', 'mass std']) 
+        self.identified_masses_table = pd.DataFrame(columns=['mass_index', 'average mass', 'mass std']) 
+        self.identified_masses_table['mass_index'] = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+1))
         self.mass_shifts = []
         self.laps_run_lp = 5
         self.ptm_column_name = ''
 
 
-    def create_table_identified_masses(self, means, relative_abundances, column_name, bin_size_identified_masses):
-        if self.identified_masses_table.empty:
-            self.identified_masses_table['masses '+column_name] = means
-            self.identified_masses_table['rel. abundances '+column_name] = relative_abundances     
-        else:
-            self.identified_masses_table['masses '+column_name] = np.nan
-            self.identified_masses_table['rel. abundances '+column_name] = np.nan
-            for ix in range(len(means)):
-                mass = means[ix]
-                abundance = relative_abundances[ix]
-                row_index = self.identified_masses_table[(self.identified_masses_table['average mass']<=mass+bin_size_identified_masses) & 
-                                                         (self.identified_masses_table['average mass']>=mass-bin_size_identified_masses)].index.values
-                if len(row_index) > 0:
-                    self.identified_masses_table.loc[row_index[0]]['masses '+column_name] = mass
-                    self.identified_masses_table.loc[row_index[0]]['rel. abundances '+column_name] = abundance
-                else:
-                    self.identified_masses_table = self.identified_masses_table.append({'masses '+column_name: mass,
-                                                                                        'rel. abundances '+column_name: abundance}, ignore_index=True)
-        
+    def create_table_identified_masses(self, means, relative_abundances, column_name):
+        self.identified_masses_table['masses '+column_name] = np.nan
+        self.identified_masses_table['rel. abundances '+column_name] = np.nan
+        for ix in range(len(means)):
+            mass = means[ix]                 
+            abundance = relative_abundances[ix]
+            row_index = self.identified_masses_table[self.identified_masses_table['mass_index']==round(mass)]['mass_index'].index.values
+            self.identified_masses_table.at[row_index[0], 'masses '+column_name] = mass
+            self.identified_masses_table.at[row_index[0], 'rel. abundances '+column_name] = abundance
+
         self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
         self.identified_masses_table.sort_values(by='average mass', inplace=True)
 
 
-    def add_mass_shifts(self, unmodified_species_mass):
-        if unmodified_species_mass == 0:
-            self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - self.identified_masses_table['average mass'].iloc[0] 
-        else:
-            self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - unmodified_species_mass  
+    def remove_empty_rows(self):
+        self.identified_masses_table.set_index('mass_index', inplace=True)
+        self.identified_masses_table.dropna(axis=0, how='all', inplace=True)
         
+
+    def add_mass_shifts(self, column_names):
+        mass_shift_list = []
+        for name in column_names: 
+            masses = self.identified_masses_table['masses '+name].values
+            unmodified_species_mass = utils.determine_unmodified_species_mass(masses, config.unmodified_species_mass_init, config.unmodified_species_mass_tol) 
+            mass_shifts = masses - unmodified_species_mass
+            mass_shift_list.append(mass_shifts)
+        
+        mean_mass_shifts = np.nanmean(np.array(mass_shift_list), axis=0)
+        self.identified_masses_table['mass shift'] = mean_mass_shifts     
         self.identified_masses_table = self.identified_masses_table[self.identified_masses_table['mass shift'] >= 0]
         self.mass_shifts = self.identified_masses_table['mass shift'].values
-        
+          
+
+# =============================================================================
+#     def create_table_identified_masses(self, means, relative_abundances, column_name, bin_size_identified_masses):
+#         if self.identified_masses_table.empty:
+#             self.identified_masses_table['masses '+column_name] = means
+#             self.identified_masses_table['rel. abundances '+column_name] = relative_abundances     
+#         else:
+#             self.identified_masses_table['masses '+column_name] = np.nan
+#             self.identified_masses_table['rel. abundances '+column_name] = np.nan
+#             for ix in range(len(means)):
+#                 mass = means[ix]
+#                 abundance = relative_abundances[ix]
+#                 row_index = self.identified_masses_table[(self.identified_masses_table['average mass']<=mass+bin_size_identified_masses) & 
+#                                                          (self.identified_masses_table['average mass']>=mass-bin_size_identified_masses)].index.values
+#                 if len(row_index) > 0:
+#                     self.identified_masses_table.loc[row_index[0]]['masses '+column_name] = mass
+#                     self.identified_masses_table.loc[row_index[0]]['rel. abundances '+column_name] = abundance
+#                 else:
+#                     self.identified_masses_table = self.identified_masses_table.append({'masses '+column_name: mass,
+#                                                                                         'rel. abundances '+column_name: abundance}, ignore_index=True)
+#         
+#         self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+#         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+#         self.identified_masses_table.sort_values(by='average mass', inplace=True)
+# =============================================================================
+
+# =============================================================================
+#     def add_mass_shifts(self, unmodified_species_mass):
+#         if unmodified_species_mass == 0:
+#             self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - self.identified_masses_table['average mass'].iloc[0] 
+#         else:
+#             self.identified_masses_table['mass shift'] = self.identified_masses_table['average mass'] - unmodified_species_mass  
+#         
+#         self.identified_masses_table = self.identified_masses_table[self.identified_masses_table['mass shift'] >= 0]
+#         self.mass_shifts = self.identified_masses_table['mass shift'].values
+# =============================================================================
         
     def save_table_identified_masses(self, path_name):
         self.identified_masses_table = self.identified_masses_table.sort_index(axis=1)
@@ -154,10 +192,11 @@ class MassShifts(object):
             
 
     def estimate_maximal_mass_error(self, mass_error):
-        mass_mean = self.identified_masses_table['average mass'].values
-        mass_std = self.identified_masses_table['mass std'].values
+        maximal_mass_error = np.repeat(mass_error, len(self.mass_shifts))
+        #mass_mean = self.identified_masses_table['average mass'].values
+        #mass_std = self.identified_masses_table['mass std'].values
         #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
-        maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
+        #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
         return np.array(maximal_mass_error)
         
     

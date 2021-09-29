@@ -2,12 +2,12 @@
 
 
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/20210821_Bolt_Rep5_multiion/'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*_E1_01_data_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
 regex_extract_output_name = 'p53_(.*)_rep5'
@@ -39,18 +39,25 @@ unmodified_species_mass_tol = 5.0
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
 pvalue_threshold = 0.05
 
+# after removing close peaks their fitted amplitudes are re-scaled and removed if they are below this threshold   
+refitted_amplitudes_threshold = 0.33
+
+# determine window size used to fit the gaussian distribution
+# lb and ub set the percentage of peaks within the distribution that should be considered for the fit
+window_size_lb = 0.6
+window_size_ub = 0.9
+
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
 
 # Identified masses across different samples are binned together in the output table if they differ by this value (given in Da)
-bin_size_identified_masses = 2.5
+bin_size_identified_masses = 2
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True
 
-# This mass error in ppm is used as default for the linear programming problem 
-# Theoretical mass shifts are determined if their difference to the observed mass shift is within a specific mass error
-mass_error = 10.0
+# This mass error in Da is used as default for the linear programming problem 
+mass_error = 1.5
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed

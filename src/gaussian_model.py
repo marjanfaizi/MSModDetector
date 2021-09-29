@@ -12,7 +12,7 @@ from scipy import optimize
 from scipy.stats import chisquare
 from sklearn.metrics import r2_score
 import utils
-
+import myconfig as config
 
 class GaussianModel(object): 
     """
@@ -49,8 +49,10 @@ class GaussianModel(object):
                 sample_size = selected_region.shape[0]          
                 
                 if sample_size >= self.sample_size_threshold:
-                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]        
+                    fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]
                     pvalue = self.chi_square_test(selected_region, fitted_amplitude, mass)
+                    #fitted_amplitude, mean = self.fit_gaussian(selected_region)
+                    #pvalue = self.chi_square_test(selected_region, fitted_amplitude, mean)
                 else:
                     pvalue = 0.0
                     fitted_amplitude = 0.0
@@ -60,9 +62,12 @@ class GaussianModel(object):
                     best_fitted_amplitude = fitted_amplitude
                     best_window_size = window_size
                           
-            stddev = utils.mapping_mass_to_stddev(mass)        
+            stddev = utils.mapping_mass_to_stddev(mass)    
             self.fitting_results = self.fitting_results.append({'sample_name': self.sample_name, 'means': mass, 'amplitudes': best_fitted_amplitude, 
                                                                 'stddevs': stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
+            #stddev = utils.mapping_mass_to_stddev(mean)
+            #self.fitting_results = self.fitting_results.append({'sample_name': self.sample_name, 'means': mean, 'amplitudes': best_fitted_amplitude, 
+            #                                                    'stddevs': stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
 
 
     def fit_gaussian(self, peaks, mean=None, amplitude=None):
@@ -90,10 +95,10 @@ class GaussianModel(object):
         masses = np.arange(mean-100, mean+100)
         stddev = utils.mapping_mass_to_stddev(mean)
         intensities = utils.gaussian(masses, amplitude, mean, stddev) 
-        most_abundant_50percent_masses = masses[intensities > intensities.max()*0.4]
-        most_abundant_90percent_masses = masses[intensities > intensities.max()*0.1]
-        lower_window_size = round((most_abundant_50percent_masses[-1]-most_abundant_50percent_masses[0])/2)
-        upper_window_size = np.ceil((most_abundant_90percent_masses[-1]-most_abundant_90percent_masses[0])/2)
+        most_abundant_masses_lb = masses[intensities > intensities.max()*1.0-config.window_size_lb]
+        most_abundant_masses_ub = masses[intensities > intensities.max()*1.0-config.window_size_ub]
+        lower_window_size = round((most_abundant_masses_lb[-1]-most_abundant_masses_lb[0])/2)
+        upper_window_size = np.ceil((most_abundant_masses_ub[-1]-most_abundant_masses_ub[0])/2)
         window_sizes = np.arange(lower_window_size, upper_window_size, 1)
         self.fitting_window_sizes = window_sizes
 
@@ -107,10 +112,10 @@ class GaussianModel(object):
     
      
     def filter_fitting_results(self, pvalue_threshold):
-        self.fitting_results = self.fitting_results[self.fitting_results['p-values'] >= pvalue_threshold]
         if not self.fitting_results.empty: 
-            self.fitting_results.reset_index(drop=True, inplace=True)
             self.__remove_overlapping_fitting_results()
+            self.fitting_results = self.fitting_results[self.fitting_results['p-values'] >= pvalue_threshold]
+            self.fitting_results.reset_index(drop=True, inplace=True)
 
 
     def __remove_overlapping_fitting_results(self):
@@ -121,6 +126,7 @@ class GaussianModel(object):
         all_window_sizes = np.append(0, self.fitting_results['window_sizes'].values)
         for index, row in self.fitting_results.iterrows():
             window_size = max(all_window_sizes[index], all_window_sizes[index+1])
+            #window_size = row['window_sizes']
             if np.abs(self.fitting_results.loc[best_index, 'means']-row['means']) <= window_size and row['p-values'] > best_pvalue:
                 best_index = index
                 best_pvalue = row['p-values']
@@ -155,7 +161,7 @@ class GaussianModel(object):
                                                          args=(self.fitting_results.means.values, self.fitting_results.stddevs.values, masses, intensities))
             ix_reduced_fitting_results = []
             for index, row in self.fitting_results.iterrows():
-                if (refitted_amplitudes.x[index] > sn_threshold) and (refitted_amplitudes.x[index] > row['amplitudes']*0.33):
+                if (refitted_amplitudes.x[index] > sn_threshold) and (refitted_amplitudes.x[index] > row['amplitudes']*config.refitted_amplitudes_threshold):
                     ix_reduced_fitting_results.append(index)
         
             self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)
