@@ -3,23 +3,23 @@
 
 # Path to the mass spec data
 #path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
-path = '..\\..\\..\\Data\\I2MS_Data\\Replicate5\\'
+path = '..\\..\\..\\Data\\I2MS_Data\\Replicate1\\'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*_E1_01_data_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*rep1_MS1_01_Profile.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'p53_(.*)_rep5'
+regex_extract_output_name = 'MCF7_(.*)_rep1'
 
 # Name and location of the modification file 
 modfication_file_name = 'modifications_P04637.csv'
 
 # color coding for each condition and the order how it should be plotted
-color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
+color_palette = {'_nutlin': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
 				 'xray_7hr': ['lightseagreen', 2], 'xray-nutlin': ['chocolate', 3],
-				 'uv-1': ['mediumpurple', 4]}
+				 'uv': ['mediumpurple', 4]}
 				 
 # used to determine the number of subplots
 number_of_conditions = 5
