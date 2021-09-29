@@ -159,7 +159,7 @@ class MassShifts(object):
                         count_laps += 1
                         number_ptms = int(sum(solution_min_ptm))
                         min_number_ptms = number_ptms+1
-                        ptm_pattern = list(map(int, solution_min_ptm))
+                        ptm_pattern = tuple(map(int, solution_min_ptm))
                         error = lp_model.get_error(solution_min_ptm)
                         row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
                         min_error = 0
@@ -167,7 +167,7 @@ class MassShifts(object):
                         while count_laps < self.laps_run_lp and min_error <= maximal_mass_error:
                             status, solution_min_error = lp_model.solve_lp_min_error(number_ptms, min_error)
                             if solution_min_error:
-                                ptm_pattern = list(map(int, solution_min_error[:-1]))
+                                ptm_pattern = tuple(map(int, solution_min_error[:-1]))
                                 is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
                                 if not is_solution_in_list:
                                     count_laps += 1
@@ -178,7 +178,7 @@ class MassShifts(object):
                                 else:
                                     min_error = solution_min_error[-1] + 1e-3*multiplier
                                     multiplier += 1
-                                        
+                            else:        
                                 break
                     else:
                         break
@@ -187,9 +187,9 @@ class MassShifts(object):
                 row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
                 self.ptm_patterns_table = self.ptm_patterns_table.append(row_entries_as_df, ignore_index=True)
 
-
             utils.progress(ix+1, len(self.mass_shifts))
-            
+        print('\n')
+
 
     def estimate_maximal_mass_error(self, mass_error):
         maximal_mass_error = np.repeat(mass_error, len(self.mass_shifts))
@@ -215,4 +215,19 @@ class MassShifts(object):
                                                 self.identified_masses_table, how='outer', left_on=['mass shift'], 
                                                 right_on=['mass shift'])
         self.identified_masses_table.sort_values(by=['mass shift'], inplace=True)
+
+
+    def groupby_ptm_patterns(self):  
+        no_ptm_pattern_identified_df = self.identified_masses_table[self.identified_masses_table['PTM pattern ('+self.ptm_column_name+')'].isna()]
+        unmodified_species_df = self.identified_masses_table[(self.identified_masses_table['average mass']<=config.unmodified_species_mass_init+config.unmodified_species_mass_tol) & 
+                                                             (self.identified_masses_table['average mass']>=config.unmodified_species_mass_init-config.unmodified_species_mass_tol)]       
+        no_ptm_pattern_identified_df = no_ptm_pattern_identified_df[~no_ptm_pattern_identified_df['average mass'].isin(unmodified_species_df['average mass'])]
+        unmodified_species_df = unmodified_species_df.groupby('PTM pattern ('+self.ptm_column_name+')', dropna=False).max()
+        unmodified_species_df.reset_index(inplace=True)
+        grouped_ptm_patterns_df = self.identified_masses_table.groupby('PTM pattern ('+self.ptm_column_name+')', dropna=True).max()
+        grouped_ptm_patterns_df.reset_index(inplace=True)
+        self.identified_masses_table = pd.concat([unmodified_species_df, no_ptm_pattern_identified_df, grouped_ptm_patterns_df], join='inner')
+        self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+        self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+        self.identified_masses_table.sort_values(by='average mass', inplace=True)
 

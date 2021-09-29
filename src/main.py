@@ -131,9 +131,6 @@ if __name__ == '__main__':
     else:
         mass_shifts.remove_empty_rows()
         if config.calculate_mass_shifts == True:
-            #masses_means = mass_shifts.identified_masses_table['average mass'].values
-            #unmodified_species_mass = utils.determine_unmodified_species_mass(masses_means, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)        
-            #mass_shifts.add_mass_shifts(unmodified_species_mass)   
             mass_shifts.add_mass_shifts(sample_names_list)
             mass_shifts.save_table_identified_masses('../output/')
         else:
@@ -146,6 +143,7 @@ if __name__ == '__main__':
         
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
+            mass_shifts.groupby_ptm_patterns()
             mass_shifts.save_table_identified_masses('../output/')
             mass_shifts.save_table_ptm_patterns('../output/')
             
@@ -164,5 +162,6 @@ if __name__ == '__main__':
     plt.savefig('../output/identified_masses.pdf', dpi=800)
     plt.show()
     
+    print('\n')
     print(80*'-'+'\n\n')
 

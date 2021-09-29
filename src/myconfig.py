@@ -2,7 +2,8 @@
 
 
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
+#path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
+path = '..\\..\\..\\Data\\I2MS_Data\\Replicate5\\'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
@@ -13,7 +14,7 @@ file_name_ending = '*_E1_01_data_Profile_MultiIonFiltered.mzml'
 regex_extract_output_name = 'p53_(.*)_rep5'
 
 # Name and location of the modification file 
-modfication_file_name = '/Users/marjanfaizi/Documents/Postdoc/Code/data/modifications_P04637.csv'
+modfication_file_name = 'modifications_P04637.csv'
 
 # color coding for each condition and the order how it should be plotted
 color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
@@ -49,9 +50,6 @@ window_size_ub = 0.9
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
-
-# Identified masses across different samples are binned together in the output table if they differ by this value (given in Da)
-bin_size_identified_masses = 2
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True
