@@ -2,16 +2,16 @@
 
 
 # Path to the mass spec data
-#path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
-path = '..\\..\\..\\Data\\I2MS_Data\\Replicate1\\'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate6/'
+#path = '..\\..\\..\\Data\\I2MS_Data\\Replicate6\\'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 # *_01_Profile.mzml, *_02_Profile.mzml, 
 # *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*rep1_MS1_01_Profile.mzml'
+file_name_ending = '*01_data_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'MCF7_(.*)_rep1'
+regex_extract_output_name = 'p53_(.*)_rep6'
 
 # Name and location of the modification file 
 modfication_file_name = 'modifications_P04637.csv'
