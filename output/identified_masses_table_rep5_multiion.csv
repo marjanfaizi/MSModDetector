@@ -1,4 +1,4 @@
-"PTM pattern (P,Ac,Me,Ox,-H2O,Na)",average mass,mass shift,mass std,masses uv-1,masses uv-2,masses xray-nutlin_7hr,masses xray_2hr,masses xray_7hr,rel. abundances uv-1,rel. abundances uv-2,rel. abundances xray-nutlin_7hr,rel. abundances xray_2hr,rel. abundances xray_7hr
+"PTM pattern (P,Ac,Me,Ox,-H2O,Na)",average mass,mass shift,mass std,masses uv_7hr,masses nutlin_7hr,masses xray-nutlin_7hr,masses xray_2hr,masses xray_7hr,rel. abundances uv_7hr,rel. abundances nutlin_7hr,rel. abundances xray-nutlin_7hr,rel. abundances xray_2hr,rel. abundances xray_7hr
 ,43772.6720158184,0.0,0.9320122690424295,43773.316360493394,43773.28828105968,43773.295327432395,43771.22185871494,43772.23825139164,0.08584682204321128,0.13614404922251633,0.14215153220726837,0.10568100181642633,0.09534564092070918
 ,43783.26185871494,12.040000000000873,,,,,43783.26185871494,,,,,0.029509309983267614,
 "(0, 0, 1, 0, 1, 1)",43790.218251391634,17.979999999995925,,,,,,43790.218251391634,,,,,0.027992725128528118
