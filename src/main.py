@@ -98,15 +98,17 @@ if __name__ == '__main__':
                 gaussian_model.filter_fitting_results(config.pvalue_threshold)
                 gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
                 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-                
+        
                 mass_shifts.create_table_identified_masses(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['relative_abundances'], sample_name)
-                
+
                 if not gaussian_model.fitting_results.empty:
                     x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
                     y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results['amplitudes'], gaussian_model.fitting_results['means'], 
                                                         gaussian_model.fitting_results['stddevs'])
                     axes[order_in_plot].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
                     axes[order_in_plot].plot(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['amplitudes']*rescaling_factor, '.', color='0.3')
+                    
+                    #utils.add_labels(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['amplitudes']*rescaling_factor, gaussian_model.fitting_results['p-values'])
                     
                     if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
                         ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor

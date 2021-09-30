@@ -161,7 +161,7 @@ class GaussianModel(object):
                                                          args=(self.fitting_results.means.values, self.fitting_results.stddevs.values, masses, intensities))
             ix_reduced_fitting_results = []
             for index, row in self.fitting_results.iterrows():
-                if (refitted_amplitudes.x[index] > sn_threshold) and (refitted_amplitudes.x[index] > row['amplitudes']*config.refitted_amplitudes_threshold):
+                if (refitted_amplitudes.x[index] > sn_threshold):# and (refitted_amplitudes.x[index] > row['amplitudes']*config.refitted_amplitudes_threshold):
                     ix_reduced_fitting_results.append(index)
         
             self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)

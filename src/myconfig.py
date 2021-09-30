@@ -2,24 +2,23 @@
 
 
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate6/'
+#path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate6/'
 #path = '..\\..\\..\\Data\\I2MS_Data\\Replicate6\\'
+path = '../../../Data/I2MS_Data/Replicate5/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
-# *_01_Profile.mzml, *_02_Profile.mzml, 
-# *_01_Profile_MultiIonFiltered.mzml, *_02_Profile_MultiIonFiltered.mzml
-file_name_ending = '*01_data_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*E1_01_data_Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'p53_(.*)_rep6'
+regex_extract_output_name = 'p53_(.*)_rep5'
 
 # Name and location of the modification file 
 modfication_file_name = 'modifications_P04637.csv'
 
 # color coding for each condition and the order how it should be plotted
-color_palette = {'_nutlin': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
+color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
 				 'xray_7hr': ['lightseagreen', 2], 'xray-nutlin': ['chocolate', 3],
-				 'uv': ['mediumpurple', 4]}
+				 'uv-1': ['mediumpurple', 4]}
 				 
 # used to determine the number of subplots
 number_of_conditions = 5
@@ -40,13 +39,10 @@ unmodified_species_mass_tol = 5.0
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
 pvalue_threshold = 0.05
 
-# after removing close peaks their fitted amplitudes are re-scaled and removed if they are below this threshold   
-refitted_amplitudes_threshold = 0.33
-
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
-window_size_lb = 0.6
-window_size_ub = 0.9
+window_size_lb = 0.5
+window_size_ub = 0.95
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
@@ -55,8 +51,8 @@ distance_threshold_adjacent_peaks = 0.6
 calculate_mass_shifts = True
 
 # This mass error in Da is used as default for the linear programming problem 
-mass_error = 1.5
+mass_error = 2
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed
-determine_ptm_patterns = True
+determine_ptm_patterns = False

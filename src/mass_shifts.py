@@ -23,7 +23,7 @@ class MassShifts(object):
     
     def __init__(self):
         self.identified_masses_table = pd.DataFrame(columns=['mass_index', 'average mass', 'mass std']) 
-        self.identified_masses_table['mass_index'] = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+1))
+        self.identified_masses_table['mass_index'] = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
         self.mass_shifts = []
         self.laps_run_lp = 5
         self.ptm_column_name = ''
@@ -33,7 +33,7 @@ class MassShifts(object):
         self.identified_masses_table['masses '+column_name] = np.nan
         self.identified_masses_table['rel. abundances '+column_name] = np.nan
         for ix in range(len(means)):
-            mass = means[ix]                 
+            mass = means[ix]             
             abundance = relative_abundances[ix]
             row_index = self.identified_masses_table[self.identified_masses_table['mass_index']==round(mass)]['mass_index'].index.values
             self.identified_masses_table.at[row_index[0], 'masses '+column_name] = mass
