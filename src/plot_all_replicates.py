@@ -23,7 +23,7 @@ abundances_name =['rel. abundances nutlin_7hr', 'rel. abundances xray_2hr', 'rel
 color_palette = ['skyblue', 'yellowgreen', 'lightseagreen', 'chocolate', 'mediumpurple']
 replicates = ['rep1', 'rep5', 'rep6']
 marker = ['o', 'X', 'v']
-linestyle = ['dashed', 'solid', 'dashedot']
+linestyle = ['dashed', 'solid', 'dashdot']
 
 output_fig = plt.figure(figsize=(14,7))
 gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
@@ -37,24 +37,24 @@ for rep in range(len(replicates)):
     
     file = file_names[rep]
     identified_masses_df = pd.read_csv(file, sep=',')
-    means = identified_masses_df['average mass'].values
 
     for condition in range(len(masses_name)):
         color_of_sample = color_palette[condition]
         sample_name = masses_name[condition][7:]
         axes[condition].plot(identified_masses_df[masses_name[condition]], identified_masses_df[abundances_name[condition]],
                              label=sample_name+' ('+replicates[rep]+')', color=color_of_sample, marker=marker[rep], linestyle='None')
-    
-    #for ax in axes:
-    #    for m in means:
-    #        ax.axvline(x=m, c='0.3', ls=linestyle[rep], lw=0.3, zorder=0)
+   
 
+identified_masses_rep1_df = pd.read_csv(file_names[0], sep=',')
+means_rep1 = identified_masses_rep1_df['average mass'].values
 
 for ax in axes:
-    ax.set_xlim((config.start_mass_range, config.start_mass_range+config.max_mass_shift))
+    ax.set_xlim((config.start_mass_range, config.start_mass_range+config.max_mass_shift+100))
     ax.set_ylim((-0.01, 0.26))
     ax.yaxis.grid()
     ax.legend(fontsize=11, loc='upper right')
+    for m in means_rep1:
+        ax.axvline(x=m, c='0.3', ls='--', lw=0.3, zorder=0)
     ax.label_outer()
 plt.xlabel('mass (Da)'); plt.ylabel('relative abundance')
 output_fig.tight_layout()
