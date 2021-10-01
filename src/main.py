@@ -45,7 +45,7 @@ if __name__ == '__main__':
     print('\nStart detecting mass shifts...')
     
     stdout_text = []
-    sample_names_list = []
+    #sample_names_list = []
         
     progress_bar_mass_shifts = 0
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
             sys.exit()
         else: 
             sample_name = text_extract.group(1).lower()
-            sample_names_list.append(sample_name)
+            #sample_names_list.append(sample_name)
 
         data = MassSpecData(file_name)
         data.set_mass_error(config.mass_error)
@@ -131,9 +131,10 @@ if __name__ == '__main__':
     if mass_shifts.identified_masses_table.empty:
         print('\nNo masses detected.')
     else:
-        mass_shifts.remove_empty_rows()
+        mass_shifts.set_index()
+        mass_shifts.bin_peaks(config.bin_size_mass_shifts)
         if config.calculate_mass_shifts == True:
-            mass_shifts.add_mass_shifts(sample_names_list)
+            mass_shifts.add_mass_shifts()
             mass_shifts.save_table_identified_masses('../output/')
         else:
             mass_shifts.save_table_identified_masses('../output/')

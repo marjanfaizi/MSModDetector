@@ -44,6 +44,9 @@ pvalue_threshold = 0.05
 window_size_lb = 0.5
 window_size_ub = 0.95
 
+# difference between idetnified masses that should be in one bin
+bin_size_mass_shifts = 2
+
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
 
