@@ -42,10 +42,36 @@ class MassShifts(object):
         self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
         self.identified_masses_table.sort_values(by='average mass', inplace=True)
+          
         
-
-    def set_index(self):
-        self.identified_masses_table.set_index('mass_index', inplace=True)  
+    def delete_empty_rows(self):
+        self.identified_masses_table.drop('mass_index', axis=1, inplace=True)
+        self.identified_masses_table.dropna(axis=0, how='all', inplace=True)
+        self.identified_masses_table.reset_index(drop=True, inplace=True)
+        
+        
+    def bin_peaks(self):
+        self.identified_masses_table.reset_index(drop=True, inplace=True)
+        distance_matrix = self.__create_distance_matrix(self.identified_masses_table['average mass'].values)
+        while (distance_matrix<config.bin_size_mass_shifts).any():
+            indices_to_combine = np.unravel_index(np.argmin(distance_matrix, axis=None), distance_matrix.shape)
+            self.identified_masses_table.iloc[indices_to_combine[0]] = self.identified_masses_table.iloc[indices_to_combine[0]:indices_to_combine[1]+1].max()
+            self.identified_masses_table.drop(indices_to_combine[1], inplace=True)
+            self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+            self.identified_masses_table.reset_index(drop=True, inplace=True)
+            distance_matrix = self.__create_distance_matrix(self.identified_masses_table['average mass'].values)
+            
+        self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+        self.identified_masses_table.sort_values(by='average mass', inplace=True)
+        
+        
+    def __create_distance_matrix(self, array):
+        m, n = np.meshgrid(array, array)
+        distance_matrix = abs(m-n)
+        arbitrary_high_number = 100
+        np.fill_diagonal(distance_matrix, arbitrary_high_number)
+        return distance_matrix
+        
         
         
 # =============================================================================
@@ -202,6 +228,14 @@ class MassShifts(object):
         print('\n')
 
 
+    def __create_ptm_pattern_table(self, modifications):
+        ptm_column_name_separator = ','
+        self.ptm_column_name = ptm_column_name_separator.join(modifications.acronyms)
+        column_names = ['mass shift', 'mass error (Da)', 'PTM pattern ('+self.ptm_column_name+')', 'amount of PTMs']
+        ptm_pattern_table = pd.DataFrame(columns=column_names) 
+        return ptm_pattern_table
+    
+
     def estimate_maximal_mass_error(self, mass_error):
         maximal_mass_error = np.repeat(mass_error, len(self.mass_shifts))
         #mass_mean = self.identified_masses_table['average mass'].values
@@ -209,14 +243,6 @@ class MassShifts(object):
         #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
         #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
         return np.array(maximal_mass_error)
-        
-    
-    def __create_ptm_pattern_table(self, modifications):
-        ptm_column_name_separator = ','
-        self.ptm_column_name = ptm_column_name_separator.join(modifications.acronyms)
-        column_names = ['mass shift', 'mass error (Da)', 'PTM pattern ('+self.ptm_column_name+')', 'amount of PTMs']
-        ptm_pattern_table = pd.DataFrame(columns=column_names) 
-        return ptm_pattern_table
     
     
     def add_ptm_patterns_to_table(self):
@@ -228,57 +254,61 @@ class MassShifts(object):
         self.identified_masses_table.sort_values(by=['mass shift'], inplace=True)
 
 
-    def bin_peaks(self, bin_size_mass_shifts):
-        peak_mass = self.identified_masses_table.filter(regex='masses').columns
-        peak_abundance = self.identified_masses_table.filter(regex='rel. abundances ').columns
-        for sample in range(len(peak_mass)):
-            not_empty_rows_ix = self.identified_masses_table[~pd.isnull(self.identified_masses_table[peak_mass[sample]])].index
-            for row_index in not_empty_rows_ix:
-                row_index_updated = self.__count_non_empty_cells(row_index, bin_size_mass_shifts, peak_mass)
-                self.identified_masses_table.at[row_index_updated, peak_mass[sample]] = self.identified_masses_table.loc[row_index, peak_mass[sample]]
-                self.identified_masses_table.at[row_index_updated, peak_abundance[sample]] = self.identified_masses_table.loc[row_index, peak_abundance[sample]]
-                if row_index != row_index_updated:
-                    self.identified_masses_table.at[row_index, peak_mass[sample]] = np.nan
-                    self.identified_masses_table.at[row_index, peak_abundance[sample]] = np.nan
 
-        self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
-        self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
-        
-        
-        no_empty_rows_df = self.identified_masses_table.dropna(axis=0, subset=peak_mass, how='all', inplace=False)
-        #print(no_empty_rows_df['average mass'][1:])
-        distance_between_indices = np.abs(no_empty_rows_df.index[1:]-no_empty_rows_df.index[:-1])
-        print(distance_between_indices)
-        #if min(distance_between_indices) <= bin_size_mass_shifts:
-        #    self.bin_peaks(bin_size_mass_shifts)
-        #else:
-        self.identified_masses_table.dropna(axis=0, subset=peak_mass, how='all', inplace=True)
-        self.identified_masses_table.sort_values(by='average mass', inplace=True)
-                
-    def __count_non_empty_cells(self, row_index, bin_size, columns):
-        current_row_count = self.identified_masses_table.loc[row_index, columns].count().sum()
-        non_empty_cells_per_row = {}
-        distance = 1
-        while distance <= bin_size:
-            prev_row_count = self.identified_masses_table.loc[row_index-distance, columns].count().sum()
-            next_row_count = self.identified_masses_table.loc[row_index+distance, columns].count().sum()
-            if prev_row_count > 0 and prev_row_count >= current_row_count:
-                non_empty_cells_per_row[-distance] = abs(self.identified_masses_table.loc[row_index, 'average mass'] - self.identified_masses_table.loc[row_index-distance, 'average mass'])
-            if next_row_count > 0 and next_row_count >= current_row_count:
-                non_empty_cells_per_row[distance] = abs(self.identified_masses_table.loc[row_index, 'average mass'] - self.identified_masses_table.loc[row_index+distance, 'average mass'])
-            if not non_empty_cells_per_row:
-                distance += 1
-            else: 
-                break
+# =============================================================================
+#     def bin_peaks(self, bin_size_mass_shifts):
+#         peak_mass = self.identified_masses_table.filter(regex='masses').columns
+#         peak_abundance = self.identified_masses_table.filter(regex='rel. abundances ').columns
+#         for sample in range(len(peak_mass)):
+#             not_empty_rows_ix = self.identified_masses_table[~pd.isnull(self.identified_masses_table[peak_mass[sample]])].index
+#             for row_index in not_empty_rows_ix:
+#                 row_index_updated = self.__count_non_empty_cells(row_index, bin_size_mass_shifts, peak_mass)
+#                 self.identified_masses_table.at[row_index_updated, peak_mass[sample]] = self.identified_masses_table.loc[row_index, peak_mass[sample]]
+#                 self.identified_masses_table.at[row_index_updated, peak_abundance[sample]] = self.identified_masses_table.loc[row_index, peak_abundance[sample]]
+#                 if row_index != row_index_updated:
+#                     self.identified_masses_table.at[row_index, peak_mass[sample]] = np.nan
+#                     self.identified_masses_table.at[row_index, peak_abundance[sample]] = np.nan
+# 
+#         self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+#         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+#         
+#         
+#         no_empty_rows_df = self.identified_masses_table.dropna(axis=0, subset=peak_mass, how='all', inplace=False)
+#         #print(no_empty_rows_df['average mass'][1:])
+#         distance_between_indices = np.abs(no_empty_rows_df.index[1:]-no_empty_rows_df.index[:-1])
+#         print(distance_between_indices)
+#         #if min(distance_between_indices) <= bin_size_mass_shifts:
+#         #    self.bin_peaks(bin_size_mass_shifts)
+#         #else:
+#         self.identified_masses_table.dropna(axis=0, subset=peak_mass, how='all', inplace=True)
+#         self.identified_masses_table.sort_values(by='average mass', inplace=True)
+#                 
+#     def __count_non_empty_cells(self, row_index, bin_size, columns):
+#         current_row_count = self.identified_masses_table.loc[row_index, columns].count().sum()
+#         non_empty_cells_per_row = {}
+#         distance = 1
+#         while distance <= bin_size:
+#             prev_row_count = self.identified_masses_table.loc[row_index-distance, columns].count().sum()
+#             next_row_count = self.identified_masses_table.loc[row_index+distance, columns].count().sum()
+#             if prev_row_count > 0 and prev_row_count >= current_row_count:
+#                 non_empty_cells_per_row[-distance] = abs(self.identified_masses_table.loc[row_index, 'average mass'] - self.identified_masses_table.loc[row_index-distance, 'average mass'])
+#             if next_row_count > 0 and next_row_count >= current_row_count:
+#                 non_empty_cells_per_row[distance] = abs(self.identified_masses_table.loc[row_index, 'average mass'] - self.identified_masses_table.loc[row_index+distance, 'average mass'])
+#             if not non_empty_cells_per_row:
+#                 distance += 1
+#             else: 
+#                 break
+# 
+#         if not non_empty_cells_per_row:
+#             return row_index
+#         else:
+#             
+#             distance_to_row_max_count = min(non_empty_cells_per_row, key=non_empty_cells_per_row.get)
+# 
+#             row_index_updated = row_index+distance_to_row_max_count
+#             return row_index_updated
+# =============================================================================
 
-        if not non_empty_cells_per_row:
-            return row_index
-        else:
-            
-            distance_to_row_max_count = min(non_empty_cells_per_row, key=non_empty_cells_per_row.get)
-
-            row_index_updated = row_index+distance_to_row_max_count
-            return row_index_updated
 
     # def groupby_ptm_patterns(self):  
     #     no_ptm_pattern_identified_df = self.identified_masses_table[self.identified_masses_table['PTM pattern ('+self.ptm_column_name+')'].isna()]

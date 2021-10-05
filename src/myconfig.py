@@ -2,12 +2,11 @@
 
 
 # Path to the mass spec data
-#path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate6/'
-#path = '..\\..\\..\\Data\\I2MS_Data\\Replicate6\\'
-path = '../../../Data/I2MS_Data/Replicate5/'
+path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
+#path = '../../../Data/I2MS_Data/Replicate5/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_name_ending = '*E1_01_data_Profile_MultiIonFiltered.mzml'
+file_name_ending = '*Profile_MultiIonFiltered.mzml'
 
 # Select a regular expression that is common for all samples, this is used as output names for the plots
 regex_extract_output_name = 'p53_(.*)_rep5'
@@ -45,7 +44,7 @@ window_size_lb = 0.5
 window_size_ub = 0.95
 
 # difference between idetnified masses that should be in one bin
-bin_size_mass_shifts = 2
+bin_size_mass_shifts = 2.5
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
@@ -54,8 +53,8 @@ distance_threshold_adjacent_peaks = 0.6
 calculate_mass_shifts = True
 
 # This mass error in Da is used as default for the linear programming problem 
-mass_error = 2
+mass_error = 2.5
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed
-determine_ptm_patterns = False
+determine_ptm_patterns = True

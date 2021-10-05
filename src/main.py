@@ -131,8 +131,8 @@ if __name__ == '__main__':
     if mass_shifts.identified_masses_table.empty:
         print('\nNo masses detected.')
     else:
-        mass_shifts.set_index()
-        mass_shifts.bin_peaks(config.bin_size_mass_shifts)
+        mass_shifts.delete_empty_rows()
+        mass_shifts.bin_peaks()
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts()
             mass_shifts.save_table_identified_masses('../output/')
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
-            mass_shifts.groupby_ptm_patterns()
+            #mass_shifts.groupby_ptm_patterns()
             mass_shifts.save_table_identified_masses('../output/')
             mass_shifts.save_table_ptm_patterns('../output/')
             
