@@ -1,26 +1,26 @@
 # myconfig.py:
 
-
 # Path to the mass spec data
-path = '/Users/marjanfaizi/Documents/Postdoc/Data/TopDown/Replicate5/'
-#path = '../../../Data/I2MS_Data/Replicate5/'
+path = '../data/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_name_ending = '*Profile_MultiIonFiltered.mzml'
+file_name_ending = '*.mzml'
 
-# Select a regular expression that is common for all samples, this is used as output names for the plots
-regex_extract_output_name = 'p53_(.*)_rep5'
+# list of all replicate names as they are in the file names
+replicates = ['rep1', 'rep5', 'rep6']
+
+# list of all condition names as they are in the file names
+conditions = ['nutlin_only', 'xray_2hr', 'xray_7hr', 'xray-nutlin', 'uv_7hr']
+
+# used to determine the number of subplots
+number_of_conditions = len(conditions)
+
+# color for each condition and the respective order in the plots
+color_order = [['skyblue', 0], ['yellowgreen', 1], ['lightseagreen', 2], ['chocolate', 3], ['mediumpurple', 4]]
+color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = 'modifications_P04637.csv'
-
-# color coding for each condition and the order how it should be plotted
-color_palette = {'uv-2': ['skyblue', 0], 'xray_2hr': ['yellowgreen', 1], 
-				 'xray_7hr': ['lightseagreen', 2], 'xray-nutlin': ['chocolate', 3],
-				 'uv-1': ['mediumpurple', 4]}
-				 
-# used to determine the number of subplots
-number_of_conditions = 5
+modfication_file_name = '../data/modifications_P04637.csv'
 
 # Set the maximal mass shift to consider (in Da)
 max_mass_shift = 800.0

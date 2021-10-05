@@ -25,10 +25,10 @@ class MassSpecData(object):
         self.masses = self.raw_spectrum[:,0]
         self.intensities = self.raw_spectrum[:,1]
         
-        self.mass_error = 3.0
+        self.mass_error = 5.0 # ppm
         self.search_window_start_mass = self.raw_spectrum[0,0]
         self.search_window_end_mass = self.raw_spectrum[-1,0]
-        self.max_mass_shift = 500.0
+        self.max_mass_shift = 500.0 # Da
 
 
     def __read_data(self, data_file_name):
@@ -50,10 +50,6 @@ class MassSpecData(object):
             except FileNotFoundError:
                 print('File does not exist.')
                 sys.exit()
-
-
-    def set_mass_error(self, mass_error):
-        self.mass_error = mass_error
 
 
     def set_max_mass_shift(self, max_mass_shift):

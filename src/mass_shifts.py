@@ -22,27 +22,32 @@ class MassShifts(object):
     """
     
     def __init__(self):
-        self.identified_masses_table = pd.DataFrame(columns=['mass_index', 'average mass', 'mass std']) 
-        self.identified_masses_table['mass_index'] = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
+        mass_index = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
+        self.identified_masses_table = pd.DataFrame(index=mass_index)
+        #self.identified_masses_table = pd.DataFrame(columns=['mass_index', 'average mass', 'mass std']) 
+        #self.identified_masses_table['mass_index'] = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
         self.mass_shifts = []
         self.laps_run_lp = 5
         self.ptm_column_name = ''
 
 
-    def create_table_identified_masses(self, means, relative_abundances, column_name):
-        self.identified_masses_table['masses '+column_name] = np.nan
-        self.identified_masses_table['rel. abundances '+column_name] = np.nan
-        for ix in range(len(means)):
-            mass = means[ix]             
-            abundance = relative_abundances[ix]
-            row_index = self.identified_masses_table[self.identified_masses_table['mass_index']==round(mass)]['mass_index'].index.values
-            self.identified_masses_table.at[row_index[0], 'masses '+column_name] = mass
-            self.identified_masses_table.at[row_index[0], 'rel. abundances '+column_name] = abundance
+    def add_identified_masses(self, means, relative_abundances, column_name):
+        self.identified_masses_table.loc[means.astype(int).values, 'masses '+column_name] = means.values
+        self.identified_masses_table.loc[means.astype(int).values, 'rel. abundances '+column_name] = relative_abundances.values
+        #self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+        # self.identified_masses_table['masses '+column_name] = np.nan
+        # self.identified_masses_table['rel. abundances '+column_name] = np.nan
+        # for ix in range(len(means)):
+        #     mass = means[ix]             
+        #     abundance = relative_abundances[ix]
+        #     row_index = self.identified_masses_table[self.identified_masses_table['mass_index']==round(mass)]['mass_index'].index.values
+        #     self.identified_masses_table.at[row_index[0], 'masses '+column_name] = mass
+        #     self.identified_masses_table.at[row_index[0], 'rel. abundances '+column_name] = abundance
 
-        self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
-        self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
-        self.identified_masses_table.sort_values(by='average mass', inplace=True)
-          
+        # self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
+        # self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
+        # self.identified_masses_table.sort_values(by='average mass', inplace=True)
+         
         
     def delete_empty_rows(self):
         self.identified_masses_table.drop('mass_index', axis=1, inplace=True)
@@ -51,16 +56,19 @@ class MassShifts(object):
         
         
     def bin_peaks(self):
-        self.identified_masses_table.reset_index(drop=True, inplace=True)
+        #self.identified_masses_table.reset_index(drop=True, inplace=True)
+        self.identified_masses_table.dropna(axis=0, how='all', inplace=True)
+        self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
         distance_matrix = self.__create_distance_matrix(self.identified_masses_table['average mass'].values)
-        while (distance_matrix<config.bin_size_mass_shifts).any():
+        while (distance_matrix <= config.bin_size_mass_shifts).any():
             indices_to_combine = np.unravel_index(np.argmin(distance_matrix, axis=None), distance_matrix.shape)
-            self.identified_masses_table.iloc[indices_to_combine[0]] = self.identified_masses_table.iloc[indices_to_combine[0]:indices_to_combine[1]+1].max()
-            self.identified_masses_table.drop(indices_to_combine[1], inplace=True)
+            self.identified_masses_table.iloc[indices_to_combine[0]] = self.identified_masses_table.iloc[list(indices_to_combine)].max()
+            self.identified_masses_table.iloc[indices_to_combine[1]] = np.nan 
             self.identified_masses_table['average mass'] = self.identified_masses_table.filter(regex='masses').mean(axis=1).values
-            self.identified_masses_table.reset_index(drop=True, inplace=True)
+            #self.identified_masses_table.reset_index(drop=True, inplace=True)
             distance_matrix = self.__create_distance_matrix(self.identified_masses_table['average mass'].values)
-            
+        
+        self.identified_masses_table.dropna(axis=0, how='all', inplace=True)
         self.identified_masses_table['mass std'] = self.identified_masses_table.filter(regex='masses').std(axis=1).values
         self.identified_masses_table.sort_values(by='average mass', inplace=True)
         
