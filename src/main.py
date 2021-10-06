@@ -40,11 +40,6 @@ if __name__ == '__main__':
      
     all_replicates_df = pd.DataFrame()
     
-    output_fig = plt.figure(figsize=(14,7))
-    gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
-    axes = gs.subplots(sharex=True, sharey=True)
-    ylim_max = 0
-    
     print('\nDetecting mass shifts...')
     
     stdout_text = []
@@ -52,6 +47,11 @@ if __name__ == '__main__':
     progress_bar_mass_shifts = 0
     
     for rep in config.replicates:
+        
+        output_fig = plt.figure(figsize=(14,7))
+        gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
+        axes = gs.subplots(sharex=True, sharey=True)
+        ylim_max = 0
         
         file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
         
@@ -64,14 +64,6 @@ if __name__ == '__main__':
                 sys.exit()
             else:
                 sample_name = sample_name[0]
-
-            #text_extract = re.search(config.regex_extract_output_name, file_name)
-            #if not text_extract:
-            #    print('\nRegular expression could not be found in file names.\n')
-            #    sys.exit()
-            #else: 
-            #    sample_name = text_extract.group(1).lower()
-            #    #sample_names_list.append(sample_name)
     
             data = MassSpecData(sample_name)
             data.set_max_mass_shift(config.max_mass_shift)
@@ -106,13 +98,11 @@ if __name__ == '__main__':
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
     
-                    #axes[order_in_plot].plot(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['amplitudes']*rescaling_factor, 'r.')
-    
                     gaussian_model.filter_fitting_results(config.pvalue_threshold)
                     gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
             
-                    mass_shifts.add_identified_masses(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['relative_abundances'], cond+'_'+rep)
+                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['relative_abundances'], cond+'_'+rep)
     
                     if not gaussian_model.fitting_results.empty:
                         x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
@@ -135,38 +125,33 @@ if __name__ == '__main__':
             progress_bar_mass_shifts += 1        
             utils.progress(progress_bar_mass_shifts, len(file_names))
         
-         
-        # if all_replicates_df.empty:
-        #     mass_index = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
-        #     all_replicates_df = pd.DataFrame(index=mass_index, columns=mass_shifts.identified_masses_table.columns)
-
-        # all_replicates_df = pd.merge(all_replicates_df, mass_shifts.identified_masses_table, left_index=True, right_index=True, suffixes=('', '_'+rep))
-
-        
-        # means = mass_shifts.identified_masses_table['average mass'].values
-        # for ax in axes:
-        #     ax.set_xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
-        #     ax.set_ylim((-10, ylim_max*1.1))
-        #     ax.yaxis.grid()
-        #     ax.legend(fontsize=11, loc='upper right')
-        #     for m in means:
-        #         ax.axvline(x=m, c='0.3', ls='--', lw=0.3, zorder=0)
-        #     ax.label_outer()
-        # plt.xlabel('mass (Da)'); plt.ylabel('intensity')
-        # output_fig.tight_layout()
-        # plt.savefig('../output/identified_masses_'+rep+'.pdf', dpi=800)
-        # plt.show()
-        
+        means = mass_shifts.identified_masses_df.filter(regex='masses.*'+rep).mean(axis=1).values
+        for ax in axes:
+            ax.set_xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
+            ax.set_ylim((-10, ylim_max*1.1))
+            ax.yaxis.grid()
+            ax.legend(fontsize=11, loc='upper right')
+            for m in means:
+                ax.axvline(x=m, c='0.3', ls='--', lw=0.3, zorder=0)
+            ax.label_outer()
+        plt.xlabel('mass (Da)'); plt.ylabel('intensity')
+        output_fig.tight_layout()
+        plt.savefig('../output/identified_masses_'+rep+'.pdf', dpi=800)
+        plt.show()
         
     print('\n')
     seperator_stdout_text = '\n'
     print(seperator_stdout_text.join(stdout_text))
     
-    if mass_shifts.identified_masses_table.empty:
+    if mass_shifts.identified_masses_df.empty:
         print('\nNo masses detected.')
     else:
-        #mass_shifts.delete_empty_rows()
         mass_shifts.bin_peaks()
+        is_aligned = mass_shifts.align_spetra()
+        if not is_aligned:
+            print('\nUnmodified species not detected. Spectra could not be algined.')
+        mass_shifts.bin_peaks(dropna=True)
+        
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts()
             mass_shifts.save_table_identified_masses('../output/')
@@ -180,10 +165,8 @@ if __name__ == '__main__':
         
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
-            #mass_shifts.groupby_ptm_patterns()
             mass_shifts.save_table_identified_masses('../output/')
             mass_shifts.save_table_ptm_patterns('../output/')
     
     print('\n')
     print(80*'-'+'\n\n')
-
