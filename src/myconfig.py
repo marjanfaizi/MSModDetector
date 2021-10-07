@@ -26,10 +26,10 @@ modfication_file_name = '../data/modifications_P04637.csv'
 max_mass_shift = 800.0
 
 # Set the start of the search window within the mass spectrum (in Da)
-start_mass_range = 43750.0
+start_mass_range = 41080.0#43750.0
 
 # Initial guess for the mass of the unmodified species (in Da)
-unmodified_species_mass_init = 43770.0
+unmodified_species_mass_init = 41100.0 #43770.0
 
 # Search for the mass of the unmodified species within this range -/+ mass_tol (in Da)
 unmodified_species_mass_tol = 5.0 
