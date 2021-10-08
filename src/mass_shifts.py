@@ -97,18 +97,13 @@ class MassShifts(object):
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
 
-    def save_table_identified_masses(self, path_name):
-        self.identified_masses_df = self.identified_masses_df.sort_index(axis=1)
-        self.identified_masses_df.to_csv(path_name+'identified_masses_df.csv', sep=',', index=False)    
-
-
-    def save_table_ptm_patterns(self, path_name):
-        self.ptm_patterns_table = self.ptm_patterns_table.sort_index(axis=1)
-        self.ptm_patterns_table.to_csv(path_name+'ptm_patterns_table.csv', sep=',', index=False) 
+    def save_table(self, table, output_name):
+        table = table.sort_index(axis=1)
+        table.to_csv(output_name, sep=',', index=False) 
         
         
     # def determine_ptm_patterns(self, modifications, maximal_mass_error_array):
-    #     self.ptm_patterns_table = self.__create_ptm_pattern_table(modifications)
+    #     self.ptm_patterns_df = self.__create_ptm_pattern_table(modifications)
     #     lp_model = LinearProgram()
     #     lp_model.set_ptm_mass_shifts(modifications.modification_masses)
     #     lp_model.set_upper_bounds(modifications.upper_bounds)
@@ -130,14 +125,14 @@ class MassShifts(object):
     #                 number_ptm_types = np.array(ptm_pattern).sum()
     #                 if abs(mass_error) < maximal_mass_error:
     #                     row_entry = [mass_shift, mass_error, ptm_pattern, number_ptm_types]
-    #                     row_entry_as_series = pd.Series(row_entry, index = self.ptm_patterns_table.columns)
-    #                     self.ptm_patterns_table = self.ptm_patterns_table.append(row_entry_as_series, ignore_index=True)
+    #                     row_entry_as_series = pd.Series(row_entry, index = self.ptm_patterns_df.columns)
+    #                     self.ptm_patterns_df = self.ptm_patterns_df.append(row_entry_as_series, ignore_index=True)
 
     #         utils.progress(ix+1, len(self.mass_shifts))
     
     
     def determine_ptm_patterns(self, modifications, maximal_mass_error_array):
-        self.ptm_patterns_table = self.__create_ptm_pattern_table(modifications)
+        self.ptm_patterns_df = self.__create_ptm_pattern_table(modifications)
         lp_model = LinearProgramCVXOPT(np.array(modifications.modification_masses), np.array(modifications.upper_bounds))
         minimal_mass_shift = min(np.abs(modifications.modification_masses))
 
@@ -181,9 +176,9 @@ class MassShifts(object):
                     else:
                         break
                         
-                row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_table.columns)
+                row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
                 row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
-                self.ptm_patterns_table = self.ptm_patterns_table.append(row_entries_as_df, ignore_index=True)
+                self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
 
             utils.progress(ix+1, len(self.mass_shifts))
         print('\n')
@@ -207,10 +202,24 @@ class MassShifts(object):
     
     
     def add_ptm_patterns_to_table(self):
-        self.ptm_patterns_table['amount of PTMs'] = pd.to_numeric(self.ptm_patterns_table['amount of PTMs'])
-        best_ptm_patterns = self.ptm_patterns_table.loc[self.ptm_patterns_table.groupby('mass shift')['amount of PTMs'].idxmin()]
+        self.ptm_patterns_df['amount of PTMs'] = pd.to_numeric(self.ptm_patterns_df['amount of PTMs'])
+        best_ptm_patterns = self.ptm_patterns_df.loc[self.ptm_patterns_df.groupby('mass shift')['amount of PTMs'].idxmin()]
         self.identified_masses_df = pd.merge(best_ptm_patterns[['mass shift', 'PTM pattern ('+self.ptm_column_name+')']], 
                                                 self.identified_masses_df, how='outer', left_on=['mass shift'], 
                                                 right_on=['mass shift'])
         self.identified_masses_df.sort_values(by=['mass shift'], inplace=True)
 
+
+
+    def reduce_mass_shifts(self):
+        keep_mass_shifts_indices = np.arange(len(self.identified_masses_df))
+        for cond in config.conditions:
+            missing_masses_count = self.identified_masses_df.filter(regex="masses .*"+cond).isnull().sum(axis=1)
+            keep_mass_shifts_indices = np.intersect1d(keep_mass_shifts_indices, self.identified_masses_df[missing_masses_count>=2].index)
+            
+        mass_shifts_df_reduced = self.identified_masses_df.drop(index=keep_mass_shifts_indices)
+        return mass_shifts_df_reduced
+                                              
+                                              
+        
+        

@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
             if trimmed_peaks_in_search_window.size:
                 ### TODO: is there another way to calculate th s/n ratio?
-                sn_threshold = trimmed_peaks_in_search_window[:,1].std()/2
+                sn_threshold = trimmed_peaks_in_search_window[:,1].std()/3
                 ### TODO: remove later, just to show sn threshold
                 axes[order_in_plot].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
                 
@@ -154,9 +154,10 @@ if __name__ == '__main__':
         
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts()
-            mass_shifts.save_table_identified_masses('../output/')
+            mass_shifts_df_reduced = mass_shifts.reduce_mass_shifts()
+            mass_shifts.save_table(mass_shifts_df_reduced, '../output/mass_shifts.csv')
         else:
-            mass_shifts.save_table_identified_masses('../output/')
+            mass_shifts.save_table(mass_shifts.identified_masses_df, '../output/mass_shifts.csv')
     
         if (config.calculate_mass_shifts == True) and (config.determine_ptm_patterns == True):
             maximal_mass_error = mass_shifts.estimate_maximal_mass_error(config.mass_error)
@@ -165,8 +166,9 @@ if __name__ == '__main__':
         
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
-            mass_shifts.save_table_identified_masses('../output/')
-            mass_shifts.save_table_ptm_patterns('../output/')
+            mass_shifts_df_reduced = mass_shifts.reduce_mass_shifts()
+            mass_shifts.save_table(mass_shifts_df_reduced, '../output/mass_shifts.csv')
+            mass_shifts.save_table(mass_shifts.ptm_patterns_df, '../output/ptm_patterns_table.csv')
     
     print('\n')
     print(80*'-'+'\n\n')
