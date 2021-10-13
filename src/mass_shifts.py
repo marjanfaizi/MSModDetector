@@ -57,7 +57,7 @@ class MassShifts(object):
                 self.identified_masses_df.loc[indices, self.mass_col_name+col_name] = masses
                 self.identified_masses_df.loc[indices, self.abundance_col_name+col_name] = abundances
                 
-            self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(self.mass_col_name).mean(axis=1).values
+            self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(regex=self.mass_col_name).mean(axis=1).values
             return True
         
 
@@ -140,7 +140,7 @@ class MassShifts(object):
             mass_shift = self.mass_shifts[ix]
             maximal_mass_error = maximal_mass_error_array[ix]
 
-            if mass_shift >= minimal_mass_shift:
+            if mass_shift >= minimal_mass_shift-maximal_mass_error:
                 lp_model.set_observed_mass_shift(mass_shift)
                 lp_model.set_max_mass_error(maximal_mass_error)
                 row_entries = []
@@ -194,10 +194,6 @@ class MassShifts(object):
 
     def estimate_maximal_mass_error(self, mass_error):
         maximal_mass_error = np.repeat(mass_error, len(self.mass_shifts))
-        #mass_mean = self.identified_masses_df[self.avg_mass_col_name].values
-        #mass_std = self.identified_masses_df['mass std'].values
-        #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6 if np.isnan(mass_std[i]) else mass_std[i] for i in range(len(mass_std))]
-        #maximal_mass_error = [mass_mean[i]*mass_error*1.0e-6+mass_std[0] if np.isnan(mass_std[i]) else mass_std[0]+mass_std[i] for i in range(len(mass_std))]
         return np.array(maximal_mass_error)
     
     

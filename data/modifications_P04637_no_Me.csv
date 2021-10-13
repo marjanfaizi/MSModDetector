@@ -1,0 +1,6 @@
+PTM id;PTM acronym;upper bound
+Phosphorylation;P;10
+Acetylation;Ac;10
+Oxidation;Ox;5
+Dehydration;-H2O;10
+Sodium adduct;Na;5

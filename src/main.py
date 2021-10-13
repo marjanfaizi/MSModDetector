@@ -161,7 +161,6 @@ if __name__ == '__main__':
     
         if (config.calculate_mass_shifts == True) and (config.determine_ptm_patterns == True):
             maximal_mass_error = mass_shifts.estimate_maximal_mass_error(config.mass_error)
-            
             print('\nSearching for PTM combinations:')
         
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
