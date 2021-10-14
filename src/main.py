@@ -113,18 +113,17 @@ if __name__ == '__main__':
                                                 
                         if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
                             ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor
-                        
+   
                     else:
                         stdout_text.append('No masses detected for the following condition: ' + cond + '_' + rep)
                 else:
                     stdout_text.append('No peaks above the SN threshold could be detected within the search window for the following condition: ' + cond + '_' + rep)
-    
             else:
                 stdout_text.append('No peaks could be detected within the search window for the following condition: ' + cond + '_' + rep)
-    
+
             progress_bar_mass_shifts += 1        
             utils.progress(progress_bar_mass_shifts, len(file_names))
-        
+
         means = mass_shifts.identified_masses_df.filter(regex='masses.*'+rep).mean(axis=1).values
         for ax in axes:
             ax.set_xlim((data.search_window_start_mass-10, data.search_window_end_mass+10))
@@ -142,7 +141,7 @@ if __name__ == '__main__':
     print('\n')
     seperator_stdout_text = '\n'
     print(seperator_stdout_text.join(stdout_text))
-    
+
     if mass_shifts.identified_masses_df.empty:
         print('\nNo masses detected.')
     else:
@@ -151,24 +150,25 @@ if __name__ == '__main__':
         if not is_aligned:
             print('\nUnmodified species not detected. Spectra could not be algined.')
         mass_shifts.bin_peaks(dropna=True)
-        
+        mass_shifts.reduce_mass_shifts()
+
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts()
-            mass_shifts_df_reduced = mass_shifts.reduce_mass_shifts()
-            mass_shifts.save_table(mass_shifts_df_reduced, '../output/mass_shifts.csv')
+            mass_shifts.save_table(mass_shifts.identified_masses_df, '../output/mass_shifts.csv')
         else:
             mass_shifts.save_table(mass_shifts.identified_masses_df, '../output/mass_shifts.csv')
-    
+
         if (config.calculate_mass_shifts == True) and (config.determine_ptm_patterns == True):
             maximal_mass_error = mass_shifts.estimate_maximal_mass_error(config.mass_error)
+    
             print('\nSearching for PTM combinations:')
-        
+
             mass_shifts.determine_ptm_patterns(mod, maximal_mass_error)        
             mass_shifts.add_ptm_patterns_to_table()
-            mass_shifts_df_reduced = mass_shifts.reduce_mass_shifts()
-            mass_shifts.save_table(mass_shifts_df_reduced, '../output/mass_shifts.csv')
+
+            mass_shifts.save_table(mass_shifts.identified_masses_df, '../output/mass_shifts.csv')
             mass_shifts.save_table(mass_shifts.ptm_patterns_df, '../output/ptm_patterns_table.csv')
-    
+
     print('\n')
     print(80*'-'+'\n\n')
 

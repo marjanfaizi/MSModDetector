@@ -20,7 +20,7 @@ color_order = [['skyblue', 0], ['yellowgreen', 1], ['lightseagreen', 2], ['choco
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = '../data/modifications_P04637_no_Me.csv'
+modfication_file_name = '../data/modifications_P04637.csv'
 
 # Set the maximal mass shift to consider (in Da)
 max_mass_shift = 800.0
@@ -44,7 +44,7 @@ window_size_lb = 0.5
 window_size_ub = 0.95
 
 # difference between idetnified masses that should be in one bin
-bin_size_mass_shifts = 3
+bin_size_mass_shifts = 2.5
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6

@@ -209,12 +209,12 @@ class MassShifts(object):
 
     def reduce_mass_shifts(self):
         keep_mass_shifts_indices = np.arange(len(self.identified_masses_df))
+        self.identified_masses_df.reset_index(drop=True, inplace=True)
         for cond in config.conditions:
             missing_masses_count = self.identified_masses_df.filter(regex="masses .*"+cond).isnull().sum(axis=1)
             keep_mass_shifts_indices = np.intersect1d(keep_mass_shifts_indices, self.identified_masses_df[missing_masses_count>=2].index)
             
-        mass_shifts_df_reduced = self.identified_masses_df.drop(index=keep_mass_shifts_indices)
-        return mass_shifts_df_reduced
+        self.identified_masses_df.drop(index=keep_mass_shifts_indices, inplace=True)
                                               
                                               
         
