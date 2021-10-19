@@ -36,7 +36,7 @@ unmodified_species_mass_tol = 5.0
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
-pvalue_threshold = 0.05
+pvalue_threshold = 0.1
 
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit

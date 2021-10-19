@@ -11,7 +11,6 @@ import sys
 import re
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -37,8 +36,6 @@ if __name__ == '__main__':
     mod.get_modification_masses()
 
     mass_shifts = MassShifts()
-     
-    all_replicates_df = pd.DataFrame()
     
     print('\nDetecting mass shifts...')
     
@@ -64,56 +61,53 @@ if __name__ == '__main__':
                 sys.exit()
             else:
                 sample_name = sample_name[0]
-    
+
             data = MassSpecData(sample_name)
-            data.set_max_mass_shift(config.max_mass_shift)
-            data.set_search_window_mass_range(config.start_mass_range)        
-  
+            data.set_search_window_mass_range(config.start_mass_range, config.max_mass_shift)        
+
             max_intensity = data.intensities.max()
-            rescaling_factor = max_intensity/100.0
             data.convert_to_relative_intensities(max_intensity)
-      
+            rescaling_factor = max_intensity/100.0
+
             all_peaks = data.picking_peaks()
             trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
             trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
-  
+
             color_of_sample = config.color_palette[cond][0]
             order_in_plot = config.color_palette[cond][1]
             axes[order_in_plot].plot(data.masses, data.intensities*rescaling_factor, label=cond, color=color_of_sample)
 
             if trimmed_peaks_in_search_window.size:
-                ### TODO: is there another way to calculate th s/n ratio?
-                sn_threshold = trimmed_peaks_in_search_window[:,1].std()/3
+                ### TODO: is there another way to calculate the noise level?
+                sn_threshold = trimmed_peaks_in_search_window[:,1].std()/2
                 ### TODO: remove later, just to show sn threshold
                 axes[order_in_plot].axhline(y=sn_threshold*rescaling_factor, c='r', lw=0.3)
-                
-                peaks_above_sn = data.picking_peaks(min_peak_height=sn_threshold)
-                trimmed_peaks_above_sn  = data.remove_adjacent_peaks(peaks_above_sn, config.distance_threshold_adjacent_peaks)  
-                trimmed_peaks_above_sn_in_search_window = data.determine_search_window(trimmed_peaks_above_sn)
-            
+
+                trimmed_peaks_above_sn_in_search_window = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>sn_threshold]
+
                 if trimmed_peaks_above_sn_in_search_window.size:  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond)
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
-    
+
                     gaussian_model.filter_fitting_results(config.pvalue_threshold)
                     gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-            
+         
                     mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['relative_abundances'], cond+'_'+rep)
-    
+ 
                     if not gaussian_model.fitting_results.empty:
                         x_gauss_func = np.arange(data.search_window_start_mass, data.search_window_end_mass)
                         y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results['amplitudes'], gaussian_model.fitting_results['means'], 
                                                             gaussian_model.fitting_results['stddevs'])
                         axes[order_in_plot].plot(x_gauss_func, y_gauss_func*rescaling_factor, color='0.3')
                         axes[order_in_plot].plot(gaussian_model.fitting_results['means'], gaussian_model.fitting_results['amplitudes']*rescaling_factor, '.', color='0.3')
-                                                
+                                              
                         if ylim_max < trimmed_peaks_in_search_window[:,1].max()*rescaling_factor:
                             ylim_max = trimmed_peaks_in_search_window[:,1].max()*rescaling_factor
-   
+
                     else:
                         stdout_text.append('No masses detected for the following condition: ' + cond + '_' + rep)
                 else:

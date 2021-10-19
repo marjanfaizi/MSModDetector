@@ -1,6 +1,6 @@
 PTM id;PTM acronym;upper bound
 Phosphorylation;P;10
-Acetylation;Ac;10
-Methylation;Me;10
-Oxidation;Ox;5
+Acetylation;Ac;20
+Methylation;Me;20
+Oxidation;Ox;10
 Dehydration;-H2O;10

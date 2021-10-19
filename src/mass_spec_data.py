@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
+
 class MassSpecData(object):
     """
     This class reads mass spectra in the following formats: .txt, .csv, and .mzMl 
@@ -25,10 +26,9 @@ class MassSpecData(object):
         self.masses = self.raw_spectrum[:,0]
         self.intensities = self.raw_spectrum[:,1]
         
-        self.mass_error = 5.0 # ppm
+        self.mass_error = 10.0 # ppm
         self.search_window_start_mass = self.raw_spectrum[0,0]
         self.search_window_end_mass = self.raw_spectrum[-1,0]
-        self.max_mass_shift = 500.0 # Da
 
 
     def __read_data(self, data_file_name):
@@ -52,35 +52,23 @@ class MassSpecData(object):
                 sys.exit()
 
 
-    def set_max_mass_shift(self, max_mass_shift):
-        self.max_mass_shift = max_mass_shift
-
-
-    def set_search_window_mass_range(self, start_mass):
+    def set_search_window_mass_range(self, start_mass, max_mass_shift):
         self.search_window_start_mass = start_mass
-        self.search_window_end_mass = start_mass + self.max_mass_shift
+        self.search_window_end_mass = start_mass + max_mass_shift
 
 
     def determine_search_window(self, peaks):
-        start_indices = self.__find_peaks_by_mass(peaks, self.search_window_start_mass)
-        if len(start_indices) != 0:
-            end_indices =  self.__find_peaks_by_mass(peaks, self.search_window_end_mass)
-            search_window_indices = np.arange(start_indices[0], end_indices[-1]+1)
-            peaks_in_search_window = peaks[search_window_indices]
-        else:
-            peaks_in_search_window = np.array([])
+        start_index = self.find_nearest_mass_idx(peaks, self.search_window_start_mass)
+        end_index =  self.find_nearest_mass_idx(peaks, self.search_window_end_mass)
+        search_window_indices = np.arange(start_index, end_index+1)
+        peaks_in_search_window = peaks[search_window_indices]
         return peaks_in_search_window
 
 
-    def __find_peaks_by_mass(self, peaks, mass):
+    def find_nearest_mass_idx(self, peaks, mass):
         peaks_mass = peaks[:,0]
-        mass_tolerance_Da = mass*self.mass_error*1.0e-6
-        found_masses_indices = []
-        while ( len(found_masses_indices) == 0  and mass_tolerance_Da < self.max_mass_shift):
-            found_masses_indices = np.argwhere((peaks_mass<=mass+mass_tolerance_Da) & (peaks_mass>=mass-mass_tolerance_Da))[:,0]
-            mass_tolerance_Da = mass_tolerance_Da*1.1
-
-        return found_masses_indices
+        nearest_mass_idx = np.abs(peaks_mass - mass).argmin()
+        return nearest_mass_idx
 
 
     def convert_to_relative_intensities(self, max_intensity):

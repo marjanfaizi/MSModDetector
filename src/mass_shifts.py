@@ -73,8 +73,6 @@ class MassShifts(object):
         
         if dropna:
             self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
-        #self.identified_masses_df['mass std'] = self.identified_masses_df.filter(regex='masses').std(axis=1).values
-        #self.identified_masses_df.sort_values(by=self.avg_mass_col_name, inplace=True)
         
         
     def __create_distance_matrix(self, array):
