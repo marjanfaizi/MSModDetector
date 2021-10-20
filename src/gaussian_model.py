@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
-from sklearn.metrics import r2_score
 import utils
 import myconfig as config
 
