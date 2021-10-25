@@ -100,15 +100,6 @@ class MassShifts(object):
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
 
-    def keep_reproduced_results(self):
-        keep_masses_indices = np.arange(len(self.identified_masses_df))
-        for cond in config.conditions:
-            missing_masses_count = self.identified_masses_df.filter(regex="masses .*"+cond).isnull().sum(axis=1)
-            keep_masses_indices = np.intersect1d(keep_masses_indices, self.identified_masses_df[missing_masses_count>=2].index)
-            
-        self.identified_masses_df.drop(index=keep_masses_indices, inplace=True)
-
-
     def save_table(self, table, output_name):
         table = table.sort_index(axis=1)
         table.to_csv(output_name, sep=',', index=False) 

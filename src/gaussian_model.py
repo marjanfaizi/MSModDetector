@@ -135,7 +135,6 @@ class GaussianModel(object):
         self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)
         self.fitting_results.reset_index(drop=True, inplace=True)
 
-
     
     def refit_amplitudes(self, peaks, sn_threshold):
         masses = peaks[:,0]; intensities = peaks[:,1]

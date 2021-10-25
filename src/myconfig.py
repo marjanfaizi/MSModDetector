@@ -1,7 +1,7 @@
 # myconfig.py:
 
 # Path to the mass spec data
-path = '../data/'
+path = '../data/p53_raw_data/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
 file_name_ending = '*.mzml'
@@ -20,7 +20,7 @@ color_order = [['skyblue', 0], ['yellowgreen', 1], ['lightseagreen', 2], ['choco
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = '../data/modifications_P04637.csv'
+modfication_file_name = '../data/modifications/modifications_P04637.csv'
 
 # Set the maximal mass shift to consider (in Da)
 max_mass_shift = 750.0
