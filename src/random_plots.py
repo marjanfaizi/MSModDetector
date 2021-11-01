@@ -10,6 +10,7 @@ import re
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 
 from mass_spec_data import MassSpecData
@@ -99,16 +100,37 @@ for cond in config.conditions:
     xerr = mass_shifts_df.filter(regex="masses "+cond).std(axis=1)
     yerr = mass_shifts_df.filter(regex="rel. abundances "+cond).std(axis=1)
     axes[order_in_plot].errorbar(x[~is_nan_mask], y[~is_nan_mask], yerr=yerr[~is_nan_mask], xerr=xerr[~is_nan_mask], 
-                                  color= color_of_sample, marker="o", markersize=3.5, linestyle="none", label=cond)
+                                 color= color_of_sample, marker="o", elinewidth=1, linestyle="none", label=cond,
+                                 markersize=3.5)
     axes[order_in_plot].legend(fontsize=11, loc='upper right')
     axes[order_in_plot].grid(False)
     axes[order_in_plot].yaxis.grid()
 
     for avg in mass_shifts_df["average mass"].values:
-        axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.2, zorder=0)
+        axes[order_in_plot].axvline(x=avg, c='0.5', ls='--', lw=0.1, zorder=0)
 
 plt.xlabel('mass (Da)'); plt.ylabel('relative abundance')
 plt.savefig('../output/comparison_all_replicates.pdf', dpi=800)
+plt.show()
+#########################################################################################################################
+#########################################################################################################################
+
+
+
+#########################################################################################################################
+###################### Figure 5: Heatmap to emphasize rel. abundances of all conditions/replicates ######################
+#########################################################################################################################
+abundance_columns = mass_shifts_df.filter(regex="rel. abundances ").columns
+treatment_label = [name.replace("rel. abundances ", "") for name in abundance_columns]
+mass_shift_label = np.round(mass_shifts_df["mass shift"].values, 2)
+
+plt.figure(figsize=(6,10))
+heatmap = sns.heatmap(mass_shifts_df[abundance_columns], yticklabels=mass_shift_label, xticklabels=treatment_label, 
+                      vmin=0, vmax=0.25, cmap="Blues")
+heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=30, fontsize=9) 
+heatmap.set_yticklabels(heatmap.get_yticklabels(), rotation=0, fontsize=7) 
+plt.tight_layout()
+plt.savefig('../output/heatmap.pdf', dpi=800)
 plt.show()
 #########################################################################################################################
 #########################################################################################################################
