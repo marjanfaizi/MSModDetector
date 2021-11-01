@@ -33,7 +33,6 @@ if __name__ == "__main__":
         sys.exit()
     
     mod = Modifications(config.modfication_file_name)
-    mod.get_modification_masses()
 
     mass_shifts = MassShifts()
     

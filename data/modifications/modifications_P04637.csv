@@ -1,4 +1,4 @@
-PTM id;PTM acronym;mass shift;upper bound
+PTM name;PTM acronym;PTM mass;upper bound
 Phosphorylation;Ph;79.9799;10
 Phosphorylation;Ph;97.9952;10
 Acetylation;Ac;42.0367;20
