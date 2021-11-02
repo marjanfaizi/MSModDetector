@@ -22,7 +22,7 @@ class MassShifts(object):
     """
     
     def __init__(self):
-        mass_index = np.arange(int(config.start_mass_range), int(config.start_mass_range+config.max_mass_shift+20))
+        mass_index = np.arange(int(config.unmodified_species_mass), int(config.unmodified_species_mass+config.max_mass_shift+20))
         self.identified_masses_df = pd.DataFrame(index=mass_index)
         self.mass_shifts = []
         self.laps_run_lp = 10
@@ -41,30 +41,32 @@ class MassShifts(object):
         self.identified_masses_df.loc[means.round().astype(int), self.abundance_col_name+column_name] = relative_abundances
      
      
-    def align_spetra(self):
-        unmodified_species_masses = self.identified_masses_df.filter(regex=self.mass_col_name).apply(utils.determine_unmodified_species_mass, raw=True, args=(config.unmodified_species_mass_init, config.unmodified_species_mass_tol)).values
-        unmodified_species_average = unmodified_species_masses.mean()
-        calibration_number = unmodified_species_average - unmodified_species_masses
-        aligned_masses_df = self.identified_masses_df.copy()
-        columns_to_correct = self.identified_masses_df.filter(regex=self.mass_col_name).columns
-        aligned_masses_df[columns_to_correct] = aligned_masses_df[columns_to_correct] + calibration_number
-        sample_names = [column[len(self.mass_col_name):] for column in columns_to_correct]
-        for col_name in sample_names:
-            indices = aligned_masses_df[self.mass_col_name+col_name].dropna().round().astype(int).values
-            masses = aligned_masses_df[self.mass_col_name+col_name].dropna().values
-            intensities = aligned_masses_df[self.intensity_col_name+col_name].dropna().values
-            abundances = aligned_masses_df[self.abundance_col_name+col_name].dropna().values
-            self.identified_masses_df[[self.mass_col_name+col_name, self.abundance_col_name+col_name, self.intensity_col_name+col_name]] = np.nan
-            self.identified_masses_df.loc[indices, self.mass_col_name+col_name] = masses
-            self.identified_masses_df.loc[indices, self.intensity_col_name+col_name] = intensities
-            self.identified_masses_df.loc[indices, self.abundance_col_name+col_name] = abundances
-
-        self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
-        self.identified_masses_df.reset_index(drop=True, inplace=True)
-        
-        all_samples = [name[len(self.mass_col_name):] for name in columns_to_correct]
-        calibration_number_dict = dict(zip(all_samples, calibration_number))
-        return calibration_number_dict
+# =============================================================================
+#     def align_spetra(self):
+#         unmodified_species_masses = self.identified_masses_df.filter(regex=self.mass_col_name).apply(utils.determine_unmodified_species_mass, raw=True, args=(config.unmodified_species_mass_init, config.unmodified_species_mass_tol)).values
+#         unmodified_species_average = unmodified_species_masses.mean()
+#         calibration_number = unmodified_species_average - unmodified_species_masses
+#         aligned_masses_df = self.identified_masses_df.copy()
+#         columns_to_correct = self.identified_masses_df.filter(regex=self.mass_col_name).columns
+#         aligned_masses_df[columns_to_correct] = aligned_masses_df[columns_to_correct] + calibration_number
+#         sample_names = [column[len(self.mass_col_name):] for column in columns_to_correct]
+#         for col_name in sample_names:
+#             indices = aligned_masses_df[self.mass_col_name+col_name].dropna().round().astype(int).values
+#             masses = aligned_masses_df[self.mass_col_name+col_name].dropna().values
+#             intensities = aligned_masses_df[self.intensity_col_name+col_name].dropna().values
+#             abundances = aligned_masses_df[self.abundance_col_name+col_name].dropna().values
+#             self.identified_masses_df[[self.mass_col_name+col_name, self.abundance_col_name+col_name, self.intensity_col_name+col_name]] = np.nan
+#             self.identified_masses_df.loc[indices, self.mass_col_name+col_name] = masses
+#             self.identified_masses_df.loc[indices, self.intensity_col_name+col_name] = intensities
+#             self.identified_masses_df.loc[indices, self.abundance_col_name+col_name] = abundances
+# 
+#         self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
+#         self.identified_masses_df.reset_index(drop=True, inplace=True)
+#         
+#         all_samples = [name[len(self.mass_col_name):] for name in columns_to_correct]
+#         calibration_number_dict = dict(zip(all_samples, calibration_number))
+#         return calibration_number_dict
+# =============================================================================
 
 
     def bin_peaks(self):
@@ -93,9 +95,7 @@ class MassShifts(object):
 
 
     def add_mass_shifts(self):
-        masses = self.identified_masses_df[self.avg_mass_col_name].values
-        unmodified_species_mass = utils.determine_unmodified_species_mass(masses, config.unmodified_species_mass_init, config.unmodified_species_mass_tol)
-        self.identified_masses_df['mass shift'] = self.identified_masses_df[self.avg_mass_col_name] - unmodified_species_mass 
+        self.identified_masses_df['mass shift'] = self.identified_masses_df[self.avg_mass_col_name] - config.unmodified_species_mass 
         self.identified_masses_df = self.identified_masses_df[self.identified_masses_df['mass shift'] >= 0]
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
@@ -177,9 +177,9 @@ class MassShifts(object):
                 else:
                     break
                         
-                row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
-                row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
-                self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
+            row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
+            row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
+            self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
 
             progress_bar_count += 1
             utils.progress(progress_bar_count, len(self.mass_shifts))

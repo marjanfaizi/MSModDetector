@@ -82,20 +82,6 @@ def estimate_stddev_from_isotope_distribution(distribution):
             
     stddev = optimized_param[2]
     return stddev
-  
-
-def determine_unmodified_species_mass(means, species_mass, mass_tolerance):
-    masses_in_interval = means[(means >= species_mass-mass_tolerance) & (means <= species_mass+mass_tolerance)]
-   
-    if len(masses_in_interval) > 1:
-        closest_to_species_mass_ix = abs(masses_in_interval - species_mass).argmin()
-        unmodified_species_mass = masses_in_interval[closest_to_species_mass_ix]
-    elif len(masses_in_interval) == 1:
-        unmodified_species_mass = masses_in_interval[0]
-    else:
-        unmodified_species_mass = 0
-    
-    return unmodified_species_mass
 
 
 def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=None):

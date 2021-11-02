@@ -60,7 +60,7 @@ if __name__ == "__main__":
                 sample_name = sample_name[0]
 
             data = MassSpecData(sample_name)
-            data.set_search_window_mass_range(config.start_mass_range, config.max_mass_shift)        
+            data.set_search_window_mass_range(config.unmodified_species_mass, config.max_mass_shift)        
 
             max_intensity = data.intensities.max()
             data.convert_to_relative_intensities(max_intensity)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond)
-                    gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass_init)
+                    gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
 
                     gaussian_model.filter_fitting_results(config.pvalue_threshold)
@@ -104,8 +104,9 @@ if __name__ == "__main__":
     if mass_shifts.identified_masses_df.empty:
         print("\nNo masses detected.")
     else:
-        calibration_number_dict = mass_shifts.align_spetra()
-        parameter = parameter.append(calibration_number_dict, ignore_index=True)
+#        calibration_number_dict = mass_shifts.align_spetra()
+#        parameter = parameter.append(calibration_number_dict, ignore_index=True)
+#        parameter.rename(index={0:"noise_level", 1:"calibration_number"}, inplace=True)
         mass_shifts.bin_peaks()
 
         if config.calculate_mass_shifts == True:
@@ -119,7 +120,8 @@ if __name__ == "__main__":
             mass_shifts.save_table(mass_shifts.ptm_patterns_df, "../output/ptm_patterns_table.csv")
             
         mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.csv")
-        parameter.rename(index={0:"noise_level", 1:"calibration_number"}, inplace=True)
+        
+        parameter.rename(index={0:"noise_level"}, inplace=True)
         parameter.to_csv("../output/parameter.csv", sep=",") 
 
     print("\n")

@@ -23,16 +23,10 @@ color_palette = dict(zip(conditions, color_order))
 modfication_file_name = '../data/modifications/modifications_P04637.csv'
 
 # Set the maximal mass shift to consider (in Da)
-max_mass_shift = 750.0
+max_mass_shift = 900.0
 
-# Set the start of the search window within the mass spectrum (in Da)
-start_mass_range = 43750.0 #35837.0 #41080.0 
-
-# Initial guess for the mass of the unmodified species (in Da)
-unmodified_species_mass_init = 43770.0 #41100.0 #35857.0
-
-# Search for the mass of the unmodified species within this range -/+ mass_tol (in Da)
-unmodified_species_mass_tol = 5.0 
+# Theoretical average mass of the unmodified species (in Da)
+unmodified_species_mass = 43653.1778
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
@@ -49,10 +43,10 @@ window_size_ub = 0.95
 
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 10
-mass_error_Da = mass_error_ppm*1e-6*unmodified_species_mass_init
+mass_error_Da = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
-max_bin_size = 2 + mass_error_Da
+max_bin_size = mass_error_Da
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
@@ -61,7 +55,7 @@ distance_threshold_adjacent_peaks = 0.6
 calculate_mass_shifts = True
 
 # This mass tolerance in Da is used as default for the linear programming problem 
-mass_tolerance = max_bin_size/2
+mass_tolerance = 1 + mass_error_Da
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed
