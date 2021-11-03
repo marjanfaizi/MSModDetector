@@ -11,7 +11,7 @@ import numpy as np
 #from linear_program import LinearProgram
 from linear_program_cvxopt import LinearProgramCVXOPT
 import utils
-import myconfig as config
+import config
 
 
 class MassShifts(object): 
@@ -22,7 +22,7 @@ class MassShifts(object):
     """
     
     def __init__(self):
-        mass_index = np.arange(int(config.unmodified_species_mass), int(config.unmodified_species_mass+config.max_mass_shift+20))
+        mass_index = np.arange(int(config.mass_start_range), int(config.mass_end_range+20))
         self.identified_masses_df = pd.DataFrame(index=mass_index)
         self.mass_shifts = []
         self.laps_run_lp = 10
@@ -96,7 +96,6 @@ class MassShifts(object):
 
     def add_mass_shifts(self):
         self.identified_masses_df['mass shift'] = self.identified_masses_df[self.avg_mass_col_name] - config.unmodified_species_mass 
-        self.identified_masses_df = self.identified_masses_df[self.identified_masses_df['mass shift'] >= 0]
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
 
@@ -137,11 +136,9 @@ class MassShifts(object):
     def determine_ptm_patterns(self, modifications, mass_tolerance):
         self.ptm_patterns_df = self.__create_ptm_pattern_table(modifications)
         lp_model = LinearProgramCVXOPT(np.array(modifications.ptm_masses), np.array(modifications.upper_bounds))
-        #minimal_mass_shift = min(np.abs(modifications.modification_masses))
 
         progress_bar_count = 0
         for mass_shift in self.mass_shifts:
-            #if mass_shift >= minimal_mass_shift-mass_tolerance:
             lp_model.set_observed_mass_shift(mass_shift)
             lp_model.set_max_mass_error(mass_tolerance)
             row_entries = []

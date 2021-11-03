@@ -52,9 +52,9 @@ class MassSpecData(object):
                 sys.exit()
 
 
-    def set_search_window_mass_range(self, start_mass, max_mass_shift):
+    def set_search_window_mass_range(self, start_mass, end_mass):
         self.search_window_start_mass = start_mass
-        self.search_window_end_mass = start_mass + max_mass_shift
+        self.search_window_end_mass = end_mass
 
 
     def determine_search_window(self, peaks):

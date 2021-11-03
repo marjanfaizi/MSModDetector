@@ -11,7 +11,7 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
 import utils
-import myconfig as config
+import config
 
 class GaussianModel(object): 
     """

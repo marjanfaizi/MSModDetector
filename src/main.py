@@ -17,9 +17,7 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-
-# Should be changed for different configurations
-import myconfig as config
+import config
 
 file_names = [file for file in glob.glob(config.path+config.file_name_ending)] 
 
@@ -60,7 +58,7 @@ if __name__ == "__main__":
                 sample_name = sample_name[0]
 
             data = MassSpecData(sample_name)
-            data.set_search_window_mass_range(config.unmodified_species_mass, config.max_mass_shift)        
+            data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
 
             max_intensity = data.intensities.max()
             data.convert_to_relative_intensities(max_intensity)

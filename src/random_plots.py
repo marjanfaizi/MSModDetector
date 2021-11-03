@@ -14,7 +14,7 @@ import seaborn as sns
 import pandas as pd
 
 from mass_spec_data import MassSpecData
-import myconfig as config
+import config
 import utils
 
 plt.style.use("seaborn-pastel")
@@ -53,28 +53,38 @@ for rep in config.replicates:
             sample_name = sample_name[0]
 
         data = MassSpecData(sample_name)
-        axes[order_in_plot].plot(data.masses, data.intensities, label=cond, color=color_of_sample)
-        
+                
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
         intensities = mass_shifts_df["y_intensities "+cond+"_"+rep].dropna().values
-        axes[order_in_plot].plot(masses, intensities, '.', color='0.3')
-
+        
         stddevs = utils.mapping_mass_to_stddev(masses)
-        x_gauss_func = np.arange(config.unmodified_species_mass-20, config.unmodified_species_mass+config.max_mass_shift+20)
+        x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, stddevs)
-        axes[order_in_plot].plot(x_gauss_func, y_gauss_func, color='0.3')
+        
+        if config.number_of_conditions > 2:
+            axes[order_in_plot].plot(data.masses, data.intensities, label=cond, color=color_of_sample)
+            axes[order_in_plot].plot(masses, intensities, '.', color='0.3')
+            axes[order_in_plot].plot(x_gauss_func, y_gauss_func, color='0.3')
+            axes[order_in_plot].axhline(y=noise_level, c='r', lw=0.3)
+            axes[order_in_plot].legend(fontsize=11, loc='upper right')
+            axes[order_in_plot].yaxis.grid()
 
-        for avg in mass_shifts_df["average mass"].values:
-            axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
-            axes[order_in_plot].label_outer()
-
-        axes[order_in_plot].axhline(y=noise_level, c='r', lw=0.3)
-        axes[order_in_plot].set_xlim((config.unmodified_species_mass-20, config.unmodified_species_mass+config.max_mass_shift+20))
-        axes[order_in_plot].set_ylim((-10, ylim_max*1.1))
-        axes[order_in_plot].yaxis.grid()
-        axes[order_in_plot].legend(fontsize=11, loc='upper right')
+            for avg in mass_shifts_df["average mass"].values:
+                axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
+                axes[order_in_plot].label_outer()
                 
-    plt.xlabel('mass (Da)'); plt.ylabel('intensity')
+        else:
+            axes.plot(data.masses, data.intensities, label=cond, color=color_of_sample)
+            axes.plot(masses, intensities, '.', color='0.3')
+            axes.plot(x_gauss_func, y_gauss_func, color='0.3')
+            axes.axhline(y=noise_level, c='r', lw=0.3)
+            axes.legend(fontsize=11, loc='upper right')
+            axes.yaxis.grid()
+        
+    plt.xlim((config.mass_start_range, config.mass_end_range))
+    plt.ylim((-10, ylim_max*1.1))
+
+    plt.xlabel('mass (Da)'); plt.ylabel('intensity (a.u.)')
     output_fig.tight_layout()
     plt.savefig('../output/identified_masses_'+rep+'.pdf', dpi=800)
     plt.show()
