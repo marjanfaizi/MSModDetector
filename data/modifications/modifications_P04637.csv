@@ -1,11 +1,11 @@
-PTM name;PTM acronym;PTM mass;upper bound
-Phosphorylation;Ph;79.9799;10
-Phosphorylation;Ph;97.9952;10
-Acetylation;Ac;42.0367;20
-Methylation;Me1;14.0266;20
-di-Methylation;Me2;28.0532;20
-tri-Methylation;Me3;42.0797;20
-Oxidation;Ox;15.9994;10
-Cysteinylation;Cys;119.1423;10
-Disulfide bridge;Cys-Cys;-2.0159;5
-Sodium adduct;Na;21.9818;5
+PTM id;PTM name;PTM mass;upper bound
+Ph;Phosphorylation;79.9799;10
+Ph-H2O;Phosphorylation;97.9952;10
+Ac;Acetylation;42.0367;20
+Me1;Methylation;14.0266;20
+Me2;di-Methylation;28.0532;20
+Me3;tri-Methylation;42.0797;20
+Ox;Oxidation;15.9994;10
+Cys;Cysteinylation;119.1423;10
+Cys-Cys;Disulfide bridge;-2.0159;5
+Na;Sodium adduct;21.9818;5
