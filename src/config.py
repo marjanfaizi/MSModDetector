@@ -1,10 +1,9 @@
 # myconfig.py:
+import utils
 
-# Path to the mass spec data
-path = '../data/raw_data/P04637/'
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_name_ending = '*.mzml'
+file_names = '../data/raw_data/P04637/*.mzml'
 
 # list of all replicate names as they are in the file names
 replicates = ['rep1', 'rep5', 'rep6']
@@ -22,12 +21,15 @@ color_palette = dict(zip(conditions, color_order))
 # Name and location of the modification file 
 modfication_file_name = '../data/modifications/modifications_P04637.csv'
 
+# Fasta file for protein of interest
+fasta_file_name = '../data/fasta_files/P04637.fasta'
+
+# Theoretical average mass of the unmodified species (in Da)
+unmodified_species_mass = utils.mean_of_isotope_distribution(fasta_file_name, 100)
+
 # Set mass range to search for shifts 
 mass_start_range = 43750.0
 mass_end_range = 44650.0
-
-# Theoretical average mass of the unmodified species (in Da)
-unmodified_species_mass = 43653.1778
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
@@ -47,7 +49,7 @@ mass_error_ppm = 10
 mass_error_Da = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
-max_bin_size = mass_error_Da
+max_bin_size = 1
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6

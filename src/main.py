@@ -19,7 +19,7 @@ from modifications import Modifications
 import utils
 import config
 
-file_names = [file for file in glob.glob(config.path+config.file_name_ending)] 
+file_names = [file for file in glob.glob(config.file_names)] 
 
 if __name__ == "__main__":
     

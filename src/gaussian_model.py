@@ -50,6 +50,7 @@ class GaussianModel(object):
                 if sample_size >= self.sample_size_threshold:
                     fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]
                     pvalue = self.chi_square_test(selected_region, fitted_amplitude, mass)
+
                 else:
                     pvalue = 0.0
                     fitted_amplitude = 0.0
@@ -59,7 +60,7 @@ class GaussianModel(object):
                     best_fitted_amplitude = fitted_amplitude
                     best_window_size = window_size
                           
-            stddev = utils.mapping_mass_to_stddev(mass)    
+            stddev = utils.mapping_mass_to_stddev(mass) 
             self.fitting_results = self.fitting_results.append({'sample_name': self.sample_name, 'means': mass, 'amplitudes': best_fitted_amplitude, 
                                                                 'stddevs': stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
 

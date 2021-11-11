@@ -53,6 +53,30 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush() 
 
+def mean_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
+    entries = []
+    fasta_file = pyopenms.FASTAFile()
+    fasta_file.load(fasta_file_name, entries)
+    for e in entries:
+        protein_sequence = e.sequence
+
+    distribution =  get_theoretical_isotope_distribution(pyopenms.AASequence.fromString(protein_sequence), 
+                                                         isotope_pattern_resolution)
+    masses = distribution[:,0]
+    intensities = distribution[:,1]
+
+    index_most_abundant_peak = intensities.argmax()
+    initial_amplitude = intensities[index_most_abundant_peak]
+    intial_stddev = 1.0
+    initial_mean = masses[index_most_abundant_peak]
+    
+    optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=10000000,
+                                            p0=[initial_amplitude, initial_mean, intial_stddev])
+            
+    mean = optimized_param[1]
+    return mean
+
+
 
 def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution):
     molecular_formula = sequence.getFormula()
@@ -66,22 +90,6 @@ def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution):
         
     isotopes_asarray = np.asarray(isotopes_aslist)
     return isotopes_asarray   
-
-
-def estimate_stddev_from_isotope_distribution(distribution):
-    masses = distribution[:,0]
-    intensities = distribution[:,1]
-
-    index_most_abundant_peak = intensities.argmax()
-    initial_amplitude = intensities[index_most_abundant_peak]
-    intial_stddev = 1.0
-    initial_mean = masses[index_most_abundant_peak]
-    
-    optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=10000000,
-                                            p0=[initial_amplitude, initial_mean, intial_stddev])
-            
-    stddev = optimized_param[2]
-    return stddev
 
 
 def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=None):
