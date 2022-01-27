@@ -138,7 +138,7 @@ class GaussianModel(object):
         if not self.fitting_results.empty: 
             refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
                                                          x0=self.fitting_results.amplitudes.values, 
-                                                         args=(self.fitting_results.means.values, self.fitting_results.stddevs.values, masses, intensities))
+                                                         args=(self.fitting_results.means.values, self.stddev, masses, intensities))
             ix_reduced_fitting_results = []
             for index, row in self.fitting_results.iterrows():
                 if (refitted_amplitudes.x[index] > sn_threshold):
@@ -156,7 +156,7 @@ class GaussianModel(object):
     def calculate_relative_abundaces(self, start_mass, end_mass):
         x_values = np.arange(start_mass, end_mass)
         total_protein_abundance = np.trapz(utils.multi_gaussian(x_values, self.fitting_results.amplitudes, self.fitting_results.means, 
-                                                                self.fitting_results.stddevs), x=x_values)
+                                                                self.stddev), x=x_values)
         relative_abundances = []
         for index, row in self.fitting_results.iterrows():
             species_abundance = np.trapz(utils.gaussian(x_values, row['amplitudes'], row['means'], row['stddevs']), x=x_values)
