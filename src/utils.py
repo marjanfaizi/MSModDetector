@@ -23,7 +23,7 @@ def gaussian(x, amplitude, mean, stddev):
 def multi_gaussian(x, amplitude, mean, stddev):
     y = np.zeros(len(x))
     for i in range(len(mean)):
-        y += gaussian(x, amplitude[i], mean[i], stddev[i])
+        y += gaussian(x, amplitude[i], mean[i], stddev)
 
     return y  
 
@@ -36,12 +36,6 @@ def fit_logistic_func(x, y, init_val):
     optimized_param, _ = optimize.curve_fit(logistic_func, x, y, maxfev=10000000, p0=init_val)
     return optimized_param
 
-def mapping_mass_to_stddev(mass):
-    max_val = 3.6011
-    steepness = 2.7585e-05
-    midpoint = 39195.1287
-    stddev = logistic_func(mass, max_val, steepness, midpoint)
-    return stddev
 
 def progress(count, total, status=''):
     bar_len = 50
@@ -53,7 +47,8 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush() 
 
-def mean_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
+
+def mean_and_stddev_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
     entries = []
     fasta_file = pyopenms.FASTAFile()
     fasta_file.load(fasta_file_name, entries)
@@ -74,8 +69,8 @@ def mean_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
                                             p0=[initial_amplitude, initial_mean, intial_stddev])
             
     mean = optimized_param[1]
-    return mean
-
+    stddev = optimized_param[2]
+    return mean, stddev
 
 
 def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution):
@@ -94,8 +89,7 @@ def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution):
 
 def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=None):
     x = np.arange(data.search_window_start_mass, data.search_window_end_mass)
-    stddev = mapping_mass_to_stddev(gaussian_model.means)
-    y = multi_gaussian(x, gaussian_model.amplitudes, gaussian_model.means, stddev)
+    y = multi_gaussian(x, gaussian_model.amplitudes, gaussian_model.means, gaussian_model.stddev)
     plt.figure(figsize=(16,4))
     plt.plot(data.masses, data.intensities, color='gray')
     plt.plot(gaussian_model.means, gaussian_model.amplitudes, '.r')

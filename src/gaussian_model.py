@@ -27,9 +27,10 @@ class GaussianModel(object):
             - and the corresponding relative abundance of the peak cluster
     """
 
-    def __init__(self, sample_name):
+    def __init__(self, sample_name, stddev_isotope_distribution):
         self.fitting_results = pd.DataFrame(columns=['sample_name', 'means', 'amplitudes', 'stddevs', 'p-values', 'window_sizes', 'relative_abundances']) 
         self.sample_name = sample_name
+        self.stddev = stddev_isotope_distribution
         self.maxfev = 100000
         self.chi_square_dof = 1
         self.sample_size_threshold = 5
@@ -59,10 +60,9 @@ class GaussianModel(object):
                     best_pvalue = pvalue
                     best_fitted_amplitude = fitted_amplitude
                     best_window_size = window_size
-                          
-            stddev = utils.mapping_mass_to_stddev(mass) 
+
             self.fitting_results = self.fitting_results.append({'sample_name': self.sample_name, 'means': mass, 'amplitudes': best_fitted_amplitude, 
-                                                                'stddevs': stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
+                                                                'stddevs': self.stddev, 'p-values': best_pvalue, 'window_sizes': best_window_size}, ignore_index=True)
 
 
     def fit_gaussian(self, peaks, mean=None, amplitude=None):
@@ -72,13 +72,11 @@ class GaussianModel(object):
             
         if amplitude==None and mean==None:
             initial_mean = masses[index_most_abundant_peak]
-            stddev = utils.mapping_mass_to_stddev(initial_mean)
-            optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, stddev), 
+            optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, self.stddev), 
                                                     masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude, initial_mean])
         elif amplitude==None and mean!=None:
-            stddev = utils.mapping_mass_to_stddev(mean)
-            optimized_param, _ = optimize.curve_fit(lambda x, amplitude: utils.gaussian(x, amplitude, mean, stddev), 
+            optimized_param, _ = optimize.curve_fit(lambda x, amplitude: utils.gaussian(x, amplitude, mean, self.stddev), 
                                                     masses, intensities, maxfev=self.maxfev,
                                                     p0=[initial_amplitude])
         
@@ -88,8 +86,7 @@ class GaussianModel(object):
     def determine_adaptive_window_sizes(self, mean):
         amplitude = 1
         masses = np.arange(mean-100, mean+100)
-        stddev = utils.mapping_mass_to_stddev(mean)
-        intensities = utils.gaussian(masses, amplitude, mean, stddev) 
+        intensities = utils.gaussian(masses, amplitude, mean, self.stddev) 
         most_abundant_masses_lb = masses[intensities > intensities.max()*1.0-config.window_size_lb]
         most_abundant_masses_ub = masses[intensities > intensities.max()*1.0-config.window_size_ub]
         lower_window_size = round((most_abundant_masses_lb[-1]-most_abundant_masses_lb[0])/2)
@@ -100,8 +97,7 @@ class GaussianModel(object):
 
     def chi_square_test(self, selected_region, amplitude, mean):
         observed_masses = selected_region[:,0]; observed_intensities = selected_region[:,1]
-        stddev = utils.mapping_mass_to_stddev(mean)
-        predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, stddev)
+        predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, self.stddev)
         chi_square_score = chisquare(observed_intensities, f_exp=predicted_intensities, ddof=self.chi_square_dof)
         return chi_square_score.pvalue
     
