@@ -8,23 +8,36 @@ Created on Mon Jul 5 2021
 #%matplotlib qt
 
 import pyopenms
+from scipy import optimize
 import numpy as np
 import utils
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-
-fasta_file_name = "/Users/marjanfaizi/Documents/Postdoc/Code/data/uniprot_human_proteome_reviewed_and_isoforms.fasta"
+fasta_file_name = "../data/uniprot_human_proteome_reviewed_and_isoforms.fasta"
 fasta_file_object = pyopenms.FASTAFile()
 fasta_file_entries = []
 fasta_file_object.load(fasta_file_name, fasta_file_entries)    
+
+# Estimate the standard deviation by fitting a Gaussian distribution to the protein's isotopic distribution
+def estimate_stddev_from_isotope_distribution(distribution, average_mass):
+    amplitude_init = 1
+    stddev_init = 5
+    masses = distribution[:,0]
+    intensities = distribution[:,1]
+    optimized_param, _ = optimize.curve_fit(lambda x, amplitude, stddev: utils.gaussian(x, amplitude, average_mass, stddev), 
+                                            masses, intensities, maxfev = 1000,
+                                            p0=[amplitude_init, stddev_init])
+    return optimized_param[0]
+
 
 isotope_pattern_resolution = 100
 mapping_protein_mass_to_stddev = {}
 
 progess_bar = 0
 print('\nCalculating the standard deviation for every protein in the human proteome database:')
+
 for entry in fasta_file_entries:
     protein_id = entry.identifier
     sequence = pyopenms.AASequence.fromString(entry.sequence)
@@ -37,13 +50,13 @@ for entry in fasta_file_entries:
             continue
         else:
             average_mass = sequence.getAverageWeight()
-            stddev = utils.estimate_stddev_from_isotope_distribution(distribution)
+            stddev = estimate_stddev_from_isotope_distribution(distribution, average_mass)
             mapping_protein_mass_to_stddev[protein_id] = [average_mass, stddev]
     progess_bar += 1
     utils.progress(progess_bar, len(fasta_file_entries))
 print('\n')
 
-
+# Save protein masses and their corresponding standard deviations
 protein_mass_stddev_table = pd.DataFrame.from_dict(mapping_protein_mass_to_stddev, orient='index')
 protein_mass_stddev_table.reset_index(inplace=True)
 protein_mass_stddev_table.columns = ["protein_id", "mass", "stddev"]
