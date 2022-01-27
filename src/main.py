@@ -19,7 +19,11 @@ from modifications import Modifications
 import utils
 import config
 
-file_names = [file for file in glob.glob(config.file_names)] 
+#file_names = [file for file in glob.glob(config.file_names)] 
+file_names = ['../data/raw_data/P04637\\nutlin_only_rep5.mzml', '../data/raw_data/P04637\\uv_7hr_rep5.mzml',
+              '../data/raw_data/P04637\\xray-nutlin_rep5.mzml', '../data/raw_data/P04637\\xray_2hr_rep5.mzml',
+              '../data/raw_data/P04637\\xray_7hr_rep5.mzml']
+sample_name ='../data/raw_data/P04637\\uv_7hr_rep5.mzml'
 
 if __name__ == "__main__":
     
@@ -47,12 +51,15 @@ if __name__ == "__main__":
         
         file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
         
+        if not file_names_same_replicate:
+                print("\nReplicate or condition not available. Adjust config.py file.\n")
+                sys.exit()
         for cond in config.conditions:
         
             sample_name = [file for file in file_names_same_replicate if re.search(cond, file)]    
            
             if not sample_name:
-                print("\nCondition not available.\n")
+                print("\nCondition not available. Adjust config.py file.\n")
                 sys.exit()
             else:
                 sample_name = sample_name[0]
@@ -60,13 +67,18 @@ if __name__ == "__main__":
             data = MassSpecData(sample_name)
             data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
 
-            max_intensity = data.intensities.max()
-            data.convert_to_relative_intensities(max_intensity)
-            rescaling_factor = max_intensity/100.0
-
             all_peaks = data.picking_peaks()
             trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
             trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+
+            #max_intensity = data.intensities.max()
+            #data.convert_to_relative_intensities(max_intensity)
+            max_intensity = trimmed_peaks_in_search_window[:,1].max()
+            intensities_normalized = trimmed_peaks_in_search_window[:,1] / max_intensity
+            trimmed_peaks_in_search_window[:,1] = intensities_normalized
+            rescaling_factor = max_intensity
+
+
 
             if trimmed_peaks_in_search_window.size:
                 sn_threshold = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()

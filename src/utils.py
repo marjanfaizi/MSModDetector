@@ -17,7 +17,7 @@ import seaborn as sns
 sns.set_context("paper", font_scale=1.2)
 
 def gaussian(x, amplitude, mean, stddev):
-    return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
+    return amplitude * np.exp(-0.5*((x - mean) / stddev)**2)
     
     
 def multi_gaussian(x, amplitude, mean, stddev):
