@@ -25,7 +25,7 @@ modfication_file_name = '../data/modifications/modifications_P04637.csv'
 fasta_file_name = '../data/fasta_files/P04637.fasta'
 
 # Theoretical average mass of the unmodified species (in Da)
-unmodified_species_mass = utils.mean_of_isotope_distribution(fasta_file_name, 100)
+unmodified_species_mass, stddev_isotope_distribution = utils.mean_and_stddev_of_isotope_distribution(fasta_file_name, 100)
 
 # Set mass range to search for shifts 
 mass_start_range = 43750.0

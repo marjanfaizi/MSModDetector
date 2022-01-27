@@ -57,9 +57,8 @@ for rep in config.replicates:
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
         intensities = mass_shifts_df["y_intensities "+cond+"_"+rep].dropna().values
         
-        stddevs = utils.mapping_mass_to_stddev(masses)
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
-        y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, stddevs)
+        y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
         if config.number_of_conditions > 2:
             axes[order_in_plot].plot(data.masses, data.intensities, label=cond, color=color_of_sample)

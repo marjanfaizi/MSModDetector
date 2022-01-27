@@ -19,11 +19,7 @@ from modifications import Modifications
 import utils
 import config
 
-#file_names = [file for file in glob.glob(config.file_names)] 
-file_names = ['../data/raw_data/P04637\\nutlin_only_rep5.mzml', '../data/raw_data/P04637\\uv_7hr_rep5.mzml',
-              '../data/raw_data/P04637\\xray-nutlin_rep5.mzml', '../data/raw_data/P04637\\xray_2hr_rep5.mzml',
-              '../data/raw_data/P04637\\xray_7hr_rep5.mzml']
-sample_name ='../data/raw_data/P04637\\uv_7hr_rep5.mzml'
+file_names = [file for file in glob.glob(config.file_names)] 
 
 if __name__ == "__main__":
     
@@ -78,8 +74,6 @@ if __name__ == "__main__":
             trimmed_peaks_in_search_window[:,1] = intensities_normalized
             rescaling_factor = max_intensity
 
-
-
             if trimmed_peaks_in_search_window.size:
                 sn_threshold = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
                 parameter.loc[0, cond+"_"+rep] = sn_threshold*rescaling_factor
@@ -89,7 +83,7 @@ if __name__ == "__main__":
                 if trimmed_peaks_above_sn_in_search_window.size:  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-                    gaussian_model = GaussianModel(cond)
+                    gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
 
