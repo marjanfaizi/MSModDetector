@@ -22,7 +22,7 @@ plt.style.use("seaborn-pastel")
 
 mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
 parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
-file_names = [file for file in glob.glob(config.path+config.file_name_ending)] 
+file_names = [file for file in glob.glob(config.file_names)] 
 
 #########################################################################################################################
 ########################### Figure 1-3: Raw I2MS data in comparison to the fitted mass shifts ###########################

@@ -23,7 +23,7 @@ file_names = [file for file in glob.glob(config.file_names)]
 
 if __name__ == "__main__":
     
-    print("\n"+"-"*80)     
+    print("\n"+"-"*63)     
     print("\nLoad files...")
     
     if not file_names:
@@ -95,7 +95,6 @@ if __name__ == "__main__":
             progress_bar_count += 1        
             utils.progress(progress_bar_count, len(file_names))
 
-    print("\n")
     seperator_stdout_text = "\n"
     print(seperator_stdout_text.join(stdout_text))
 
@@ -122,8 +121,7 @@ if __name__ == "__main__":
         parameter.rename(index={0:"noise_level"}, inplace=True)
         parameter.to_csv("../output/parameter.csv", sep=",") 
 
-    print("\n")
-    print(80*"-"+"\n\n")
+    print(63*"-"+"\n\n")
 
 
 
