@@ -21,15 +21,15 @@ fasta_file_entries = []
 fasta_file_object.load(fasta_file_name, fasta_file_entries)    
 
 # Estimate the standard deviation by fitting a Gaussian distribution to the protein's isotopic distribution
-def estimate_stddev_from_isotope_distribution(distribution, average_mass):
-    amplitude_init = 1
-    stddev_init = 5
-    masses = distribution[:,0]
-    intensities = distribution[:,1]
-    optimized_param, _ = optimize.curve_fit(lambda x, amplitude, stddev: utils.gaussian(x, amplitude, average_mass, stddev), 
-                                            masses, intensities, maxfev = 1000,
-                                            p0=[amplitude_init, stddev_init])
-    return optimized_param[0]
+def estimate_stddev_from_isotope_distribution(distribution):
+	masses = distribution[:,0]
+	intensities = distribution[:,1]
+	amplitude_init = intensities.max()
+	mean_init = masses.mean()
+	stddev_init = 2
+	optimized_param, _ = optimize.curve_fit(utils.gaussian, masses, intensities, maxfev=100000,
+                                            bounds=(0, [100, 1e7, 20]) , p0=[amplitude_init, mean_init, stddev_init])
+	return optimized_param[2]
 
 
 isotope_pattern_resolution = 100
@@ -43,14 +43,13 @@ for entry in fasta_file_entries:
     sequence = pyopenms.AASequence.fromString(entry.sequence)
     if "X" in sequence.toString():  
         continue
-        #print(protein_id)
     else:
         distribution = utils.get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution)
         if np.isnan(distribution).any():
             continue
         else:
             average_mass = sequence.getAverageWeight()
-            stddev = estimate_stddev_from_isotope_distribution(distribution, average_mass)
+            stddev = estimate_stddev_from_isotope_distribution(distribution)
             mapping_protein_mass_to_stddev[protein_id] = [average_mass, stddev]
     progess_bar += 1
     utils.progress(progess_bar, len(fasta_file_entries))
@@ -70,9 +69,9 @@ max_val_init = 5
 steepness_init = 1e-5
 midpoint_init = 1e4
 initial_values = [max_val_init, steepness_init, midpoint_init]
-popt_logistic_func = utils.fit_logistic_func(protein_mass_stddev_table.mass, protein_mass_stddev_table.stddev, initial_values)
+#popt_logistic_func = utils.fit_logistic_func(protein_mass_stddev_table.mass, protein_mass_stddev_table.stddev, initial_values)
 
 plt.plot(protein_mass_stddev_table.mass, protein_mass_stddev_table.stddev, '.')
-plt.plot(protein_mass_stddev_table.mass, utils.logistic_func(protein_mass_stddev_table.mass, *popt_logistic_func), '--')
+#plt.plot(protein_mass_stddev_table.mass, utils.logistic_func(protein_mass_stddev_table.mass, *popt_logistic_func), '--')
 plt.show()
 
