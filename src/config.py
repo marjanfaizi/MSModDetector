@@ -41,7 +41,7 @@ pvalue_threshold = 0.1
 
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
-window_size_lb = 0.5
+window_size_lb = 0.2
 window_size_ub = 0.95
 
 # mass error in ppm and converted in Dalton

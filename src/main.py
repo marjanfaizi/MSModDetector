@@ -87,7 +87,13 @@ if __name__ == "__main__":
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
 
+                    print(gaussian_model.fitting_window_sizes)
+
+
                     gaussian_model.filter_fitting_results(config.pvalue_threshold)
+                    
+                    print(gaussian_model.fitting_results.window_sizes)
+                    
                     gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
          
