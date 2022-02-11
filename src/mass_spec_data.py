@@ -71,9 +71,11 @@ class MassSpecData(object):
         return nearest_mass_idx
 
 
-#    def convert_to_relative_intensities(self, max_intensity):
-#        relative_intensities = 100 * self.intensities / max_intensity
-#        self.intensities = relative_intensities
+    def normalize_intensities(self, intensities):
+        max_intensity = intensities.max()
+        intensities_normalized = intensities / max_intensity
+        self.rescaling_factor = max_intensity
+        return intensities_normalized
 
 
     def picking_peaks(self, min_peak_height=None):

@@ -22,14 +22,13 @@ class LinearProgramCVXOPT(object):
                                                                       x_i <= upper_bound_i,
                                                                    -1 * x <= min_number_ptms
 
-
     ptm_mass_shifts is a row vector and x a column vector containing the unknown amounts of each PTM type accounting for the total mass shift.
     The upper bound for each element in x is determined by counting the possible modification sites for a given amino acid sequence.
+   
     A second linear program minimizes the difference between theoretical and observed mass shift:
                                                 min   | ptm_mass_shift * x - observed_mass_shift |
                                                 s.t.                 -x_i <= 0,
-                                                                    1 * x  = max_number_ptms
-                                                                    
+                                                                    1 * x  = max_number_ptms                                                                
                                                                    
     This problem is equivalent to:
                                                 min   1 * error

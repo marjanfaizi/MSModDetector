@@ -24,6 +24,68 @@ mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
 parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
 file_names = [file for file in glob.glob(config.file_names)] 
 
+
+
+
+"""
+#########################################################################################################################
+########################### Figure 1-3: Raw I2MS data in comparison to the fitted mass shifts ###########################
+#########################################################################################################################
+# determine which replicates should be compared
+replicates_to_compare = ["rep5", "rep6"]
+flip_spectrum = [1,-1]
+
+output_fig = plt.figure(figsize=(14,10))
+gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
+axes = gs.subplots(sharex=True, sharey=True)
+ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()
+    
+for cond in config.conditions:  
+    color_of_sample = config.color_palette[cond][0]
+    order_in_plot = config.color_palette[cond][1]
+    
+    for ix, rep in enumerate(replicates_to_compare):
+        file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
+        
+        noise_level = parameter.loc["noise_level", cond+"_"+rep]
+    
+        sample_name = [file for file in file_names_same_replicate if re.search(cond, file)][0]
+        data = MassSpecData(sample_name)
+                
+        masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
+        intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
+        
+        x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
+        y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
+        
+        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities, label=cond, color=color_of_sample)
+        axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
+        axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.3)
+        axes[order_in_plot].legend(fontsize=11, loc='upper right')
+        axes[order_in_plot].yaxis.grid()
+    
+        for avg in mass_shifts_df["average mass"].values:
+            axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
+            axes[order_in_plot].label_outer()
+
+        
+plt.xlim((config.mass_start_range, config.mass_end_range))
+plt.ylim((-ylim_max*1.1, ylim_max*1.1))
+
+plt.xlabel('mass (Da)'); plt.ylabel('intensity (a.u.)')
+output_fig.tight_layout()
+plt.savefig('../output/identified_masses_'+replicates_to_compare[0]+'_'+replicates_to_compare[1]+'.pdf', dpi=800)
+plt.show()
+
+#########################################################################################################################
+#########################################################################################################################
+
+"""
+
+
+
+
 #########################################################################################################################
 ########################### Figure 1-3: Raw I2MS data in comparison to the fitted mass shifts ###########################
 #########################################################################################################################
@@ -34,7 +96,7 @@ for rep in config.replicates:
     output_fig = plt.figure(figsize=(14,7))
     gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
     axes = gs.subplots(sharex=True, sharey=True)
-    ylim_max = mass_shifts_df.filter(regex="y_intensities.*"+rep).max().max()
+    ylim_max = mass_shifts_df.filter(regex="raw intensities.*"+rep).max().max()
         
     for cond in config.conditions:        
         
@@ -55,7 +117,7 @@ for rep in config.replicates:
         data = MassSpecData(sample_name)
                 
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
-        intensities = mass_shifts_df["y_intensities "+cond+"_"+rep].dropna().values
+        intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
         
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
@@ -90,7 +152,7 @@ for rep in config.replicates:
 #########################################################################################################################
 #########################################################################################################################
 
-
+"""
 
 #########################################################################################################################
 ##################### Figure 4: Compare identified mass shifts across all conditions and replicates #####################
@@ -144,13 +206,6 @@ plt.show()
 #########################################################################################################################
 #########################################################################################################################
 
+"""
 
 
-
-# def keep_reproduced_results(self):
-#     keep_masses_indices = np.arange(len(self.identified_masses_df))
-#     for cond in config.conditions:
-#         missing_masses_count = self.identified_masses_df.filter(regex="masses .*"+cond).isnull().sum(axis=1)
-#         keep_masses_indices = np.intersect1d(keep_masses_indices, self.identified_masses_df[missing_masses_count>=2].index)
-        
-#     self.identified_masses_df.drop(index=keep_masses_indices, inplace=True)

@@ -66,38 +66,24 @@ if __name__ == "__main__":
             all_peaks = data.picking_peaks()
             trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
             trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+            trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
 
-            #max_intensity = data.intensities.max()
-            #data.convert_to_relative_intensities(max_intensity)
-            max_intensity = trimmed_peaks_in_search_window[:,1].max()
-            intensities_normalized = trimmed_peaks_in_search_window[:,1] / max_intensity
-            trimmed_peaks_in_search_window[:,1] = intensities_normalized
-            rescaling_factor = max_intensity
 
             if trimmed_peaks_in_search_window.size:
-                sn_threshold = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
-                parameter.loc[0, cond+"_"+rep] = sn_threshold*rescaling_factor
+                noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
+                parameter.loc[0, cond+"_"+rep] = noise_level*data.rescaling_factor
 
-                trimmed_peaks_above_sn_in_search_window = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>sn_threshold]
-
-                if trimmed_peaks_above_sn_in_search_window.size:  
+                if any(trimmed_peaks_in_search_window[:,1]>noise_level):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
-                    gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, trimmed_peaks_above_sn_in_search_window)
-
-                    print(gaussian_model.fitting_window_sizes)
-
-
-                    gaussian_model.filter_fitting_results(config.pvalue_threshold)
-                    
-                    print(gaussian_model.fitting_results.window_sizes)
-                    
-                    gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, sn_threshold)
+                    gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)      
+                    gaussian_model.remove_overlapping_fitting_results()
+                    gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, noise_level)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
          
-                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, rescaling_factor, cond+"_"+rep)
+                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, data.rescaling_factor, cond+"_"+rep)
  
                 else:
                     stdout_text.append("No peaks above the SN threshold could be detected within the search window for the following condition: " + cond + "_" + rep)
@@ -116,7 +102,9 @@ if __name__ == "__main__":
 #        calibration_number_dict = mass_shifts.align_spetra()
 #        parameter = parameter.append(calibration_number_dict, ignore_index=True)
 #        parameter.rename(index={0:"noise_level", 1:"calibration_number"}, inplace=True)
-        mass_shifts.bin_peaks()
+        mass_shifts.calculate_avg_mass()
+        if config.bin_peaks == True:
+            mass_shifts.bin_peaks()
 
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts()
@@ -134,6 +122,4 @@ if __name__ == "__main__":
         parameter.to_csv("../output/parameter.csv", sep=",") 
 
     print(63*"-"+"\n\n")
-
-
 

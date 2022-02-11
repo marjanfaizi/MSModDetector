@@ -6,7 +6,8 @@ import utils
 file_names = '../data/raw_data/P04637/*.mzml'
 
 # list of all replicate names as they are in the file names
-replicates = ['rep1', 'rep5', 'rep6']
+#replicates = ['rep1', 'rep5', 'rep6']
+replicates = ['rep5', 'rep6']
 
 # list of all condition names as they are in the file names
 conditions = ['nutlin_only', 'xray_2hr', 'xray_7hr', 'xray-nutlin', 'uv_7hr']
@@ -29,7 +30,7 @@ unmodified_species_mass, stddev_isotope_distribution = utils.mean_and_stddev_of_
 
 # Set mass range to search for shifts 
 mass_start_range = 43750.0
-mass_end_range = 44650.0
+mass_end_range = 44520.0
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
@@ -42,14 +43,20 @@ pvalue_threshold = 0.1
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
-window_size_ub = 0.95
+window_size_ub = 0.8
+
+# allowed overlap of window sizes that are used for fitting
+allowed_overlap = 0.3
 
 # mass error in ppm and converted in Dalton
-mass_error_ppm = 10
-mass_error_Da = mass_error_ppm*1e-6*unmodified_species_mass
+mass_error_ppm = 20
+
+# This mass tolerance in Da is used as default for the linear programming problem 
+mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
-max_bin_size = 1
+bin_peaks = False
+max_bin_size = 0
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
@@ -57,8 +64,6 @@ distance_threshold_adjacent_peaks = 0.6
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True
 
-# This mass tolerance in Da is used as default for the linear programming problem 
-mass_tolerance = 1 + mass_error_Da
 
 # Set this to be true if the PTM patterns should be determined and reported in the output table
 # Only the PTM pattern with the least amount of PTMs will be selected to be displayed

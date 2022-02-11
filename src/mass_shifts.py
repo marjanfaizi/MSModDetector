@@ -27,15 +27,15 @@ class MassShifts(object):
         self.mass_shifts = []
         self.laps_run_lp = 10
         self.mass_col_name = "masses "
-        self.intensity_col_name = "y_intensities "
+        self.intensity_col_name = "raw intensities "
         self.abundance_col_name = "rel. abundances "
         self.avg_mass_col_name = "average mass"
 
 
     def add_identified_masses_to_df(self, fitting_results, rescaling_factor, column_name):
-        means = fitting_results["means"].values
-        amplitudes = fitting_results["amplitudes"].values*rescaling_factor
-        relative_abundances = fitting_results["relative_abundances"].values
+        means = fitting_results["mean"].values
+        amplitudes = fitting_results["amplitude"].values*rescaling_factor
+        relative_abundances = fitting_results["relative_abundance"].values
         self.identified_masses_df.loc[means.round().astype(int), self.mass_col_name+column_name] = means
         self.identified_masses_df.loc[means.round().astype(int), self.intensity_col_name+column_name] = amplitudes
         self.identified_masses_df.loc[means.round().astype(int), self.abundance_col_name+column_name] = relative_abundances
@@ -70,7 +70,6 @@ class MassShifts(object):
 
 
     def bin_peaks(self):
-        self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(regex=self.mass_col_name).mean(axis=1).values
         max_distances_between_bins = self.identified_masses_df.filter(regex="masses ").max(axis=1).values[1:] - \
                                      self.identified_masses_df.filter(regex="masses ").min(axis=1).values[:-1]  
         
@@ -79,12 +78,16 @@ class MassShifts(object):
             indices_to_combine = np.unravel_index(np.nanargmin(distance_matrix, axis=None), distance_matrix.shape)
             self.identified_masses_df.iloc[indices_to_combine[0]] = self.identified_masses_df.iloc[list(indices_to_combine)].max()
             self.identified_masses_df.iloc[indices_to_combine[1]] = np.nan 
-            self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(regex=self.mass_col_name).mean(axis=1).values
-            self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
-            self.identified_masses_df.reset_index(drop=True, inplace=True)
+            self.identified_masses_df.calculate_avg_mass()
             max_distances_between_bins = self.identified_masses_df.filter(regex="masses ").max(axis=1).values[1:] - \
                                          self.identified_masses_df.filter(regex="masses ").min(axis=1).values[:-1]  
 
+
+
+    def calculate_avg_mass(self):
+        self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(regex=self.mass_col_name).mean(axis=1).values
+        self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
+        self.identified_masses_df.reset_index(drop=True, inplace=True)
 
     def __create_distance_matrix(self, array):
         m, n = np.meshgrid(array, array)
