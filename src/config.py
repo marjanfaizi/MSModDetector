@@ -61,6 +61,14 @@ max_bin_size = 0
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
 
+# Solve optimization k times and report the best k optimal solutions
+laps_run_lp = 10
+
+# Choose between two objective functions: 
+# 1) min_ptm: minimize total amount of PTMs on a single protein
+# 2) min_err: minimize error between observed and inferred mass shift
+objective_fun = "min_err"
+
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True
 

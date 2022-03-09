@@ -18,19 +18,19 @@ class Modifications(object):
     If the mass caused by the PTM is not given in the table it will be taken from the pyopenms class.
     """
     
-    def __init__(self, modfications_file_name):
+    def __init__(self, modfications_file_name, aa_sequence_str):
         self.modifications_table =  pd.read_csv(modfications_file_name, sep=';')
-        self.modifications = self.modifications_table['PTM name'].values.tolist()
-        self.ptm_ids = self.modifications_table['PTM id'].values.tolist()
-        self.default_upper_bound = 20.0
-        self.upper_bounds = self.modifications_table['upper bound'].replace(np.nan, self.default_upper_bound).values.tolist()
-        self.ptm_masses = self.modifications_table['PTM mass'].values.tolist()
+        self.modifications = self.modifications_table["ptm_name"].values.tolist()
+        self.ptm_ids = self.modifications_table["ptm_id"].values.tolist()
+        self.upper_bounds = self.set_upper_bounds(aa_sequence_str)
+        self.ptm_masses = self.modifications_table["ptm_mass"].values.tolist()
 
-    def get_modification_masses(self, mass_type='average'):
-        if mass_type == 'average':
+
+    def get_modification_masses(self, mass_type="average"):
+        if mass_type == "average":
             self.modification_masses = [self.get_average_mass(modification_type) for modification_type in self.modifications]
             
-        elif mass_type == 'monoisotopic':
+        elif mass_type == "monoisotopic":
             self.modification_masses = [self.get_monoisotopic_mass(modification_type) for modification_type in self.modifications]
 
 
@@ -44,3 +44,24 @@ class Modifications(object):
         mod = pyopenms.ModificationsDB().getModification(modification_type)
         monoisotopic_mass = mod.getDiffMonoMass()
         return monoisotopic_mass
+
+
+    def set_upper_bounds(self, aa_sequence_str):
+        default_upper_bound = 20
+        self.modifications_table["upper_bound"].replace(np.nan, default_upper_bound, inplace=True)    
+        for index, row in self.modifications_table.iterrows():
+            sites = row["site"].split(",")
+            aa_occurence_in_protein = np.array([ aa_sequence_str.count(aa)for aa in sites ]).sum() 
+            if row["upper_bound"] > aa_occurence_in_protein:
+                self.modifications_table.loc[index, "upper_bound"] = aa_occurence_in_protein
+              
+        upper_bounds = self.modifications_table["upper_bound"].values.tolist()  
+        return upper_bounds
+        
+
+    
+    
+    
+    
+    
+    

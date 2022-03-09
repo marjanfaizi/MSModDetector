@@ -123,7 +123,7 @@ for rep in config.replicates:
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
         if config.number_of_conditions > 2:
-            axes[order_in_plot].plot(data.masses, data.intensities, label=cond, color=color_of_sample)
+            axes[order_in_plot].plot(data.masses, data.intensities,label=cond, color=color_of_sample)
             axes[order_in_plot].plot(masses, intensities, '.', color='0.3')
             axes[order_in_plot].plot(x_gauss_func, y_gauss_func, color='0.3')
             axes[order_in_plot].axhline(y=noise_level, c='r', lw=0.3)
@@ -135,7 +135,7 @@ for rep in config.replicates:
                 axes[order_in_plot].label_outer()
                 
         else:
-            axes.plot(data.masses, data.intensities, label=cond, color=color_of_sample)
+            axes.plot(data.masses, data.intensities,label=cond, color=color_of_sample)
             axes.plot(masses, intensities, '.', color='0.3')
             axes.plot(x_gauss_func, y_gauss_func, color='0.3')
             axes.axhline(y=noise_level, c='r', lw=0.3)

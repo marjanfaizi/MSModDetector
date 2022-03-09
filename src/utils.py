@@ -19,6 +19,10 @@ sns.set_context("paper", font_scale=1.2)
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-0.5*((x - mean) / stddev)**2)
     
+
+def integral_of_gaussian(amplitude, stddev):
+    return np.sqrt(2*np.pi)*amplitude*stddev
+
     
 def multi_gaussian(x, amplitude, mean, stddev):
     y = np.zeros(len(x))
@@ -49,11 +53,7 @@ def progress(count, total, status=''):
 
 
 def mean_and_stddev_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
-    entries = []
-    fasta_file = pyopenms.FASTAFile()
-    fasta_file.load(fasta_file_name, entries)
-    for e in entries:
-        protein_sequence = e.sequence
+    protein_sequence = read_fasta(fasta_file_name)
 
     distribution =  get_theoretical_isotope_distribution(pyopenms.AASequence.fromString(protein_sequence), 
                                                          isotope_pattern_resolution)
@@ -73,10 +73,24 @@ def mean_and_stddev_of_isotope_distribution(fasta_file_name, isotope_pattern_res
     return mean, stddev
 
 
-def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution):
-    molecular_formula = sequence.getFormula()
-    isotope_pattern_generator = pyopenms.CoarseIsotopePatternGenerator(isotope_pattern_resolution) 
+def read_fasta(fasta_file_name):
+    entries = []
+    fasta_file = pyopenms.FASTAFile()
+    fasta_file.load(fasta_file_name, entries)
+    for e in entries:
+        protein_sequence = e.sequence
+    return protein_sequence
+
+
+def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution, modus="coarse"):
+    molecular_formula = sequence.getFormula()       
+    if modus == "fine":
+        isotope_pattern_generator = pyopenms.FineIsotopePatternGenerator(isotope_pattern_resolution) 
+    else:
+        isotope_pattern_generator = pyopenms.CoarseIsotopePatternGenerator(isotope_pattern_resolution) 
+    
     isotopes = molecular_formula.getIsotopeDistribution(isotope_pattern_generator)
+    
     isotopes_aslist = []
     for iso in isotopes.getContainer():
         mass = iso.getMZ()

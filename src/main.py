@@ -30,7 +30,8 @@ if __name__ == "__main__":
         print("\nFiles do not exist.\n")
         sys.exit()
     
-    mod = Modifications(config.modfication_file_name)
+    aa_sequence_str = utils.read_fasta(config.fasta_file_name)
+    mod = Modifications(config.modfication_file_name, aa_sequence_str)
 
     mass_shifts = MassShifts()
     
@@ -112,7 +113,7 @@ if __name__ == "__main__":
         if config.determine_ptm_patterns == True:
             print("\nSearching for PTM combinations:")
 
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance)        
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.save_table(mass_shifts.ptm_patterns_df, "../output/ptm_patterns_table.csv")
             

@@ -156,16 +156,9 @@ class GaussianModel(object):
 
     
     def calculate_relative_abundaces(self, start_mass, end_mass):
-        x_values = np.arange(start_mass, end_mass)
-        total_protein_abundance = np.trapz(utils.multi_gaussian(x_values, self.fitting_results["amplitude"], self.fitting_results["mean"], 
-                                                                self.stddev), x=x_values)
-        relative_abundances = []
-        for index, row in self.fitting_results.iterrows():
-            species_abundance = np.trapz(utils.gaussian(x_values, row["amplitude"], row["mean"], self.stddev), x=x_values)
-            relative_abundances.append(species_abundance/total_protein_abundance)
+        abundances = utils.integral_of_gaussian(self.fitting_results["amplitude"].values, self.stddev)
+        total_protein_abundance = sum(abundances)
+        self.fitting_results["relative_abundance"] = abundances/total_protein_abundance
 
-        self.fitting_results["relative_abundance"] = relative_abundances
-    
-    
-    
-    
+
+
