@@ -129,11 +129,11 @@ for rep in config.replicates:
             axes[order_in_plot].axhline(y=noise_level, c='r', lw=0.3)
             axes[order_in_plot].legend(fontsize=11, loc='upper right')
             axes[order_in_plot].yaxis.grid()
-
+            """
             for avg in mass_shifts_df["average mass"].values:
                 axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
                 axes[order_in_plot].label_outer()
-                
+            """              
         else:
             axes.plot(data.masses, data.intensities,label=cond, color=color_of_sample)
             axes.plot(masses, intensities, '.', color='0.3')
@@ -143,7 +143,7 @@ for rep in config.replicates:
             axes.yaxis.grid()
         
     plt.xlim((config.mass_start_range, config.mass_end_range))
-    plt.ylim((-10, ylim_max*1.1))
+    plt.ylim((-10, ylim_max*1.2))
 
     plt.xlabel('mass (Da)'); plt.ylabel('intensity (a.u.)')
     output_fig.tight_layout()

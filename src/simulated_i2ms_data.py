@@ -6,7 +6,7 @@ Created on Tue Dec 14 2021
 @author: Marjan Faizi
 """
 
-from brainpy import isotopic_variants
+#from brainpy import isotopic_variants
 import pyopenms
 from matplotlib import pyplot as plt
 import numpy as np
@@ -57,19 +57,17 @@ def create_modified_seqeunce(modform, modifications_table, aa_sequence_str):
         mod_pos_dict.update(dict(zip(selected_pos, [unimod_id]*int(mod_amount[ix]))))
         
     unimod_pos_dict = dict(sorted(mod_pos_dict.items()))
-
     modified_sequence_str = str()
     unimod_ids = list(unimod_pos_dict.values())
     for ix, pos in enumerate(unimod_pos_dict):
         if ix == 0:      
-            pos_next = list(unimod_pos_dict)[ix+1]
-            modified_sequence_str += aa_sequence_str[:pos+1] + "(UniMod:" + str(unimod_ids[ix]) + ")" + aa_sequence_str[pos+1:pos_next+1]
-        elif ix == len(unimod_pos_dict)-1:
-            modified_sequence_str += "(UniMod:" + str(unimod_ids[ix]) + ")"  + aa_sequence_str[pos+1:]   
+            modified_sequence_str += aa_sequence_str[:pos+1]            
+        modified_sequence_str += "(UniMod:" + str(unimod_ids[ix]) + ")"         
+        if ix == len(unimod_pos_dict)-1:
+            modified_sequence_str += aa_sequence_str[pos+1:]
         else:
             pos_next = list(unimod_pos_dict)[ix+1]
-            modified_sequence_str += "(UniMod:" + str(unimod_ids[ix]) + ")" + aa_sequence_str[pos+1:pos_next+1]
-            
+            modified_sequence_str += aa_sequence_str[pos+1:pos_next+1]
     return modified_sequence_str
 
     
@@ -90,15 +88,59 @@ def determine_mass_spectrum_range(unmodified_species_distribution, max_mass_shif
 isotopic_distribution_p53 = seq_str_to_isotopic_dist(aa_sequence_str, 100)
 mass_spectrum = determine_mass_spectrum_range(isotopic_distribution_p53, 800.0, 0.02)
 
+spectrum = np.array([]).reshape(0,2)
+for index, row in modform_distribution.iterrows():
+    modified_sequence_str = create_modified_seqeunce(row["modform"], modifications_table, aa_sequence_str)
+    isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
+    scaling_factor = row["relative intensity"]/isotopic_distribution_mod[:,1].max()
+    isotopic_distribution_mod *= scaling_factor
+    
+    mass_grid = np.arange(spectrum[0,0], spectrum[-1,0], 0.02)
+    intensity = np.zeros(mass_grid.shape)
+    sigma = 0.02
+    for peak in isotopic_distribution_mod:
+        # Add gaussian peak shape centered around each theoretical peak
+        intensity += peak[1] * np.exp(-(mass_grid - peak[0]) ** 2 / (2 * sigma)
+                ) / (np.sqrt(2 * np.pi) * sigma)
+ 
+    ### TODO: combine all results into one array
+    spectrum = np.vstack((spectrum, isotopic_distribution_mod))
 
 #####################
 
+masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
+spectrum = spectrum[masses_sorted_ix]
+mz_grid = np.arange(spectrum[0,0] - 1,
+                    spectrum[-1,0] + 1, 0.02)
+intensity = np.zeros(mz_grid.shape)
+
+noise_mean = spectrum[:,1].mean()
+noise_std = spectrum[:,1].std()/2
+noise = np.random.normal(noise_mean/4, noise_std/4, size=spectrum.shape[0])
+spectrum[:,1]+=noise
+spectrum[:,1] = np.abs(spectrum[:,1])
+
+
+sigma = 0.02
+for peak in spectrum:
+    # Add gaussian peak shape centered around each theoretical peak
+    intensity += peak[1] * np.exp(-(mz_grid - peak[0]) ** 2 / (2 * sigma)
+            ) / (np.sqrt(2 * np.pi) * sigma)
+
+# Normalize profile to 0-100
+intensity = (intensity / intensity.max()) * 100
+
+plt.plot(mz_grid, intensity, "g.-")
+plt.xlabel("mass (Da)")
+plt.ylabel("relative intensity (%)")
+plt.show()
+
+#####################
+
+
+
+
 modform = modform_distribution.loc[12, "modform"]
-
-for index, row in modform_distribution.iterrows():
-    print(row)
-
-
 modified_sequence_str = create_modified_seqeunce(modform, modifications_table, aa_sequence_str)
 isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
 
@@ -109,7 +151,7 @@ intensity = np.zeros(mz_grid.shape)
 
 noise_mean = isotopic_distribution_mod[:,1].mean()
 noise_std = isotopic_distribution_mod[:,1].std()/2
-noise = np.random.normal(noise_mean, noise_mean, size=isotopic_distribution_mod.shape[0])
+noise = np.random.normal(noise_mean/4, noise_std/4, size=isotopic_distribution_mod.shape[0])
 isotopic_distribution_mod[:,1]+=noise
 isotopic_distribution_mod[:,1] = np.abs(isotopic_distribution_mod[:,1])
 
@@ -126,8 +168,7 @@ intensity = (intensity / intensity.max()) * 100
 
 
 
-#plt.plot(isotopic_distribution_p53[:,0], isotopic_distribution_p53[:,1]*50, "r.-")
-#plt.plot(isotopic_distribution_mod[:,0], isotopic_distribution_mod[:,1]*50, "b.-")
+plt.plot(isotopic_distribution_mod[:,0], isotopic_distribution_mod[:,1]*50, "b.-")
 plt.plot(mz_grid, intensity, "g.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("relative intensity (%)")
@@ -147,7 +188,7 @@ data = MassSpecData(file_name)
 
 plt.figure(figsize=(7,3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(mz_grid+1.5, intensity*2, "g.-")
+plt.plot(mz_grid+1.5, intensity*16, "g.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((3500,55000))
@@ -178,6 +219,9 @@ y =np.sin(x1)+sigma * np.random.normal(size=nsample)
 fig, ax = plt.subplots()
 ax.plot(x1, y, label="Data")
 
+
+
+"""
 ############################################# SONSTIGES #############################################
 aa_sequence = pyopenms.AASequence.fromString(aa_sequence_str)
 aa_sequence.getFormula()
@@ -214,4 +258,4 @@ plt.ylabel("relative intensity (%)")
 
 
 #####################################################################################################
-
+"""
