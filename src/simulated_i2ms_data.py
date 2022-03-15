@@ -11,9 +11,11 @@ import pyopenms
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy import optimize
 import re
 import random
 import utils 
+import config
 
 
 #####################################################################################################
@@ -37,6 +39,57 @@ modform_distribution["relative intensity"] = modform_distribution["intensity"]/m
         
 #####################################################################################################
 #####################################################################################################
+
+
+#####################################################################################################
+################### Analyzing horizontal and vertical error in experimental data ####################
+#####################################################################################################
+from mass_spec_data import MassSpecData
+sample_name = "xray_7hr_rep5"
+file_name = "../data/raw_data/P04637/" + sample_name + ".mzml"
+data = MassSpecData(file_name)
+data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
+data_in_search_window = data.determine_search_window(data.raw_spectrum)
+peaks_only = data_in_search_window.picking_peaks()
+trimmed_peaks = data.remove_adjacent_peaks(peaks_only, config.distance_threshold_adjacent_peaks)   
+trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+
+#intensity = np.zeros(data_in_search_window.shape[0])
+sigmas = []
+for peak in trimmed_peaks_in_search_window:
+    window_size = 0.5
+    selected_region_ix = np.argwhere((data_in_search_window[:,0]<=peak[0]+window_size) & (data_in_search_window[:,0]>=peak[1]-window_size))[:,0]
+    selected_region = data_in_search_window[selected_region_ix]         
+    sigma_init = 0.2
+    optimized_param, _ = optimize.curve_fit(lambda x, sigma: utils.gaussian(x, peak[1], peak[0], sigma), 
+                                            selected_region[:,0], selected_region[:,1], maxfev=100000,
+                                            p0=[sigma_init], bounds=(0, 0.3))
+    sigma = optimized_param[0]
+    sigmas.append(sigma)
+#    intensity += peak[1] *  np.exp(-0.5*((data_in_search_window[:,0] -  peak[0]) / sigma)**2)
+
+
+sigmas= np.sort(sigmas[sigmas<0.29])
+plt.hist(sigmas, bins=100) # plotting histogram 
+plt.plot(sigmas, utils.gaussian(sigmas, 30, sigmas.mean(), sigmas.std()), "r.-") #plotting normal curve 
+plt.show() 
+
+
+plt.figure(figsize=(7,3))
+plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
+#plt.plot(data_in_search_window[:,0], intensity, "g.-")
+plt.xlabel("mass (Da)")
+plt.ylabel("intensity (a.u.)")
+plt.xlim((3500,55000))
+plt.ylim(ymin=-200)
+plt.tight_layout()
+
+plt.show()
+
+
+#####################################################################################################
+#####################################################################################################
+
 
 
 #####################################################################################################
@@ -88,107 +141,41 @@ def determine_mass_spectrum_range(unmodified_species_distribution, max_mass_shif
 isotopic_distribution_p53 = seq_str_to_isotopic_dist(aa_sequence_str, 100)
 mass_spectrum = determine_mass_spectrum_range(isotopic_distribution_p53, 800.0, 0.02)
 
+# create theoretical isotopic pattern for each modform in the theoretical modform distribution
 spectrum = np.array([]).reshape(0,2)
 for index, row in modform_distribution.iterrows():
     modified_sequence_str = create_modified_seqeunce(row["modform"], modifications_table, aa_sequence_str)
     isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
     scaling_factor = row["relative intensity"]/isotopic_distribution_mod[:,1].max()
-    isotopic_distribution_mod *= scaling_factor
-    
-    mass_grid = np.arange(spectrum[0,0], spectrum[-1,0], 0.02)
-    intensity = np.zeros(mass_grid.shape)
-    sigma = 0.02
-    for peak in isotopic_distribution_mod:
-        # Add gaussian peak shape centered around each theoretical peak
-        intensity += peak[1] * np.exp(-(mass_grid - peak[0]) ** 2 / (2 * sigma)
-                ) / (np.sqrt(2 * np.pi) * sigma)
- 
-    ### TODO: combine all results into one array
+    isotopic_distribution_mod[:,1] *= scaling_factor    
+    noise_mean = isotopic_distribution_mod[:,1].mean()
+    noise_std = isotopic_distribution_mod[:,1].std()/4
+    noise = np.random.normal(noise_mean, noise_std, size=isotopic_distribution_mod.shape[0])
+    isotopic_distribution_mod[:,1] += noise
+    #isotopic_distribution_mod[:,1] =  np.abs(isotopic_distribution_mod[:,1])
+    isotopic_distribution_mod[isotopic_distribution_mod[:,1]<0,1] = 0
     spectrum = np.vstack((spectrum, isotopic_distribution_mod))
-
-#####################
 
 masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
 spectrum = spectrum[masses_sorted_ix]
-mz_grid = np.arange(spectrum[0,0] - 1,
-                    spectrum[-1,0] + 1, 0.02)
-intensity = np.zeros(mz_grid.shape)
 
-noise_mean = spectrum[:,1].mean()
-noise_std = spectrum[:,1].std()/2
-noise = np.random.normal(noise_mean/4, noise_std/4, size=spectrum.shape[0])
-spectrum[:,1]+=noise
-spectrum[:,1] = np.abs(spectrum[:,1])
-
-
-sigma = 0.02
+mass_grid = np.arange(spectrum[0,0], spectrum[-1,0], 0.02)
+intensity = np.zeros(mass_spectrum.shape)
+sigma = 0.22
 for peak in spectrum:
     # Add gaussian peak shape centered around each theoretical peak
-    intensity += peak[1] * np.exp(-(mz_grid - peak[0]) ** 2 / (2 * sigma)
-            ) / (np.sqrt(2 * np.pi) * sigma)
+    intensity += peak[1] *  np.exp(-0.5*((mass_spectrum -  peak[0]) / sigma)**2)
 
-# Normalize profile to 0-100
-intensity = (intensity / intensity.max()) * 100
-
-plt.plot(mz_grid, intensity, "g.-")
-plt.xlabel("mass (Da)")
-plt.ylabel("relative intensity (%)")
-plt.show()
-
-#####################
-
-
-
-
-modform = modform_distribution.loc[12, "modform"]
-modified_sequence_str = create_modified_seqeunce(modform, modifications_table, aa_sequence_str)
-isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
-
-
-mz_grid = np.arange(isotopic_distribution_mod[0,0] - 1,
-                    isotopic_distribution_mod[-1,0] + 1, 0.02)
-intensity = np.zeros(mz_grid.shape)
-
-noise_mean = isotopic_distribution_mod[:,1].mean()
-noise_std = isotopic_distribution_mod[:,1].std()/2
-noise = np.random.normal(noise_mean/4, noise_std/4, size=isotopic_distribution_mod.shape[0])
-isotopic_distribution_mod[:,1]+=noise
-isotopic_distribution_mod[:,1] = np.abs(isotopic_distribution_mod[:,1])
-
-
-sigma = 0.02
-for peak in isotopic_distribution_mod:
-    # Add gaussian peak shape centered around each theoretical peak
-    intensity += peak[1] * np.exp(-(mz_grid - peak[0]) ** 2 / (2 * sigma)
-            ) / (np.sqrt(2 * np.pi) * sigma)
-
-# Normalize profile to 0-100
-intensity = (intensity / intensity.max()) * 100
-
-
-
-
-plt.plot(isotopic_distribution_mod[:,0], isotopic_distribution_mod[:,1]*50, "b.-")
-plt.plot(mz_grid, intensity, "g.-")
-plt.xlabel("mass (Da)")
-plt.ylabel("relative intensity (%)")
-plt.show()
-
-# create theoretical isotopic pattern for each modform in the theoretical modform distribution
-
+##############################
+# TODOS
 # create basal noise level
-
+# alles was negative ist nicht abs sondern vllt einfach auf null setzen
 # combine all isotopic patterns and noise level into one spectrum
-
-# add horizontal and vertical noise 
-from mass_spec_data import MassSpecData
-sample_name = "xray_7hr_rep5"
-file_name = "../data/raw_data/P04637/" + sample_name + ".mzml"
-data = MassSpecData(file_name)
+# add horizontal and vertical noise (überlegen wieviel, was koennte mean und std in beide richtungen sein)
 
 plt.figure(figsize=(7,3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(mz_grid+1.5, intensity*16, "g.-")
+plt.plot(mass_spectrum-0.25, intensity*5000, "g.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((3500,55000))
@@ -197,27 +184,10 @@ plt.tight_layout()
 
 plt.show()
 
+
 #####################################################################################################
 #####################################################################################################
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-nsample = 1024
-## simulate a simple sinusoidal function
-x1 = np.linspace(0, 100, nsample)
-y=np.sin(x1)
-
-sigma = 0.3
-y =sigma * np.random.normal(size=nsample)
-fig, ax = plt.subplots()
-ax.plot(x1, y, label="Data")
-
-sigma = 0.3
-y =np.sin(x1)+sigma * np.random.normal(size=nsample)
-fig, ax = plt.subplots()
-ax.plot(x1, y, label="Data")
 
 
 
