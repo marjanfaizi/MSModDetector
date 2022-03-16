@@ -37,7 +37,6 @@ modifications_table =  pd.read_csv('../data/modifications/modifications_P04637.c
 
 modform_distribution =  pd.read_csv('../data/modifications/modform_distribution.csv', sep=';')
 modform_distribution["relative intensity"] = modform_distribution["intensity"]/modform_distribution["intensity"].sum()
-        
 #####################################################################################################
 #####################################################################################################
 
@@ -47,12 +46,12 @@ modform_distribution["relative intensity"] = modform_distribution["intensity"]/m
 #####################################################################################################
 sample_name = "xray_7hr_rep5"
 file_name = "../data/raw_data/P04637/" + sample_name + ".mzml"
-data = MassSpecData(file_name)       
+data = MassSpecData(file_name)     
+data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)   
 data_in_search_window = data.determine_search_window(data.raw_spectrum)    
 all_peaks = data.picking_peaks()
 trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
 trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
-trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
 
 #intensity = np.zeros(data_in_search_window.shape[0])
 sigmas = []
@@ -68,12 +67,13 @@ for peak in trimmed_peaks_in_search_window:
     sigmas.append(sigma)
 #    intensity += peak[1] *  np.exp(-0.5*((data_in_search_window[:,0] -  peak[0]) / sigma)**2)
 
+sigmas = np.sort(sigmas)
+sigmas = sigmas[sigmas<0.49]
+
 """
 plt.plot(trimmed_peaks_in_search_window[:,0], sigmas, "r.") 
 plt.show() 
 
-sigmas = np.sort(sigmas)
-sigmas = sigmas[sigmas<0.49]
 plt.hist(sigmas, bins=100)
 plt.plot(sigmas, utils.gaussian(sigmas, 20, sigmas.mean(), sigmas.std()), "r.-") 
 plt.show() 
@@ -98,31 +98,28 @@ plt.hist(dist, bins=20)
 plt.plot(dist, utils.gaussian(dist, 80, dist.mean(), dist.std()), "r.-") 
 """
 
+trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
 noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
 gaussian_model = GaussianModel("xray_7hr", config.stddev_isotope_distribution)
 gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
 gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)
+gaussian_model.remove_overlapping_fitting_results()
 gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, noise_level)
 
-#TODOs: 
-#   - should I include remove overlapping for better fit?
-#   - calulate distance from function to data point
-#   - how are the distances distributed, calculate mean and std if it is gaussian distributed 
-#   - for all fits normalize data and use normal distribution for fit (no amplitude needed)
-#   - include vertical error to simulated data 
+start_ix = np.abs(trimmed_peaks_in_search_window[:,0]-43745).argmin()
+end_ix = np.abs(trimmed_peaks_in_search_window[:,0]-43805).argmin()
+trimmed_peaks_in_search_window[start_ix:end_ix+1,0]
 
-x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
-y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], config.stddev_isotope_distribution)
+x_gauss_func = trimmed_peaks_in_search_window[start_ix:end_ix+1,0]
+y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
 
-plt.figure(figsize=(7,3))
-plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(x_gauss_func, y_gauss_func*data.rescaling_factor, "g-")
-plt.xlabel("mass (Da)")
-plt.ylabel("intensity (a.u.)")
-plt.xlim((3500,55000))
-plt.ylim(ymin=-200)
-plt.tight_layout()
-plt.show()
+vertical_error = y_gauss_func - trimmed_peaks_in_search_window[start_ix:end_ix+1,1]
+vertical_error = np.sort(vertical_error)
+
+"""
+plt.hist(vertical_error, bins=50)
+plt.plot(vertical_error, utils.gaussian(vertical_error, 5, vertical_error.mean(), vertical_error.std()), "r.-") 
+"""
 
 #####################################################################################################
 #####################################################################################################
@@ -176,7 +173,7 @@ def determine_mass_spectrum_range(unmodified_species_distribution, max_mass_shif
 
 
 isotopic_distribution_p53 = seq_str_to_isotopic_dist(aa_sequence_str, 100)
-mass_spectrum = determine_mass_spectrum_range(isotopic_distribution_p53, 800.0, 0.02)
+masses = determine_mass_spectrum_range(isotopic_distribution_p53, 800.0, 0.02)
 
 # create theoretical isotopic pattern for each modform in the theoretical modform distribution
 spectrum = np.array([]).reshape(0,2)
@@ -185,16 +182,13 @@ for index, row in modform_distribution.iterrows():
     isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
     scaling_factor = row["relative intensity"]/isotopic_distribution_mod[:,1].max()
     isotopic_distribution_mod[:,1] *= scaling_factor    
-    noise_mean = isotopic_distribution_mod[:,1].mean()
-    noise_std = isotopic_distribution_mod[:,1].std()/4
-    #TODO: include hier vertical error
-    noise = np.random.normal(noise_mean, noise_std, size=isotopic_distribution_mod.shape[0])
+    noise = np.random.normal(vertical_error.mean(), vertical_error.std()/4, size=isotopic_distribution_mod.shape[0])
     isotopic_distribution_mod[:,1] += noise
     #isotopic_distribution_mod[:,1] = np.abs(isotopic_distribution_mod[:,1])
     isotopic_distribution_mod[isotopic_distribution_mod[:,1]<0,1] = 0
 
     for index, val in enumerate(isotopic_distribution_mod):
-        horizontal_error = random.gauss(dist.mean(), dist.std())-dist.mean()
+        horizontal_error = random.gauss(dist.mean(), dist.std()/2)-dist.mean()
         isotopic_distribution_mod[index, 0] = val[0]+horizontal_error
     
     spectrum = np.vstack((spectrum, isotopic_distribution_mod))
@@ -202,18 +196,17 @@ for index, row in modform_distribution.iterrows():
 masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
 spectrum = spectrum[masses_sorted_ix]
 
-mass_grid = np.arange(spectrum[0,0], spectrum[-1,0], 0.02)
-intensity = np.zeros(mass_spectrum.shape)
+intensities = np.zeros(masses.shape)
 
 for peak in spectrum:
     sigma = random.gauss(sigmas.mean(), sigmas.std())
     # Add gaussian peak shape centered around each theoretical peak
-    intensity += peak[1] * np.exp(-0.5*((mass_spectrum - peak[0]) / sigma)**2)
+    intensities += peak[1] * np.exp(-0.5*((masses - peak[0]) / sigma)**2)
 
 
 plt.figure(figsize=(7,3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(mass_spectrum, intensity*2000, "g.-")
+plt.plot(masses, intensities*2000, "g.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((3500,55000))
@@ -225,6 +218,14 @@ plt.show()
 #####################################################################################################
 
 
+#####################################################################################################
+################################## Save mass spectrum as csv file ###################################
+#####################################################################################################
+
+mass_spectrum = pd.DataFrame({"mass" : masses, "intensity" : intensities})
+mass_spectrum.to_csv("../data/simulated_data_rep1.csv", index=False, header=False)
+#####################################################################################################
+#####################################################################################################
 
 
 """

@@ -137,7 +137,7 @@ class GaussianModel(object):
     
     def refit_amplitudes(self, peaks, noise_level):
         masses = peaks[:,0]; intensities = peaks[:,1]
-        if not self.fitting_results.empty: 
+        if not self.fitting_results.empty:
             refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
                                                          x0=self.fitting_results["amplitude"].values, 
                                                          args=(self.fitting_results["mean"].values, self.stddev, masses, intensities))
