@@ -28,7 +28,7 @@ fasta_file_name = '../data/fasta_files/P04637.fasta'
 unmodified_species_mass, stddev_isotope_distribution = utils.mean_and_stddev_of_isotope_distribution(fasta_file_name, 100)
 
 # Set mass range to search for shifts 
-mass_start_range = 43750.0
+mass_start_range = 43600.0
 mass_end_range = 44520.0
 
 # The standard deviation of the data points within the search window determine the noise level
@@ -45,7 +45,7 @@ window_size_lb = 0.2
 window_size_ub = 0.8
 
 # allowed overlap of window sizes that are used for fitting
-allowed_overlap = 0.3
+allowed_overlap = 0.5
 
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 20

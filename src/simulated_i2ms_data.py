@@ -25,18 +25,7 @@ from gaussian_model import GaussianModel
 #####################################################################################################
 aa_sequence_str = utils.read_fasta('../data/fasta_files/P04637.fasta')
 modifications_table =  pd.read_csv('../data/modifications/modifications_P04637.csv', sep=';')
-
-#####################################################################################################
-#####################################################################################################
-
-
-
-#####################################################################################################
-################################# Generate theoretical distribution #################################
-#####################################################################################################
-
 modform_distribution =  pd.read_csv('../data/modifications/modform_distribution.csv', sep=';')
-modform_distribution["relative intensity"] = modform_distribution["intensity"]/modform_distribution["intensity"].sum()
 #####################################################################################################
 #####################################################################################################
 
@@ -182,14 +171,14 @@ for index, row in modform_distribution.iterrows():
     isotopic_distribution_mod = seq_str_to_isotopic_dist(modified_sequence_str, 100)
     scaling_factor = row["relative intensity"]/isotopic_distribution_mod[:,1].max()
     isotopic_distribution_mod[:,1] *= scaling_factor    
-    noise = np.random.normal(vertical_error.mean(), vertical_error.std()/4, size=isotopic_distribution_mod.shape[0])
-    isotopic_distribution_mod[:,1] += noise
+#    noise = np.random.normal(vertical_error.mean(), vertical_error.std()/4, size=isotopic_distribution_mod.shape[0])
+#    isotopic_distribution_mod[:,1] += noise
     #isotopic_distribution_mod[:,1] = np.abs(isotopic_distribution_mod[:,1])
-    isotopic_distribution_mod[isotopic_distribution_mod[:,1]<0,1] = 0
+#    isotopic_distribution_mod[isotopic_distribution_mod[:,1]<0,1] = 0
 
-    for index, val in enumerate(isotopic_distribution_mod):
-        horizontal_error = random.gauss(dist.mean(), dist.std()/2)-dist.mean()
-        isotopic_distribution_mod[index, 0] = val[0]+horizontal_error
+#    for index, val in enumerate(isotopic_distribution_mod):
+#        horizontal_error = random.gauss(dist.mean(), dist.std()/2)-dist.mean()
+#        isotopic_distribution_mod[index, 0] = val[0]+horizontal_error
     
     spectrum = np.vstack((spectrum, isotopic_distribution_mod))
 
@@ -199,14 +188,15 @@ spectrum = spectrum[masses_sorted_ix]
 intensities = np.zeros(masses.shape)
 
 for peak in spectrum:
-    sigma = random.gauss(sigmas.mean(), sigmas.std())
+#    sigma = random.gauss(sigmas.mean(), sigmas.std())
+    sigma = sigmas.mean()
     # Add gaussian peak shape centered around each theoretical peak
     intensities += peak[1] * np.exp(-0.5*((masses - peak[0]) / sigma)**2)
 
 
 plt.figure(figsize=(7,3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(masses, intensities*2000, "g.-")
+plt.plot(masses, intensities, "g.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((3500,55000))
@@ -264,5 +254,21 @@ plt.xlabel("mass (Da)")
 plt.ylabel("relative intensity (%)")
 
 
+
+masses = []
+for ix, row in modform_distribution.iterrows():
+    modform = row["modform"]
+    mod_type =  re.findall(r'\[(.*?)\]', modform)
+    mod_amount = re.findall(r'\d+', modform)
+    print(mod_type)
+    mass = 0
+    for ix, m in enumerate(mod_type):
+        print(modifications_table[modifications_table["ptm_id"] == m].ptm_mass.values[0])
+        print(type(mod_amount[ix]))
+        mass += modifications_table[modifications_table["ptm_id"] == m].ptm_mass.values[0] * int(mod_amount[ix])
+    masses.append(mass)
+
+modform_distribution["mass"] = masses
+modform_distribution.to_csv('../data/modifications/modform_distribution.csv', index=False)
 #####################################################################################################
 """

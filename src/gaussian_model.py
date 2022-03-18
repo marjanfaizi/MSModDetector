@@ -49,13 +49,25 @@ class GaussianModel(object):
                     sample_size = selected_region.shape[0]          
                 
                     if sample_size >= self.sample_size_threshold:
+                        """
                         fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]
                         chi_square_result = self.chi_square_test(selected_region, fitted_amplitude, mass)
+                        """
+                        optimized_param = self.fit_gaussian(selected_region)
+                        fitted_amplitude = optimized_param[0]
+                        fitted_mean = optimized_param[1]
+                        chi_square_result = self.chi_square_test(selected_region, fitted_amplitude, fitted_mean)
+                                            
                         pvalue = chi_square_result.pvalue
                         chi_score = chi_square_result.statistic
-
+                        """
                         self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, "mean": mass, "amplitude": fitted_amplitude, 
                                                                             "chi_score": chi_score, "p_value": pvalue, "window_size": window_size}, ignore_index=True)
+                        """
+                        self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, "mean": fitted_mean, "amplitude": fitted_amplitude, 
+                                                                            "chi_score": chi_score, "p_value": pvalue, "window_size": window_size}, ignore_index=True)
+                       
+
 
         idxmax_pvalue = self.fitting_results.groupby("mean")["p_value"].idxmax().tolist()
         
@@ -138,7 +150,7 @@ class GaussianModel(object):
     def refit_amplitudes(self, peaks, noise_level):
         masses = peaks[:,0]; intensities = peaks[:,1]
         if not self.fitting_results.empty:
-            refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, np.inf),
+            refitted_amplitudes = optimize.least_squares(self.__error_func, bounds=(0, 100),
                                                          x0=self.fitting_results["amplitude"].values, 
                                                          args=(self.fitting_results["mean"].values, self.stddev, masses, intensities))
             ix_reduced_fitting_results = []
