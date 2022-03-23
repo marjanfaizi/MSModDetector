@@ -92,9 +92,10 @@ plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", line
 #plt.plot(trimmed_peaks_in_search_window[:,0], trimmed_peaks_in_search_window[:,1]*data.rescaling_factor, 'b.')
 plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
 plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'y.')
+plt.plot(data.raw_spectrum[:,0],yt_mean*data.rescaling_factor, 'g-')
 plt.plot(x_gauss_func, y_gauss_func_pred, 'y-')
 plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["relative intensity"], 'r.')
-plt.plot(x_gauss_func, y_gauss_func, "r-")
+#plt.plot(x_gauss_func, y_gauss_func, "r-")
 plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
@@ -105,9 +106,28 @@ plt.show()
 
 
 
+from scipy import optimize
+
+def error_func(mean, amplitude, stddev, x, y):
+    return utils.multi_gaussian(x, amplitude, mean, stddev) - y 
 
 
-optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.multi_gaussian(x, amplitude, mean, config.stddev_isotope_distribution), 
-                                        masses, intensities, maxfev=100000,
-                                        p0=[gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"]])
+refitted_means = optimize.least_squares(error_func, bounds=(config.mass_start_range, config.mass_end_range),
+                                        x0=gaussian_model.fitting_results["mean"].values, 
+                                        args=(gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, gaussian_model.stddev, data.raw_spectrum[:,0], data.raw_spectrum[:,1]))
+
+
+
+
+
+
+
+
+import GPy
+
+m_full = GPy.models.GPRegression(np.reshape(trimmed_peaks_in_search_window[:,0], (799,1)),np.reshape(trimmed_peaks_in_search_window[:,1], (799,1)))
+_ = m_full.optimize()
+
+
+
 
