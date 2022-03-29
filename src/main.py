@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
                     gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)      
                     gaussian_model.remove_overlapping_fitting_results()
-                    gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, noise_level)
+                    gaussian_model.refit_results(trimmed_peaks_in_search_window, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
          
                     mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, data.rescaling_factor, cond+"_"+rep)
