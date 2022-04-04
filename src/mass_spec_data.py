@@ -40,7 +40,7 @@ class MassSpecData(object):
             except FileNotFoundError:
                 print('File does not exist.')
                 sys.exit()
-        elif ".mzml" in data_file_name:
+        elif ".mzml" in data_file_name  or ".mzML" in data_file_name:
             try:
                 openms_object = pyopenms.MSExperiment()
                 pyopenms.MzMLFile().load(data_file_name, openms_object)
