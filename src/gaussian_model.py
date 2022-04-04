@@ -147,28 +147,32 @@ class GaussianModel(object):
 
 
     
-    def refit_results(self, peaks, refit_mean=False):
-        if not self.fitting_results.empty:
-            masses = peaks[:,0]; intensities = peaks[:,1]
-            error_func_amp = lambda amplitude, x, y: (utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y)**2         
-            refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 100),
-                                                         x0=self.fitting_results["amplitude"].values, 
-                                                         args=(masses, intensities))
-            
-            self.fitting_results["amplitude"] = refitted_amplitudes.x
-            self.fitting_results = self.fitting_results[self.fitting_results["amplitude"] > 1e-3]
-            self.fitting_results.reset_index(drop=True, inplace=True)
-            
-            if refit_mean:
-                error_func_mean = lambda mean, x, y: (utils.multi_gaussian(x,  self.fitting_results["amplitude"].values, mean, self.stddev) - y)**2
-                delta = 3
-                lb = self.fitting_results["mean"].values-delta
-                ub = self.fitting_results["mean"].values+delta
-                refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub),
-                                                         x0=self.fitting_results["mean"].values, 
-                                                         args=(masses, intensities))
+    def refit_results(self, peaks, noise_level, refit_mean=False):
+        repeat_fitting = 2
+        while repeat_fitting > 0:
+            if not self.fitting_results.empty:
+                masses = peaks[:,0]; intensities = peaks[:,1]
+                error_func_amp = lambda amplitude, x, y: (utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y)**2         
+                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 1000),
+                                                             x0=self.fitting_results["amplitude"].values, 
+                                                             args=(masses, intensities))
                 
-                self.fitting_results["mean"] = refitted_means.x
+                self.fitting_results["amplitude"] = refitted_amplitudes.x
+                self.fitting_results = self.fitting_results[self.fitting_results["amplitude"] > noise_level]
+                self.fitting_results.reset_index(drop=True, inplace=True)
+                
+                if refit_mean:
+                    error_func_mean = lambda mean, x, y: (utils.multi_gaussian(x,  self.fitting_results["amplitude"].values, mean, self.stddev) - y)**2
+                    delta = 3
+                    lb = self.fitting_results["mean"].values-delta
+                    ub = self.fitting_results["mean"].values+delta
+                    refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub),
+                                                             x0=self.fitting_results["mean"].values, 
+                                                             args=(masses, intensities))
+                    
+                    self.fitting_results["mean"] = refitted_means.x
+            
+            repeat_fitting -= 1
             """
             ix_reduced_fitting_results = []
             for index, row in self.fitting_results.iterrows():
