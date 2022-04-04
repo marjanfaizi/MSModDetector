@@ -68,9 +68,10 @@ for rep in config.replicates:
 
             x_gauss_func = peaks_in_search_window[:,0]
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
-            vertical_error += (y_gauss_func - peaks_in_search_window[:,1]).tolist()
+            vertical_error += (y_gauss_func / peaks_in_search_window[:,1]).tolist()
 
-            horizontal_error += (peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]).tolist()
+            proton_mass = 1.007
+            horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]).tolist() - proton_mass)
 
             for peak in peaks_in_search_window:
                 window_size = 0.6
@@ -82,23 +83,23 @@ for rep in config.replicates:
                                                         p0=guess, bounds=(0, window_size))
                 sigma_sinlge_peak.append(optimized_param[0])
 
-            noise_start_ix = data.find_nearest_mass_idx(data.raw_spectrum, noise_start_range)
-            noise_end_ix = data.find_nearest_mass_idx(data.raw_spectrum, noise_end_range)
-            basal_noise += random.sample((data.raw_spectrum[noise_start_ix:noise_end_ix,1]/data.rescaling_factor).tolist(), peaks_in_search_window.shape[0])
+            noise_start_ix = data.find_nearest_mass_idx(all_peaks, noise_start_range)
+            noise_end_ix = data.find_nearest_mass_idx(all_peaks, noise_end_range)
+            basal_noise += random.sample((all_peaks[noise_start_ix:noise_end_ix,1]/data.rescaling_factor).tolist(), peaks_in_search_window.shape[0])
 
 
 error_estimate_table = pd.DataFrame()
 
-error_estimate_table["sigma noise (a.u.)"] = np.sort(sigma_sinlge_peak)
+error_estimate_table["sigma noise"] = np.sort(sigma_sinlge_peak)
 error_estimate_table["horizontal noise (Da)"] = np.sort(horizontal_error+len(sample_names)*[0])
-error_estimate_table["vertical noise (a.u.)"] = np.sort(vertical_error)
+error_estimate_table["vertical noise (rel.)"] = np.sort(vertical_error)
 error_estimate_table["basal noise (a.u.)"] = np.sort(basal_noise)
 
-error_estimate_table.to_csv("../output/error_distribution_table.csv", index=False)
+error_estimate_table.to_csv("../output/noise_distribution_table.csv", index=False)
 
 
 ###########################################################################################################################################
-error_estimate_table = pd.read_csv("../output/error_distribution_table.csv")
+error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -106,12 +107,12 @@ import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(2, 2, figsize=(8,6))
 sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=100, ax=axes[0][0])
-sns.histplot(x="sigma noise (a.u.)", data=error_estimate_table[error_estimate_table["sigma noise (a.u.)"]<0.55], bins=100, ax=axes[0][1])
+sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma nois"]<0.55], bins=100, ax=axes[0][1])
 sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[error_estimate_table["horizontal noise (Da)"]<2.1], bins=100, ax=axes[1][0])
-sns.histplot(x="vertical noise (a.u.)", data=error_estimate_table, bins=100, ax=axes[1][1])
+sns.histplot(x="vertical noise (rel.)", data=error_estimate_table, bins=100, ax=axes[1][1])
 sns.despine()
 plt.tight_layout()
-plt.savefig("../output/error_distribution.pdf")
+plt.savefig("../output/nosie_distribution.pdf")
 
 
 
