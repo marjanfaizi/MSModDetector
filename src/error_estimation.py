@@ -124,4 +124,3 @@ plt.savefig("../output/noise_distribution.pdf")
 
 
 
-
