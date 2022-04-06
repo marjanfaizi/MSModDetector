@@ -40,6 +40,7 @@ basal_noise = []
 sigma_sinlge_peak = []
 vertical_error = []
 horizontal_error = []
+signal = []
 
 for rep in config.replicates:
     
@@ -71,7 +72,7 @@ for rep in config.replicates:
             vertical_error += (y_gauss_func / peaks_in_search_window[:,1]).tolist()
 
             proton_mass = 1.007
-            horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]).tolist() - proton_mass)
+            horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - proton_mass).tolist()
 
             for peak in peaks_in_search_window:
                 window_size = 0.6
@@ -87,13 +88,15 @@ for rep in config.replicates:
             noise_end_ix = data.find_nearest_mass_idx(all_peaks, noise_end_range)
             basal_noise += random.sample((all_peaks[noise_start_ix:noise_end_ix,1]/data.rescaling_factor).tolist(), peaks_in_search_window.shape[0])
 
+            signal += (peaks_in_search_window[:,1]>noise_level).tolist()
 
 error_estimate_table = pd.DataFrame()
 
-error_estimate_table["sigma noise"] = np.sort(sigma_sinlge_peak)
-error_estimate_table["horizontal noise (Da)"] = np.sort(horizontal_error+len(sample_names)*[0])
-error_estimate_table["vertical noise (rel.)"] = np.sort(vertical_error)
-error_estimate_table["basal noise (a.u.)"] = np.sort(basal_noise)
+error_estimate_table["sigma noise"] = sigma_sinlge_peak
+error_estimate_table["horizontal noise (Da)"] = horizontal_error+len(sample_names)*[0]
+error_estimate_table["vertical noise (rel.)"] = vertical_error
+error_estimate_table["basal noise (a.u.)"] = basal_noise
+error_estimate_table["is_signal"] = signal
 
 error_estimate_table.to_csv("../output/noise_distribution_table.csv", index=False)
 
@@ -106,13 +109,16 @@ import matplotlib.pyplot as plt
 
 
 fig, axes = plt.subplots(2, 2, figsize=(8,6))
-sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=100, ax=axes[0][0])
-sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma nois"]<0.55], bins=100, ax=axes[0][1])
-sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[error_estimate_table["horizontal noise (Da)"]<2.1], bins=100, ax=axes[1][0])
-sns.histplot(x="vertical noise (rel.)", data=error_estimate_table, bins=100, ax=axes[1][1])
+sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=50, ax=axes[0][0])
+sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma noise"]<0.55], bins=50, ax=axes[0][1])
+#sns.histplot(x="sigma noise", data=error_estimate_table[(error_estimate_table["sigma noise"]<0.55) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[0][1], color="orange")
+sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[error_estimate_table["horizontal noise (Da)"]<1], bins=50, ax=axes[1][0])
+#sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[(error_estimate_table["horizontal noise (Da)"]<1) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][0], color="orange")
+sns.histplot(x="vertical noise (rel.)", data=error_estimate_table[error_estimate_table["vertical noise (rel.)"]<2.5], bins=50, ax=axes[1][1])
+#sns.histplot(x="vertical noise (rel.)", data=error_estimate_table[(error_estimate_table["vertical noise (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][1], color="orange")
 sns.despine()
 plt.tight_layout()
-plt.savefig("../output/nosie_distribution.pdf")
+plt.savefig("../output/noise_distribution.pdf")
 
 
 
