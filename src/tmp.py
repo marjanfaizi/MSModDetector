@@ -45,12 +45,18 @@ gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
 gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
 gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)      
 
-gaussian_model.remove_overlapping_fitting_results()
-gaussian_model.refit_amplitudes(trimmed_peaks_in_search_window, noise_level)
-gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-
 mean = gaussian_model.fitting_results["mean"]
 amplitude = gaussian_model.fitting_results["amplitude"]
+
+gaussian_model.remove_overlapping_fitting_results()
+
+mean2 = gaussian_model.fitting_results["mean"]
+amplitude2 = gaussian_model.fitting_results["amplitude"]
+
+gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
+gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+
+
 
 ####todo refit mean and compare with actual modform masses   
 error_func_mean = lambda mean, x, y: (utils.multi_gaussian(x, amplitude*data.rescaling_factor, mean, config.stddev_isotope_distribution) - y)**2
@@ -84,10 +90,12 @@ mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.
 
 plt.figure(figsize=(7,3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
-plt.plot(mod_mean, mod_amplitude/200*data.rescaling_factor, 'b.')
-plt.plot(mean, amplitude*data.rescaling_factor, 'r.')
-plt.plot(data.raw_spectrum[:,0], utils.multi_gaussian(data.raw_spectrum[:,0], refitted_amp.x, refitted_mean.x, config.stddev_isotope_distribution), 'g-')
-plt.plot(refitted_mean.x, refitted_amp.x, 'g.')
+#plt.plot(mod_mean, mod_amplitude/200*data.rescaling_factor, 'b.')
+plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
+plt.plot(mean2, amplitude2*data.rescaling_factor, 'r.')
+plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
+#plt.plot(data.raw_spectrum[:,0], utils.multi_gaussian(data.raw_spectrum[:,0], refitted_amp.x, refitted_mean.x, config.stddev_isotope_distribution), 'g-')
+#plt.plot(refitted_mean.x, refitted_amp.x, 'g.')
 plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")

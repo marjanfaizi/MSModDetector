@@ -122,31 +122,30 @@ class GaussianModel(object):
         ix_keep_fitting_results = []        
         best_result_ix = 0
         best_pvalue = 0.0 
-        last_mean = self.fitting_results.tail(1)["mean"].values[0]
-        all_window_sizes = np.append(0, self.fitting_results["window_size"].values)
+        self.fitting_results.sort_values(by="mean", inplace=True, ignore_index=True)
+        last_index = self.fitting_results.shape[0]-1
+        all_window_sizes = np.append(self.fitting_results["window_size"].values, 0)
 
         for index, row in self.fitting_results.iterrows():
             
-            #window_size = max(all_window_sizes[index], all_window_sizes[index+1])
-            window_size_sum = all_window_sizes[index] + all_window_sizes[index+1]
-            
-            if np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) <= (1.0-config.allowed_overlap)*window_size_sum and row["p_value"] > best_pvalue:
+            max_window_size = max(all_window_sizes[index], all_window_sizes[index+1])
+
+            if np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) <= max_window_size and row["p_value"] > best_pvalue:
                 best_result_ix = index
                 best_pvalue = row["p_value"]
             
-            elif np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) > (1.0-config.allowed_overlap)*window_size_sum:
+            elif np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) > max_window_size:
                 ix_keep_fitting_results.append(best_result_ix)
                 best_result_ix = index
                 best_pvalue = row["p_value"]    
-                
-                if self.fitting_results.loc[best_result_ix, "mean"] == last_mean:
-                    ix_keep_fitting_results.append(best_result_ix)
+
+            elif index == last_index:
+                ix_keep_fitting_results.append(best_result_ix)
 
         self.fitting_results = self.fitting_results.filter(items = ix_keep_fitting_results, axis=0)
         self.fitting_results.reset_index(drop=True, inplace=True)
 
 
-    
     def refit_results(self, peaks, noise_level, refit_mean=False):
         repeat_fitting = 2
         while repeat_fitting > 0:
