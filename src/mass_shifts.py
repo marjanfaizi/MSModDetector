@@ -123,7 +123,7 @@ class MassShifts(object):
                     if solution_min_ptm:
                         count_laps += 1
                         number_ptms = int(sum(solution_min_ptm))
-                        min_number_ptms = number_ptms+1
+                        #min_number_ptms = number_ptms+1
                         ptm_pattern = self.array_to_ptm_annotation(list(solution_min_ptm), modifications.ptm_ids)
                         error = lp_model.get_error(solution_min_ptm)
                         row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
@@ -145,6 +145,7 @@ class MassShifts(object):
                                     multiplier += 1
                             else:        
                                 break
+                        min_number_ptms = number_ptms+1
                     else:
                         break
                         
