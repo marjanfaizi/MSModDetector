@@ -18,7 +18,6 @@ from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
 import config_sim as config
-#import config
 
 file_names = [file for file in glob.glob(config.file_names)] 
 
@@ -34,7 +33,7 @@ if __name__ == "__main__":
     aa_sequence_str = utils.read_fasta(config.fasta_file_name)
     mod = Modifications(config.modfication_file_name, aa_sequence_str)
 
-    mass_shifts = MassShifts()
+    mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
     
     print("\nDetecting mass shifts...")
     
@@ -106,10 +105,10 @@ if __name__ == "__main__":
 #        parameter.rename(index={0:"noise_level", 1:"calibration_number"}, inplace=True)
         mass_shifts.calculate_avg_mass()
         if config.bin_peaks == True:
-            mass_shifts.bin_peaks()
+            mass_shifts.bin_peaks(config.max_bin_size)
 
         if config.calculate_mass_shifts == True:
-            mass_shifts.add_mass_shifts()
+            mass_shifts.add_mass_shifts(config.unmodified_species_mass)
 
         if config.determine_ptm_patterns == True:
             print("\nSearching for PTM combinations:")
@@ -117,9 +116,9 @@ if __name__ == "__main__":
             mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.save_table(mass_shifts.ptm_patterns_df, "../output/ptm_patterns_table.csv")
-            
+          
         mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.csv")
-        
+       
         parameter.rename(index={0:"noise_level"}, inplace=True)
         parameter.to_csv("../output/parameter.csv", sep=",") 
 

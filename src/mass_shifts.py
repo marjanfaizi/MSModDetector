@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 from linear_program_cvxopt import LinearProgramCVXOPT
 import utils
-import config
 
 
 class MassShifts(object): 
@@ -20,14 +19,15 @@ class MassShifts(object):
     For a given mass shift the linear program determines global PTM patterns/combinations and reports the combination with the least amount of PTMs.
     """
     
-    def __init__(self):
-        mass_index = np.arange(int(config.mass_start_range), int(config.mass_end_range+20))
+    def __init__(self, mass_start_range,mass_end_range):
+        mass_index = np.arange(int(mass_start_range), int(mass_end_range+20))
         self.identified_masses_df = pd.DataFrame(index=mass_index)
         self.mass_shifts = []
         self.mass_col_name = "masses "
         self.intensity_col_name = "raw intensities "
         self.abundance_col_name = "rel. abundances "
         self.avg_mass_col_name = "average mass"
+        self.laps_run_lp = 10
 
 
     def add_identified_masses_to_df(self, fitting_results, rescaling_factor, column_name):
@@ -67,11 +67,11 @@ class MassShifts(object):
 # =============================================================================
 
 
-    def bin_peaks(self):
+    def bin_peaks(self, max_bin_size):
         max_distances_between_bins = self.identified_masses_df.filter(regex="masses ").max(axis=1).values[1:] - \
                                      self.identified_masses_df.filter(regex="masses ").min(axis=1).values[:-1]  
         
-        while (max_distances_between_bins <= config.max_bin_size).any():
+        while (max_distances_between_bins <= max_bin_size).any():
             distance_matrix = self.__create_distance_matrix(self.identified_masses_df[self.avg_mass_col_name].values)
             indices_to_combine = np.unravel_index(np.nanargmin(distance_matrix, axis=None), distance_matrix.shape)
             self.identified_masses_df.iloc[indices_to_combine[0]] = self.identified_masses_df.iloc[list(indices_to_combine)].max()
@@ -95,8 +95,8 @@ class MassShifts(object):
         return distance_matrix
 
 
-    def add_mass_shifts(self):
-        self.identified_masses_df['mass shift'] = self.identified_masses_df[self.avg_mass_col_name] - config.unmodified_species_mass 
+    def add_mass_shifts(self, unmodified_species_mass):
+        self.identified_masses_df['mass shift'] = self.identified_masses_df[self.avg_mass_col_name] - unmodified_species_mass 
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
 
@@ -116,11 +116,19 @@ class MassShifts(object):
             row_entries = []
             min_number_ptms = 0
             count_laps = 0 
-            
+
             if objective_fun == "min_ptm":
-                while count_laps < config.laps_run_lp:         
+                while count_laps < self.laps_run_lp:
+                    print(count_laps)
+                    print(mass_tolerance)
+                    print(min_number_ptms)
+                    print(mass_shift)
                     status, solution_min_ptm = lp_model.solve_lp_min_ptms(min_number_ptms)
-                    if solution_min_ptm:
+                    print(status)
+                    print(solution_min_ptm)
+                    
+                    if solution_min_ptm !=[]:
+                        print("LOOP0")
                         count_laps += 1
                         number_ptms = int(sum(solution_min_ptm))
                         #min_number_ptms = number_ptms+1
@@ -129,9 +137,12 @@ class MassShifts(object):
                         row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
                         min_error = 0
                         multiplier = 1
-                        while count_laps < config.laps_run_lp and min_error <= mass_tolerance:
+                        while count_laps < self.laps_run_lp and min_error <= mass_tolerance:
+                            print("LOOP1")
                             status, solution_min_error = lp_model.solve_lp_min_error(min_error, number_ptms)
-                            if solution_min_error:
+                            print("LOOP2")
+                            print(status,solution_min_error)
+                            if solution_min_error!=[]:
                                 ptm_pattern = self.array_to_ptm_annotation(list(solution_min_error[:-1]), modifications.ptm_ids)
                                 is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
                                 if not is_solution_in_list:
@@ -152,7 +163,7 @@ class MassShifts(object):
             if objective_fun == "min_err":
                     min_error = 0
                     multiplier = 1
-                    while count_laps < config.laps_run_lp and min_error <= mass_tolerance:
+                    while count_laps < self.laps_run_lp and min_error <= mass_tolerance:
                         status, solution_min_error = lp_model.solve_lp_min_error(min_error)
                         if solution_min_error:
                             ptm_pattern = self.array_to_ptm_annotation(list(solution_min_error[:-1]), modifications.ptm_ids)
