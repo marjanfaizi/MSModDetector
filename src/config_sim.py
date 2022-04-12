@@ -3,7 +3,7 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/*.csv'
+file_names = '../data/*.mzml'
 
 # list of all replicate names as they are in the file names
 replicates = ['rep1']
