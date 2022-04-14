@@ -60,8 +60,7 @@ class LinearProgramCVXOPT(object):
 
     def get_error(self, solution):
         theoretical_mass_shift = np.dot(self.ptm_mass_shifts, solution)
-        #error = abs(theoretical_mass_shift - self.observed_mass_shift)[0]
-        error = (theoretical_mass_shift - self.observed_mass_shift)[0]
+        error = abs(theoretical_mass_shift - self.observed_mass_shift)[0]
         return error
 
 
@@ -78,7 +77,7 @@ class LinearProgramCVXOPT(object):
         status, solution = glpk.ilp(c, A, b, I=set(range(number_variables)))
         return status, solution
 
-
+    """
     def solve_lp_min_error(self, min_error, number_ptms=None):
         number_variables = len(self.ptm_mass_shifts)
         ones = np.ones(number_variables)
@@ -131,7 +130,7 @@ class LinearProgramCVXOPT(object):
             return status_max, solution_max
     
 
-    """
+
     def solve_lp_min_error(self, min_error, number_ptms=None):
         number_variables = len(self.ptm_mass_shifts)
         ones = np.ones(number_variables)
@@ -156,8 +155,9 @@ class LinearProgramCVXOPT(object):
         status, solution = glpk.ilp(c, A, b, I=set(range(number_variables)))
         return status, solution
 
+ 
+    """ 
     
-
     def solve_lp_min_error(self, min_error, number_ptms=None):
         number_variables = len(self.ptm_mass_shifts)
         ones = np.ones(number_variables)
@@ -165,7 +165,7 @@ class LinearProgramCVXOPT(object):
         lower_bounds = zeros.reshape(-1,1)
         
         if number_ptms != None:
-            min_number_ptms = -number_ptms
+            min_number_ptms = number_ptms
             max_number_ptms = number_ptms
         else:
             min_number_ptms = 0
@@ -206,4 +206,5 @@ class LinearProgramCVXOPT(object):
         
         else:
             return status_max, solution_max
-    """
+
+ 

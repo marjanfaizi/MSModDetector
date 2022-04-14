@@ -123,18 +123,17 @@ class MassShifts(object):
                     if solution_min_ptm:
                         count_laps += 1
                         number_ptms = int(sum(solution_min_ptm))
-                        #min_number_ptms = number_ptms+1
                         ptm_pattern = self.array_to_ptm_annotation(list(solution_min_ptm), modifications.ptm_ids)
                         error = lp_model.get_error(solution_min_ptm)
-                        print("1", ptm_pattern, solution_min_ptm[-1], error)
+                        print("1", ptm_pattern, error)
                         row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
-                        min_error = -mass_tolerance
+                        min_error = 0
                         multiplier = 1
                         while count_laps < self.laps_run_lp and min_error <= mass_tolerance:
                             status, solution_min_error = lp_model.solve_lp_min_error(min_error, number_ptms)
                             if solution_min_error:
                                 ptm_pattern = self.array_to_ptm_annotation(list(solution_min_error[:-1]), modifications.ptm_ids)
-                                print("2", ptm_pattern, solution_min_error[-1], error)
+                                print("2", ptm_pattern, error)
                                 is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
                                 if not is_solution_in_list:
                                     count_laps += 1
@@ -150,9 +149,10 @@ class MassShifts(object):
                         min_number_ptms = number_ptms+1
                     else:
                         break
+            print(row_entries)
                         
             if objective_fun == "min_err":
-                    min_error = -mass_tolerance
+                    min_error = 0
                     multiplier = 1
                     while count_laps < self.laps_run_lp and min_error <= mass_tolerance:
                         status, solution_min_error = lp_model.solve_lp_min_error(min_error)
