@@ -51,7 +51,7 @@ allowed_overlap = 0.5
 mass_error_ppm = 20
 
 # This mass tolerance in Da is used as default for the linear programming problem 
-mass_tolerance = 1.5#mass_error_ppm*1e-6*unmodified_species_mass
+mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
 bin_peaks = False
