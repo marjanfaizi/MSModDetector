@@ -63,7 +63,7 @@ class SimulateData(object):
             
             spectrum = np.vstack((spectrum, isotopic_distribution_mod))
 
-        
+
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]
         

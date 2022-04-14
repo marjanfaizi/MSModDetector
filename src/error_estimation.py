@@ -108,13 +108,38 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
+def exponential(x, beta):
+    return (1/beta)*np.exp(-(x/beta))
+
+
+sigma_mean = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].mean()
+sigma_std = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].std()
+
+
 fig, axes = plt.subplots(2, 2, figsize=(8,6))
-sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=50, ax=axes[0][0])
-sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma noise"]<0.55], bins=50, ax=axes[0][1])
+sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=150, ax=axes[0][0])
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 30*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/75), color="purple")
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 15*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/150), color="red")
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 7.5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/300), color="orange")
+axes[0][0].set_xlim([0,0.12])
+#sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=30, ax=axes[0][0])
+sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma noise"]<0.55], bins=70, ax=axes[0][1])
+axes[0][1].plot(error_estimate_table["sigma noise"].sort_values(), utils.gaussian(error_estimate_table["sigma noise"].sort_values(), 300, sigma_mean, sigma_std), color="purple")
+axes[0][1].plot(error_estimate_table["sigma noise"].sort_values(), utils.gaussian(error_estimate_table["sigma noise"].sort_values(), 300, sigma_mean, sigma_std/2), color="red")
+axes[0][1].plot(error_estimate_table["sigma noise"].sort_values(), utils.gaussian(error_estimate_table["sigma noise"].sort_values(), 300, sigma_mean, sigma_std/4), color="orange")
+axes[0][1].set_xlim([0.1,0.45])
 #sns.histplot(x="sigma noise", data=error_estimate_table[(error_estimate_table["sigma noise"]<0.55) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[0][1], color="orange")
 sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[error_estimate_table["horizontal noise (Da)"]<1], bins=50, ax=axes[1][0])
+axes[1][0].plot(error_estimate_table["horizontal noise (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal noise (Da)"].sort_values(), 1e3, 0, 0.1), color="purple")
+axes[1][0].plot(error_estimate_table["horizontal noise (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal noise (Da)"].sort_values(), 1e3, 0, 0.05), color="red")
+axes[1][0].plot(error_estimate_table["horizontal noise (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal noise (Da)"].sort_values(), 1e3, 0, 0.025), color="orange")
+axes[1][0].set_xlim([-1,1])
 #sns.histplot(x="horizontal noise (Da)", data=error_estimate_table[(error_estimate_table["horizontal noise (Da)"]<1) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][0], color="orange")
-sns.histplot(x="vertical noise (rel.)", data=error_estimate_table[error_estimate_table["vertical noise (rel.)"]<2.5], bins=50, ax=axes[1][1])
+sns.histplot(x="vertical noise (rel.)", data=error_estimate_table[error_estimate_table["vertical noise (rel.)"]<2.5], bins=75, ax=axes[1][1])
+plt.plot(error_estimate_table["vertical noise (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical noise (rel.)"].sort_values(), 200, 1, 0.25), color="purple")
+plt.plot(error_estimate_table["vertical noise (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical noise (rel.)"].sort_values(), 200, 1, 0.125), color="red")
+plt.plot(error_estimate_table["vertical noise (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical noise (rel.)"].sort_values(), 200, 1, 0.0625), color="orange")
+axes[1][1].set_xlim([0,2.5])
 #sns.histplot(x="vertical noise (rel.)", data=error_estimate_table[(error_estimate_table["vertical noise (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][1], color="orange")
 sns.despine()
 plt.tight_layout()
