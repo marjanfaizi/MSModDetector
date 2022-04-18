@@ -115,9 +115,9 @@ if __name__ == "__main__":
 
             mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun)        
             mass_shifts.add_ptm_patterns_to_table()
-            mass_shifts.save_table(mass_shifts.ptm_patterns_df, "../output/ptm_patterns_table.csv")
+            mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           
-        mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.csv")
+        mass_shifts.save_tables("../output/")
        
         parameter.rename(index={0:"noise_level"}, inplace=True)
         parameter.to_csv("../output/parameter.csv", sep=",") 

@@ -20,29 +20,30 @@ sns.set_context("paper", rc = paper_rc)
 
 aa_sequence_str = utils.read_fasta('../data/fasta_files/P04637.fasta')
 modifications_table =  pd.read_csv('../data/modifications/modifications_P04637.csv', sep=';')
-modform_distribution =  pd.read_csv('../data/modifications/modform_distribution_phospho.csv', sep=',')
 error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
 
-
+modform_distribution =  pd.read_csv('../data/modform_distributions/modform_distribution_phospho.csv', sep=',')
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 
-sigma_mean = error_estimate_table[error_estimate_table["sigma noise"]<0.55]["sigma noise"].mean()
-masses, intensities = data_simulation.create_mass_spectrum(modform_distribution, sigma_mean)
+sigma_mean = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].mean()
+sigma_std = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].std()
+data_simulation.set_sigma_mean(sigma_mean)
 
 
-data_simulation.add_noise(basal_noise_beta=5)
-masses2, intensities2 = data_simulation.create_mass_spectrum(modform_distribution, sigma_mean)
+data_simulation.reset_noise_levels()
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
-data_simulation.add_noise(basal_noise_beta=2, vertical_noise_std=0.05)
-masses3, intensities3 = data_simulation.create_mass_spectrum(modform_distribution, sigma_mean)
+data_simulation.add_noise(basal_noise_beta=10, vertical_noise_std=0.25, sigma_noise_std=sigma_std, horizontal_noise_std=0.1)
+masses2, intensities2 = data_simulation.create_mass_spectrum(modform_distribution)
 
-data_simulation.add_noise(basal_noise_beta=20, vertical_noise_std=0.1, sigma_noise_std=0.01, horizontal_noise_std=0.05)
-masses4, intensities4 = data_simulation.create_mass_spectrum(modform_distribution, sigma_mean)
+data_simulation.add_noise(basal_noise_beta=10, vertical_noise_std=0.125, sigma_noise_std=sigma_std/2, horizontal_noise_std=0.05)
+masses3, intensities3 = data_simulation.create_mass_spectrum(modform_distribution)
+
 
 plt.figure(figsize=(7,3))
-#plt.plot(masses3, intensities3, "g.-")
-plt.plot(masses4, intensities4, "r.-")
+plt.plot(masses3, intensities3, "g.-")
+#plt.plot(masses2, intensities2, "r.-")
 #plt.plot(masses, intensities, "b.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")

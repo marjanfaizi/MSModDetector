@@ -27,6 +27,8 @@ class MassShifts(object):
         self.intensity_col_name = "raw intensities "
         self.abundance_col_name = "rel. abundances "
         self.avg_mass_col_name = "average mass"
+        self.pvalue_col_name = "pvalue "
+        self.chi_score_col_name = "chi_score "
         self.laps_run_lp = 10
 
 
@@ -38,7 +40,12 @@ class MassShifts(object):
         self.identified_masses_df.loc[means.round().astype(int), self.intensity_col_name+column_name] = amplitudes
         self.identified_masses_df.loc[means.round().astype(int), self.abundance_col_name+column_name] = relative_abundances
      
-     
+        pvalue = fitting_results["p_value"].values
+        chi_score = fitting_results["chi_score"].values
+        self.identified_masses_df.loc[means.round().astype(int), self.pvalue_col_name+column_name] = pvalue
+        self.identified_masses_df.loc[means.round().astype(int), self.chi_score_col_name+column_name] = chi_score
+        
+        
 # =============================================================================
 #     def align_spetra(self):
 #         unmodified_species_masses = self.identified_masses_df.filter(regex=self.mass_col_name).apply(utils.determine_unmodified_species_mass, raw=True, args=(config.unmodified_species_mass_init, config.unmodified_species_mass_tol)).values
@@ -100,9 +107,19 @@ class MassShifts(object):
         self.mass_shifts = self.identified_masses_df['mass shift'].values
 
 
-    def save_table(self, table, output_name):
-        table = table.sort_index(axis=1)
-        table.to_csv(output_name, sep=',', index=False) 
+    def save_tables(self, output_path_name):
+        regex_score_cols =  "mass shift"+"|"+self.pvalue_col_name+"|"+self.chi_score_col_name
+        regex_mass_shift_cols = "mass shift"+"|"+"PTM pattern"+"|"+self.avg_mass_col_name+\
+                                self.mass_col_name+"|"+self.intensity_col_name+"|"+self.abundance_col_name
+
+        masses_df = self.identified_masses_df.filter(regex=regex_mass_shift_cols)
+        score_df = self.identified_masses_df.filter(regex=regex_score_cols)
+        
+        #masses_df.sort_index(axis=1, inplace=True)
+        #score_df.sort_index(axis=1, inplace=True)
+        
+        masses_df.to_csv(output_path_name+"mass_shifts.csv", sep=',', index=False) 
+        score_df.to_csv(output_path_name+"scores.csv", sep=',', index=False)
 
 
     def determine_ptm_patterns(self, modifications, mass_tolerance, objective_fun):

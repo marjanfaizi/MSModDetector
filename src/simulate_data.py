@@ -10,6 +10,7 @@ import pyopenms
 import numpy as np
 import pandas as pd
 import re
+import sys
 import random
 import utils 
 
@@ -34,10 +35,22 @@ class SimulateData(object):
         self.horizontal_noise_mean = 0.0
         self.horizontal_noise_std = None
         self.basal_noise_beta = None
+        self.sigma_mean = None
         self.sigma_noise_std = None
         
+        
+    def set_sigma_mean(self, sigma_mean):
+        self.sigma_mean = sigma_mean
 
-    def create_mass_spectrum(self, modform_distribution, sigma_mean):       
+
+    def reset_noise_levels(self):
+        self.vertical_noise_std = None
+        self.horizontal_noise_std = None
+        self.basal_noise_beta = None
+        self.sigma_noise_std = None
+
+
+    def create_mass_spectrum(self, modform_distribution):       
         # create theoretical isotopic pattern for each modform in the theoretical modform distribution
         mass_grid = self.determine_mass_spectrum_range(modform_distribution)
         spectrum = np.array([]).reshape(0,2)
@@ -70,10 +83,12 @@ class SimulateData(object):
         intensities = np.zeros(mass_grid.shape)
         
         for peak in spectrum:
+            if self.sigma_mean == None:
+                sys.exit("Set value for sigma_mean.")
             if self.sigma_noise_std != None:
-                sigma = random.gauss(sigma_mean, self.sigma_noise_std)
+                sigma = random.gauss(self.sigma_mean, self.sigma_noise_std)
             else:
-                sigma = sigma_mean
+                sigma = self.sigma_mean
             # Add gaussian peak shape centered around each theoretical peak
             intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / sigma)**2)
 
