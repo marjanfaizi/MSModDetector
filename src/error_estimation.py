@@ -121,6 +121,7 @@ sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=150, ax=axe
 axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 30*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/75), color="purple")
 axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 15*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/150), color="red")
 axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 7.5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/300), color="orange")
+###axes[0][0].hist(np.random.exponential(1/75, 1e6), 100, density = True)
 axes[0][0].set_xlim([0,0.12])
 #sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=30, ax=axes[0][0])
 sns.histplot(x="sigma noise", data=error_estimate_table[error_estimate_table["sigma noise"]<0.55], bins=70, ax=axes[0][1])

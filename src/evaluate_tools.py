@@ -140,13 +140,16 @@ for std_comb in all_std_combinations:
 
 
 
-
+data_simulation.reset_noise_levels()
+data_simulation.add_noise(vertical_noise_std=0.25, sigma_noise_std=0, 
+                          basal_noise_beta=30, horizontal_noise_std=0)
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 plt.figure(figsize=(7,3))
 plt.plot(masses, intensities, "b.-")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim((config.mass_start_range, config.mass_end_range))
+plt.xlim((43700, 44200))
 plt.ylim(ymin=-0.005)
 plt.tight_layout()
 sns.despine()

@@ -123,7 +123,7 @@ class SimulateData(object):
         mass_spectrum_df = pd.DataFrame({"mass" : masses, "intensity" : intensities})
         mass_spectrum_df.to_csv(file_name, header=False, index=False)
         
-
+        
     def determine_max_mass_shift(self, modform_distribution):
         max_mass = modform_distribution.mass.max()
         max_mass_shift = max_mass + self.margin_mass_range
