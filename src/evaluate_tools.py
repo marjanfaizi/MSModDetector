@@ -10,6 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.metrics import r2_score
+import numpy as np
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -95,8 +96,24 @@ mass_shifts.add_ptm_patterns_to_table()
 ###################################################################################################################
 ####################################### DETERMINE PERFORMANCE OF PREDICTION #######################################
 ###################################################################################################################
-
 mass_shift_true = modform_distribution["mass"].values
+
+
+def determine_mass_shift_pred(all_detected_mass_shifts, mass_shift_true):
+    mass_shift_pred = []
+    for ms in all_detected_mass_shifts:
+        nearest_mass_index = np.abs(mass_shift_pred - ms).argmin()
+        if nearest_mass_index:
+            mass_shift_pred += all_detected_mass_shifts[nearest_mass_index]
+        else:
+           mass_shift_pred += 0 
+    return mass_shift_pred
+
+
+mass_shift_pred = determine_mass_shift_pred(mass_shifts.identified_masses_df["mass shift"].values, mass_shift_true)
+
+
+
 # TODO: determine y_pred
 mass_shift_pred = mass_shift_true
 score = r2_score(mass_shift_true, mass_shift_pred)
