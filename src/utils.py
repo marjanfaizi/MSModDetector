@@ -16,6 +16,7 @@ import seaborn as sns
 
 sns.set_context("paper", font_scale=1.2)
 
+
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-0.5*((x - mean) / stddev)**2)
     

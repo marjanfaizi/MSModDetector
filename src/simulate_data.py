@@ -121,7 +121,7 @@ class SimulateData(object):
 
     def save_mass_spectrum(self, masses, intensities, file_name):
         mass_spectrum_df = pd.DataFrame({"mass" : masses, "intensity" : intensities})
-        mass_spectrum_df.to_csv(file_name, index=False)
+        mass_spectrum_df.to_csv(file_name, header=False, index=False)
         
 
     def determine_max_mass_shift(self, modform_distribution):
