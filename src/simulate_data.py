@@ -61,15 +61,15 @@ class SimulateData(object):
             scaling_factor = row["intensity"]/isotopic_distribution_mod[:,1].max()
             isotopic_distribution_mod[:,1] *= scaling_factor    
 
-            if self.vertical_noise_std != None:
+            if self.vertical_noise_std != None and self.vertical_noise_std != 0:
                 vertical_noise = np.random.normal(self.vertical_noise_mean, self.vertical_noise_std, size=isotopic_distribution_mod.shape[0])
                 isotopic_distribution_mod[:,1] *= vertical_noise
 
-            if self.basal_noise_beta != None:
+            if self.basal_noise_beta != None and self.basal_noise_beta != 0:
                 basal_noise = np.random.exponential(self.basal_noise_beta, size=isotopic_distribution_mod.shape[0])
                 isotopic_distribution_mod[:,1] += basal_noise
 
-            if self.horizontal_noise_std != None:       
+            if self.horizontal_noise_std != None and self.horizontal_noise_std != 0:       
                 for index, val in enumerate(isotopic_distribution_mod):
                     horizontal_noise = random.gauss(self.horizontal_noise_mean, self.horizontal_noise_std)
                     isotopic_distribution_mod[index, 0] = val[0]+horizontal_noise
@@ -85,7 +85,7 @@ class SimulateData(object):
         for peak in spectrum:
             if self.sigma_mean == None:
                 sys.exit("Set value for sigma_mean.")
-            if self.sigma_noise_std != None:
+            if self.sigma_noise_std != None and self.sigma_noise_std != 0:
                 sigma = random.gauss(self.sigma_mean, self.sigma_noise_std)
             else:
                 sigma = self.sigma_mean
