@@ -166,6 +166,30 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=','
 
 ###################################################################################################################
 ###################################################################################################################
+
+
+## TODO: loop over all parameters and this for r_score and accuracy
+
+pivot_df = performance_df[(performance_df["sigma_noise_std"]==0) & 
+                          (performance_df["basal_noise_beta"]==0)].pivot("horizontal_noise_std", 
+                                                                         "vertical_noise_std", "r_score")
+
+fig, axn = plt.subplots(4, 4, sharex=True, sharey=True)
+cbar_ax = fig.add_axes([.91, .3, .03, .4])
+
+for i, ax in enumerate(axn.flat):
+    sns.heatmap(pivot_df, ax=ax,
+                cbar=i == 0,
+                vmin=performance_df["r_score"].min(), vmax=performance_df["r_score"].max(),
+                cbar_ax=None if i else cbar_ax)
+
+fig.tight_layout(rect=[0, 0, .9, 1])
+
+
+
+
+
+
 """
 data_simulation.reset_noise_levels()
 data_simulation.add_noise(vertical_noise_std=0.125, sigma_noise_std=sigma_std/2, basal_noise_beta=1/200, 
