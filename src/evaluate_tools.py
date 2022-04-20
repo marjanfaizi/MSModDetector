@@ -29,9 +29,11 @@ sns.set_context("paper", rc = paper_rc)
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
+modform_file_name = "phospho"
 aa_sequence_str = utils.read_fasta(config.fasta_file_name)
-modifications_table =  pd.read_csv(config.modfication_file_name, sep=';')
-modform_distribution =  pd.read_csv("../data/modform_distributions/modform_distribution_phospho.csv", sep=",")
+modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
+modform_distribution = pd.read_csv("../data/modform_distributions/modform_distribution_"+modform_file_name+".csv", 
+                                   sep=",")
 error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
 ###################################################################################################################
 ###################################################################################################################
@@ -40,20 +42,18 @@ error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
 ###################################################################################################################
 ############################################### REQUIRED FUNCTIONS ################################################
 ###################################################################################################################
-def determine_pred_vectors(detected_mass_shifts, modform_distribution_simulated):
+def determine_matching_mass_shifts(detected_mass_shifts, modform_distribution_simulated):
     mass_shift_true = modform_distribution_simulated["mass"].values
     detected_mass_shifts
-    mass_shift_pred = []
-    ptm_pattern_pred = []
-    for ms in mass_shift_true:
-        diff = np.abs(detected_mass_shifts["mass shift"].values - ms)
-        nearest_mass_index = diff.argmin()
-        if diff[nearest_mass_index] <= config.mass_tolerance:
-            mass_shift_pred += [detected_mass_shifts.loc[nearest_mass_index, "mass shift"]]
-            ptm_pattern_pred += [detected_mass_shifts.loc[nearest_mass_index, "PTM pattern"]]
-        else:
-           mass_shift_pred += [0] 
-    return mass_shift_pred, ptm_pattern_pred
+    mass_shift_pred_ix = []
+    mass_shift_true_ix = []
+    for ms_true_index, ms_true in enumerate(mass_shift_true):
+        diff = np.abs(detected_mass_shifts["mass shift"].values - ms_true)
+        nearest_predicted_mass_index = diff.argmin()
+        if diff[nearest_predicted_mass_index] <= config.mass_tolerance:
+            mass_shift_pred_ix += [nearest_predicted_mass_index]
+            mass_shift_true_ix += [ms_true_index]
+    return mass_shift_pred_ix, mass_shift_true_ix
 ###################################################################################################################
 ###################################################################################################################
 
@@ -67,9 +67,10 @@ sigma_std = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma
 vertical_noise_std_list = [0, 0.0625, 0.125, 0.25]
 horizontal_noise_std_list = [0, 0.025, 0.05, 0.1]
 sigma_std_list = [0, sigma_std/4, sigma_std/2, sigma_std]
+basal_noise_beta_list = [0, 1/400, 1/200, 1/100]
 
 all_std_combinations = [p for p in itertools.product(*[sigma_std_list, horizontal_noise_std_list, 
-                                                       vertical_noise_std_list])]
+                                                       vertical_noise_std_list, basal_noise_beta_list])]
 ###################################################################################################################
 ###################################################################################################################
 
@@ -82,18 +83,29 @@ mod = Modifications(config.modfication_file_name, aa_sequence_str)
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_sigma_mean(sigma_mean)
 
-progress_bar_count = 0
+performance_df = pd.DataFrame(columns=["vertical_noise_std", "sigma_noise_std", "horizontal_noise_std", 
+                                       "basal_noise_beta", "all_detected_mass_shifts", "simulated_mass_shifts", 
+                                       "matching_mass_shifts", "r_score", "matching_ptm_patterns"])
 
-score = []
-acc = []
+performance_df["sigma_noise_std"] = [a_tuple[0] for a_tuple in all_std_combinations]
+performance_df["horizontal_noise_std"] = [a_tuple[1] for a_tuple in all_std_combinations]
+performance_df["vertical_noise_std"] = [a_tuple[2] for a_tuple in all_std_combinations]
+performance_df["basal_noise_beta"] = [a_tuple[3] for a_tuple in all_std_combinations]
+performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
+
+all_detected_mass_shifts = []
+matching_mass_shifts = []
+r_score = []
+matching_ptm_patterns = []
+progress = 1
 for std_comb in all_std_combinations:
     # simulated data
     data_simulation.reset_noise_levels()
     data_simulation.add_noise(vertical_noise_std=std_comb[0], sigma_noise_std=std_comb[1], 
-                              horizontal_noise_std=std_comb[2])
+                              horizontal_noise_std=std_comb[2], basal_noise_beta=std_comb[3])
     masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
     
-    theoretical_spectrum_file_name = "../output/phospho_with_noise.csv"
+    theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
     data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
     
     # determine mass shifts and ptm patterns
@@ -125,24 +137,39 @@ for std_comb in all_std_combinations:
     mass_shifts.add_ptm_patterns_to_table()
     
     # determine performance of prediction
-    mass_shift_true = modform_distribution["mass"].values
-    ptm_pattern_true = modform_distribution["modform"].values
+    mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
+                                                                            modform_distribution)
     
-    mass_shift_pred, ptm_pattern_pred = determine_pred_vectors(mass_shifts.identified_masses_df, modform_distribution)
+    mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
+    ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "modform"].values
+    mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
+    ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
     
-    score += [r2_score(mass_shift_true, mass_shift_pred)]
-    acc += [len(set(ptm_pattern_true) & set(ptm_pattern_pred)) / len(ptm_pattern_true)]
-    
-    progress_bar_count += 1        
-    utils.progress(progress_bar_count, len(all_std_combinations))
+    all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
+    matching_mass_shifts += [len(mass_shift_pred)]
+    r_score += [r2_score(mass_shift_true, mass_shift_pred)]
+    matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+
+    print(progress, "out of", len(all_std_combinations))
+    progress += 1
+
+
+performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts
+performance_df["matching_mass_shifts"] = matching_mass_shifts
+performance_df["r_score"] = r_score
+performance_df["matching_ptm_patterns"] = matching_ptm_patterns
+performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=',', index=False) 
 ###################################################################################################################
 ###################################################################################################################
 
 
 
+###################################################################################################################
+###################################################################################################################
+"""
 data_simulation.reset_noise_levels()
-data_simulation.add_noise(vertical_noise_std=0.25, sigma_noise_std=0, 
-                          basal_noise_beta=30, horizontal_noise_std=0)
+data_simulation.add_noise(vertical_noise_std=0.125, sigma_noise_std=sigma_std/2, basal_noise_beta=1/200, 
+                          horizontal_noise_std=0.05)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 plt.figure(figsize=(7,3))
@@ -154,6 +181,8 @@ plt.ylim(ymin=-0.005)
 plt.tight_layout()
 sns.despine()
 plt.show()
-
+"""
+###################################################################################################################
+###################################################################################################################
 
 

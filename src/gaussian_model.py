@@ -152,7 +152,7 @@ class GaussianModel(object):
             if not self.fitting_results.empty:
                 masses = peaks[:,0]; intensities = peaks[:,1]
                 error_func_amp = lambda amplitude, x, y: (utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y)**2         
-                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 1000),
+                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, np.inf),
                                                              x0=self.fitting_results["amplitude"].values, 
                                                              args=(masses, intensities))
                 

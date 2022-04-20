@@ -59,27 +59,27 @@ class SimulateData(object):
             modified_sequence_str = self.create_modified_seqeunce(row["modform"])
             isotopic_distribution_mod = self.seq_str_to_isotopic_dist(modified_sequence_str)
             scaling_factor = row["intensity"]/isotopic_distribution_mod[:,1].max()
-            isotopic_distribution_mod[:,1] *= scaling_factor    
-
-            if self.vertical_noise_std != None and self.vertical_noise_std != 0:
-                vertical_noise = np.random.normal(self.vertical_noise_mean, self.vertical_noise_std, size=isotopic_distribution_mod.shape[0])
-                isotopic_distribution_mod[:,1] *= vertical_noise
-
-            if self.basal_noise_beta != None and self.basal_noise_beta != 0:
-                basal_noise = np.random.exponential(self.basal_noise_beta, size=isotopic_distribution_mod.shape[0])
-                isotopic_distribution_mod[:,1] += basal_noise
-
-            if self.horizontal_noise_std != None and self.horizontal_noise_std != 0:       
-                for index, val in enumerate(isotopic_distribution_mod):
-                    horizontal_noise = random.gauss(self.horizontal_noise_mean, self.horizontal_noise_std)
-                    isotopic_distribution_mod[index, 0] = val[0]+horizontal_noise
-            
+            isotopic_distribution_mod[:,1] *= scaling_factor   
             spectrum = np.vstack((spectrum, isotopic_distribution_mod))
 
 
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]
-        
+
+        if self.basal_noise_beta != None and self.basal_noise_beta != 0:
+            basal_noise = np.random.exponential(self.basal_noise_beta, size=spectrum.shape[0])
+            spectrum[:,1] += basal_noise*scaling_factor
+
+        if self.vertical_noise_std != None and self.vertical_noise_std != 0:
+            vertical_noise = np.random.normal(self.vertical_noise_mean, self.vertical_noise_std, size=spectrum.shape[0])
+            spectrum[:,1] *= vertical_noise
+
+        if self.horizontal_noise_std != None and self.horizontal_noise_std != 0:       
+            for index, val in enumerate(spectrum):
+                horizontal_noise = random.gauss(self.horizontal_noise_mean, self.horizontal_noise_std)
+                spectrum[index, 0] = val[0]+horizontal_noise
+
+
         intensities = np.zeros(mass_grid.shape)
         
         for peak in spectrum:
