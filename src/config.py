@@ -3,27 +3,26 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/raw_data/P04637/*.mzml'
+file_names = "../data/raw_data/P04637/*.mzml"
 
 # list of all replicate names as they are in the file names
-#replicates = ['rep1', 'rep5', 'rep6']
-replicates = ['rep5', 'rep6']
+replicates = ["rep1", "rep5", "rep6", "rep8", "rep9"]
 
 # list of all condition names as they are in the file names
-conditions = ['nutlin_only', 'xray_2hr', 'xray_7hr', 'xray-nutlin', 'uv_7hr']
+conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-color_order = [['skyblue', 0], ['yellowgreen', 1], ['lightseagreen', 2], ['chocolate', 3], ['mediumpurple', 4]]
+color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = '../data/modifications/modifications_P04637.csv'
+modfication_file_name = "../data/modifications/modifications_P04637.csv"
 
 # Fasta file for protein of interest
-fasta_file_name = '../data/fasta_files/P04637.fasta'
+fasta_file_name = "../data/fasta_files/P04637.fasta"
 
 # Theoretical average mass of the unmodified species (in Da)
 unmodified_species_mass, stddev_isotope_distribution = utils.mean_and_stddev_of_isotope_distribution(fasta_file_name, 100)
@@ -45,9 +44,6 @@ pvalue_threshold = 0.1
 window_size_lb = 0.2
 window_size_ub = 0.8
 
-# allowed overlap of window sizes that are used for fitting
-allowed_overlap = 0.3
-
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 20
 
@@ -67,7 +63,7 @@ laps_run_lp = 10
 # Choose between two objective functions: 
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
-objective_fun = "min_err"
+objective_fun = "min_ptm"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

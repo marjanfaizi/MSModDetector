@@ -44,9 +44,6 @@ pvalue_threshold = 0.1
 window_size_lb = 0.2
 window_size_ub = 0.8
 
-# allowed overlap of window sizes that are used for fitting
-allowed_overlap = 0.5
-
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 20
 

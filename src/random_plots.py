@@ -14,7 +14,7 @@ import seaborn as sns
 import pandas as pd
 
 from mass_spec_data import MassSpecData
-import config_sim as config
+import config as config
 import utils
 
 plt.style.use("seaborn-pastel")

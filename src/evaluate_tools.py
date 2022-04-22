@@ -158,7 +158,7 @@ performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts
 performance_df["matching_mass_shifts"] = matching_mass_shifts
 performance_df["r_score"] = r_score
 performance_df["matching_ptm_patterns"] = matching_ptm_patterns
-performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=',', index=False) 
+performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
 ###################################################################################################################
 ###################################################################################################################
 
@@ -167,23 +167,35 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=','
 ###################################################################################################################
 ###################################################################################################################
 
+basal_noise_sigma_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], sigma_std_list])]
 
-## TODO: loop over all parameters and this for r_score and accuracy
+performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-pivot_df = performance_df[(performance_df["sigma_noise_std"]==0) & 
-                          (performance_df["basal_noise_beta"]==0)].pivot("horizontal_noise_std", 
-                                                                         "vertical_noise_std", "r_score")
+metric = "r_score" # "ptm_pattern_acc" 
 
-fig, axn = plt.subplots(4, 4, sharex=True, sharey=True)
-cbar_ax = fig.add_axes([.91, .3, .03, .4])
-
+fig, axn = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(7,6))
+cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
+cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
+    basal_noise_beta = basal_noise_sigma_comb[i][0]
+    sigma_std = round(basal_noise_sigma_comb[i][1],6)
+    mask = ((performance_df["sigma_noise_std"].round(6)==sigma_std) & 
+            (performance_df["basal_noise_beta"]==basal_noise_beta))
+    pivot_df = performance_df[mask].pivot("horizontal_noise_std", "vertical_noise_std", metric)                                                                             
     sns.heatmap(pivot_df, ax=ax,
-                cbar=i == 0,
-                vmin=performance_df["r_score"].min(), vmax=performance_df["r_score"].max(),
+                cbar=i == 0, cmap=cmap,
+                vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None if i else cbar_ax)
-
-fig.tight_layout(rect=[0, 0, .9, 1])
+    
+    ax.set_xlabel("$\sigma_{vertical\_noise}$")
+    ax.set_ylabel("$\sigma_{horizontal\_noise}$")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation = 45)    
+    ax.invert_yaxis()
+    matching_mass_shifts = performance_df[mask]["matching_mass_shifts"].values[i]
+    simulated_mass_shifts = performance_df[mask]["simulated_mass_shifts"].values[i]
+    ax.set_title(str(matching_mass_shifts)+" out of "+str(simulated_mass_shifts))
+       
+fig.tight_layout(rect=[0, 0, 0.93, 1])
 
 
 

@@ -109,7 +109,7 @@ class MassShifts(object):
 
     def save_tables(self, output_path_name):
         regex_score_cols =  "mass shift"+"|"+self.pvalue_col_name+"|"+self.chi_score_col_name
-        regex_mass_shift_cols = "mass shift"+"|"+"PTM pattern"+"|"+self.avg_mass_col_name+\
+        regex_mass_shift_cols = "mass shift"+"|"+"PTM pattern"+"|"+self.avg_mass_col_name+ "|"+\
                                 self.mass_col_name+"|"+self.intensity_col_name+"|"+self.abundance_col_name
 
         masses_df = self.identified_masses_df.filter(regex=regex_mass_shift_cols)

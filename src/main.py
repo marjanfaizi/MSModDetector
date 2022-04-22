@@ -17,7 +17,7 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-import config_sim as config
+import config as config
 
 file_names = [file for file in glob.glob(config.file_names)] 
 
