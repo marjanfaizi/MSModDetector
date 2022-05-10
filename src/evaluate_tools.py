@@ -34,6 +34,7 @@ aa_sequence_str = utils.read_fasta(config.fasta_file_name)
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
 modform_distribution = pd.read_csv("../data/modform_distributions/modform_distribution_"+modform_file_name+".csv", 
                                    sep=",")
+modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
 ###################################################################################################################
 ###################################################################################################################
@@ -85,7 +86,8 @@ data_simulation.set_sigma_mean(sigma_mean)
 
 performance_df = pd.DataFrame(columns=["vertical_noise_std", "sigma_noise_std", "horizontal_noise_std", 
                                        "basal_noise_beta", "all_detected_mass_shifts", "simulated_mass_shifts", 
-                                       "matching_mass_shifts", "r_score", "matching_ptm_patterns"])
+                                       "matching_mass_shifts", "r_score_mass", "r_score_abundance", 
+                                       "matching_ptm_patterns"])
 
 performance_df["sigma_noise_std"] = [a_tuple[0] for a_tuple in all_std_combinations]
 performance_df["horizontal_noise_std"] = [a_tuple[1] for a_tuple in all_std_combinations]
@@ -95,10 +97,11 @@ performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
 
 all_detected_mass_shifts = []
 matching_mass_shifts = []
-r_score = []
+r_score_mass = []
+r_score_abundance = []
 matching_ptm_patterns = []
 progress = 1
-for std_comb in all_std_combinations:
+for std_comb in all_std_combinations[:5]:
     # simulated data
     data_simulation.reset_noise_levels()
     data_simulation.add_noise(vertical_noise_std=std_comb[0], sigma_noise_std=std_comb[1], 
@@ -142,12 +145,16 @@ for std_comb in all_std_combinations:
     
     mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
     ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "modform"].values
+    abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
     mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
     ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
-    
+    abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
+
     all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
     matching_mass_shifts += [len(mass_shift_pred)]
-    r_score += [r2_score(mass_shift_true, mass_shift_pred)]
+    r_score_mass += [r2_score(mass_shift_true, mass_shift_pred)]
+    r_score_abundance += [r2_score(abundance_true, abundance_pred)]
+    print(abundance_true, abundance_pred)
     matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
 
     print(progress, "out of", len(all_std_combinations))
@@ -156,7 +163,8 @@ for std_comb in all_std_combinations:
 
 performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts
 performance_df["matching_mass_shifts"] = matching_mass_shifts
-performance_df["r_score"] = r_score
+performance_df["r_score_mass"] = r_score_mass
+performance_df["r_score_abundance"] = r_score_abundance
 performance_df["matching_ptm_patterns"] = matching_ptm_patterns
 performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
 ###################################################################################################################
