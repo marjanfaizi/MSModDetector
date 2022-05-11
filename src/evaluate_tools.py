@@ -101,7 +101,7 @@ r_score_mass = []
 r_score_abundance = []
 matching_ptm_patterns = []
 progress = 1
-for std_comb in all_std_combinations[:5]:
+for std_comb in all_std_combinations:
     # simulated data
     data_simulation.reset_noise_levels()
     data_simulation.add_noise(vertical_noise_std=std_comb[0], sigma_noise_std=std_comb[1], 
@@ -154,7 +154,6 @@ for std_comb in all_std_combinations[:5]:
     matching_mass_shifts += [len(mass_shift_pred)]
     r_score_mass += [r2_score(mass_shift_true, mass_shift_pred)]
     r_score_abundance += [r2_score(abundance_true, abundance_pred)]
-    print(abundance_true, abundance_pred)
     matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
 
     print(progress, "out of", len(all_std_combinations))
@@ -179,7 +178,7 @@ basal_noise_sigma_comb = [p for p in itertools.product(*[basal_noise_beta_list[:
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "r_score" # "ptm_pattern_acc" 
+metric = "r_score_abundance" # "r_score_mass" "ptm_pattern_acc" 
 
 fig, axn = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(7,6))
 cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])

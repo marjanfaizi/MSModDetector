@@ -6,7 +6,7 @@ import utils
 file_names = "../data/raw_data/P04637/*.mzml"
 
 # list of all replicate names as they are in the file names
-replicates = ["rep1", "rep5", "rep6", "rep8", "rep9"]
+replicates = ["rep5", "rep6"]
 
 # list of all condition names as they are in the file names
 conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
