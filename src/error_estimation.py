@@ -71,8 +71,8 @@ for rep in config.replicates:
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
             vertical_error += (y_gauss_func / peaks_in_search_window[:,1]).tolist()
 
-            proton_mass = 1.007
-            horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - proton_mass).tolist()
+            spacing_between_peaks = 1.003355
+            horizontal_error += (abs(abs(peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks) % spacing_between_peaks).tolist()
 
             for peak in peaks_in_search_window:
                 window_size = 0.6

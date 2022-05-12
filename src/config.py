@@ -6,10 +6,10 @@ import utils
 file_names = "../data/raw_data/P04637/*.mzml"
 
 # list of all replicate names as they are in the file names
-replicates = ["rep5", "rep6"]
+replicates = ["rep5", "rep6"] # "rep1", "rep9"
 
 # list of all condition names as they are in the file names
-conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
+conditions = ["nutlin_only", "uv_7hr"] # "xray_2hr", "xray_7hr", "xray-nutlin"
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)

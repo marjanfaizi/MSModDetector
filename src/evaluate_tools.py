@@ -62,16 +62,16 @@ def determine_matching_mass_shifts(detected_mass_shifts, modform_distribution_si
 ###################################################################################################################
 ############################################## DETERMINE NOISE LEVEL ##############################################
 ###################################################################################################################
-sigma_mean = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].mean()
-sigma_std = error_estimate_table[error_estimate_table["sigma noise"]<0.4]["sigma noise"].std()
+peak_width_mean = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].mean()
+peak_width_std = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].std()
 
-vertical_noise_std_list = [0, 0.0625, 0.125, 0.25]
-horizontal_noise_std_list = [0, 0.025, 0.05, 0.1]
-sigma_std_list = [0, sigma_std/4, sigma_std/2, sigma_std]
-basal_noise_beta_list = [0, 1/400, 1/200, 1/100]
+vertical_error_std_list = [0, 0.1, 0.2]
+horizontal_error_std_list = [0, 1/40, 1/20]
+peak_width_std_list = [0, peak_width_std/2, peak_width_std]
+basal_noise_beta_list = [0, 1/240, 1/120]
 
-all_std_combinations = [p for p in itertools.product(*[sigma_std_list, horizontal_noise_std_list, 
-                                                       vertical_noise_std_list, basal_noise_beta_list])]
+all_std_combinations = [p for p in itertools.product(*[peak_width_std_list, horizontal_error_std_list, 
+                                                       vertical_error_std_list, basal_noise_beta_list])]
 ###################################################################################################################
 ###################################################################################################################
 
@@ -82,7 +82,7 @@ all_std_combinations = [p for p in itertools.product(*[sigma_std_list, horizonta
 mod = Modifications(config.modfication_file_name, aa_sequence_str)
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
-data_simulation.set_sigma_mean(sigma_mean)
+data_simulation.set_sigma_mean(peak_width_mean)
 
 performance_df = pd.DataFrame(columns=["vertical_noise_std", "sigma_noise_std", "horizontal_noise_std", 
                                        "basal_noise_beta", "all_detected_mass_shifts", "simulated_mass_shifts", 
@@ -174,7 +174,7 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=","
 ###################################################################################################################
 ###################################################################################################################
 
-basal_noise_sigma_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], sigma_std_list])]
+basal_noise_sigma_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], peak_width_std_list])]
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 

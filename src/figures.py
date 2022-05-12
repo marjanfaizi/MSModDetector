@@ -187,6 +187,8 @@ plt.show()
 ################################################################################################
 #################################### SUPPLEMENTAL FIGURE 2 #####################################
 ################################################################################################
+sns.set_style("ticks")
+
 protein_sequence = AASequence.fromString(utils.read_fasta(config.fasta_file_name))
 distribution = utils.get_theoretical_isotope_distribution(protein_sequence, 100)
 
@@ -206,7 +208,7 @@ plt.plot(mean_p53, intensities.max(), "r.")
 plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
 plt.xlim((43630, 43680))
-plt.legend()
+plt.legend(frameon=False, fontsize=10)
 plt.tight_layout()
 sns.despine()
 plt.show()
@@ -217,8 +219,6 @@ plt.show()
 ################################################################################################
 #################################### SUPPLEMENTAL FIGURE 3 #####################################
 ################################################################################################
-sns.set_style("ticks")
-
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
 
@@ -226,36 +226,41 @@ def exponential(x, beta):
     return (1/beta)*np.exp(-(x/beta))
 
 
-peak_width_mean = error_estimate_table[error_estimate_table["peak width"]<0.4]["peak width"].mean()
-peak_width_std = error_estimate_table[error_estimate_table["peak width"]<0.4]["peak width"].std()
 
+
+
+peak_width_mean = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].mean()
+peak_width_std = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].std()
+
+lw = 1.3
 
 fig, axes = plt.subplots(2, 2, figsize=(7,5))
-sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=100, ax=axes[0][0])
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 20*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/100), color="purple")
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 10*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/200), color="red")
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/400), color="brown")
-axes[0][0].set_xlim([0,0.12])
-#sns.histplot(x="basal noise (a.u.)", data=error_estimate_table[error_estimate_table["basal noise (a.u.)"]<0.12], bins=30, ax=axes[0][0])
-sns.histplot(x="peak width", data=error_estimate_table[error_estimate_table["peak width"]<0.5], bins=50, ax=axes[0][1])
-axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 300, peak_width_mean, peak_width_std), color="purple")
-axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 300, peak_width_mean, peak_width_std/2), color="red")
-axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 300, peak_width_mean, peak_width_std/4), color="brown")
+sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=70, ax=axes[0][0])
+#axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 8*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/100), color="purple", lw=lw)
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 4*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/150), color="purple", lw=lw)
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 2*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/300), color="red", lw=lw)
+axes[0][0].set_xlim([0,0.04])
+sns.histplot(x="peak width", data=error_estimate_table[error_estimate_table["peak width"]<0.5], bins=40, ax=axes[0][1], label="all peaks")
+sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)], bins=40, ax=axes[0][1], color="orange", label="signal only")
+#axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std), color="purple", lw=lw)
+axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std), color="purple", lw=lw)
+axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std/2), color="red", lw=lw)
 axes[0][1].set_xlim([0.1,0.5])
-sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width error"]<0.55) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[0][1], color="orange")
-sns.histplot(x="horizontal error (Da)", data=error_estimate_table[error_estimate_table["horizontal error (Da)"]<1], bins=50, ax=axes[1][0])
-axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal error (Da)"].sort_values(), 1e3, 0, 0.1), color="purple")
-axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal error (Da)"].sort_values(), 1e3, 0, 0.05), color="red")
-axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal error (Da)"].sort_values(), 1e3, 0, 0.025), color="brown")
-axes[1][0].set_xlim([-1,1])
-sns.histplot(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][0], color="orange")
+plt.legend(frameon=False, fontsize=10)
+sns.histplot(x="horizontal error (Da)", data=error_estimate_table[error_estimate_table["horizontal error (Da)"]<1], bins=45, ax=axes[1][0])
+sns.histplot(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], bins=45, ax=axes[1][0], color="orange")
+#[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal error (Da)"].sort_values(), 1e3, 0, 0.1), color="purple", lw=lw)
+axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), 30*exponential(error_estimate_table["horizontal error (Da)"].sort_values(), 1/20), color="purple", lw=lw)
+axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), 15*exponential(error_estimate_table["horizontal error (Da)"].sort_values(), 1/40), color="red", lw=lw)
+axes[1][0].set_xlim([0,1])
 sns.histplot(x="vertical error (rel.)", data=error_estimate_table[error_estimate_table["vertical error (rel.)"]<2.5], bins=50, ax=axes[1][1])
-plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 300, 1, 0.25), color="purple")
-plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 300, 1, 0.125), color="red")
-plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 300, 1, 0.0625), color="brown")
-axes[1][1].set_xlim([0,2.5])
-axes[1][1].set_ylim([-1,600])
 sns.histplot(x="vertical error (rel.)", data=error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][1], color="orange")
+#plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 300, 1, 0.25), color="purple", lw=lw)
+plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 100, 1, 0.2), color="purple", lw=lw)
+plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 100, 1, 0.1), color="red", lw=lw)
+axes[1][1].set_xlim([0,2.5])
+axes[1][1].set_ylim([-1,300])
+axes[1][1].set_yticks([50, 100, 150])
 sns.despine()
 plt.tight_layout()
 plt.show()
