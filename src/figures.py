@@ -11,7 +11,9 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from pyopenms import AASequence
+import itertools
 
+from simulate_data import SimulateData
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
 import config
@@ -21,22 +23,25 @@ sns.set()
 sns.set_style("white")
 
 
-################################################################################################
-############################################ TOY EXAMPLE #######################################
-################################################################################################
+###################################################################################################################
+############################################## INPUT AND TOY EXAMPLE ##############################################
+###################################################################################################################
 file_name = "../data/raw_data/P04637/xray_7hr_rep5.mzml"
 rep = "rep5"
 cond = "xray_7hr"
 
 data = MassSpecData(file_name)
 data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)  
-################################################################################################
-################################################################################################
+
+aa_sequence_str = utils.read_fasta(config.fasta_file_name)
+modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
+###################################################################################################################
+###################################################################################################################
 
 
-################################################################################################
-############################################# FIGURE 1 #########################################
-################################################################################################
+###################################################################################################################
+#################################################### FIGURE 1 #####################################################
+###################################################################################################################
 plt.figure(figsize=(2.,1.6))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=1)
 plt.xticks([])
@@ -138,14 +143,14 @@ plt.tight_layout()
 sns.despine()
 plt.show()  
 
-################################################################################################
-################################################################################################
+###################################################################################################################
+###################################################################################################################
 
 
 
-################################################################################################
-#################################### SUPPLEMENTAL FIGURE 1 #####################################
-################################################################################################
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 1 ##############################################
+###################################################################################################################
 plt.figure(figsize=(7, 3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=0.8)
 plt.xlabel("mass (Da)", fontsize=10)
@@ -180,13 +185,13 @@ plt.tight_layout()
 sns.despine()
 plt.show()
 
-################################################################################################
-################################################################################################
+###################################################################################################################
+###################################################################################################################
 
 
-################################################################################################
-#################################### SUPPLEMENTAL FIGURE 2 #####################################
-################################################################################################
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 2 ##############################################
+###################################################################################################################
 sns.set_style("ticks")
 
 protein_sequence = AASequence.fromString(utils.read_fasta(config.fasta_file_name))
@@ -212,21 +217,18 @@ plt.legend(frameon=False, fontsize=10)
 plt.tight_layout()
 sns.despine()
 plt.show()
-################################################################################################
-################################################################################################
+###################################################################################################################
+###################################################################################################################
 
 
-################################################################################################
-#################################### SUPPLEMENTAL FIGURE 3 #####################################
-################################################################################################
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 3 ##############################################
+###################################################################################################################
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
 
 def exponential(x, beta):
     return (1/beta)*np.exp(-(x/beta))
-
-
-
 
 
 peak_width_mean = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].mean()
@@ -237,8 +239,8 @@ lw = 1.3
 fig, axes = plt.subplots(2, 2, figsize=(7,5))
 sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=70, ax=axes[0][0])
 #axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 8*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/100), color="purple", lw=lw)
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 4*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/150), color="purple", lw=lw)
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 2*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/300), color="red", lw=lw)
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/120), color="purple", lw=lw)
+axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 2.5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/240), color="red", lw=lw)
 axes[0][0].set_xlim([0,0.04])
 sns.histplot(x="peak width", data=error_estimate_table[error_estimate_table["peak width"]<0.5], bins=40, ax=axes[0][1], label="all peaks")
 sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)], bins=40, ax=axes[0][1], color="orange", label="signal only")
@@ -265,32 +267,109 @@ sns.despine()
 plt.tight_layout()
 plt.show()
 
-################################################################################################
-################################################################################################
+###################################################################################################################
+###################################################################################################################
 
 
-################################################################################################
-#################################### SUPPLEMENTAL FIGURE 4 #####################################
-################################################################################################
+###################################################################################################################
+########################################### SUPPLEMENTAL FIGURE 4 AND 5 ###########################################
+###################################################################################################################
+modform_file_name = "complex" # "phospho"
+modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
+                                   sep=",")
+data_simulation = SimulateData(aa_sequence_str, modifications_table)
+data_simulation.set_peak_width_mean(peak_width_mean)
+
+data_simulation.reset_noise_error()
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
+
+data_simulation.reset_noise_error()
+data_simulation.add_noise(peak_width_std=peak_width_std)
+masses_p, intensities_p = data_simulation.create_mass_spectrum(modform_distribution)
+
+data_simulation.reset_noise_error()
+data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20)
+masses_ph, intensities_ph = data_simulation.create_mass_spectrum(modform_distribution)
+
+data_simulation.reset_noise_error()
+data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20, basal_noise_beta=1/120)
+masses_phb, intensities_phb = data_simulation.create_mass_spectrum(modform_distribution)
+
+data_simulation.reset_noise_error()
+data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20, basal_noise_beta=1/120,
+                          vertical_error_std=0.2)
+masses_phbv, intensities_phbv = data_simulation.create_mass_spectrum(modform_distribution)
+
+title = ["no noise or error", "peak width variation", "peak width variation + horizontal error",
+         "peak width variation + horizontal error + basal noise",
+         "peak width variation + horizontal and vertical error + basal noise"]
+fig = plt.figure(figsize=(7,6))
+gs = fig.add_gridspec(5, hspace=0)
+axes = gs.subplots(sharex=True, sharey=True)
+axes[0].plot(masses, intensities, color="k") 
+axes[1].plot(masses_p, intensities_p, color="k") 
+axes[2].plot(masses_ph, intensities_ph, color="k") 
+axes[3].plot(masses_phb, intensities_phb, color="k") 
+axes[4].plot(masses_phbv, intensities_phbv, color="k") 
+axes[4].set_xlabel("mass (Da)", fontsize=10)
+axes[2].set_ylabel("intensity (a.u.)", fontsize=10)
+[axes[i].set_title(title[i], fontsize=10, pad=-20) for i in  range(5)]
+#[axes[i].set_xlim([43680, 44220]) for i in range(5)] # phospho
+#[axes[i].set_ylim([0, 1210]) for i in range(5)] # phospho
+[axes[i].set_xlim([43720, 44460]) for i in range(5)] # complex
+[axes[i].set_ylim([0, 2350]) for i in range(5)] # complex
+fig.tight_layout()
+sns.despine()
+plt.show()
+###################################################################################################################
+###################################################################################################################
 
 
-# spectrum mit different noise levels of phospho example
+###################################################################################################################
+#################################################### FIGURE 2 #####################################################
+###################################################################################################################
+modform_file_name = "phospho"
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
-################################################################################################
-################################################################################################
+vertical_error_std_list = [0, 0.1, 0.2]
+horizontal_error_std_list = [0, 1/40, 1/20]
+peak_width_std_list = [0., peak_width_std/2, peak_width_std]
+basal_noise_beta_list = [0, 1/240, 1/120]
 
+all_std_combinations = [p for p in itertools.product(*[peak_width_std_list, horizontal_error_std_list, 
+                                                       vertical_error_std_list, basal_noise_beta_list])]
 
-################################################################################################
-#################################### SUPPLEMENTAL FIGURE 5 #####################################
-################################################################################################
+basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], peak_width_std_list])]
 
+performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-# spectrum of complex example with noise
+metric = "ptm_pattern_acc" # "r_score_abundance" # "r_score_mass" "ptm_pattern_acc" 
 
-################################################################################################
-################################################################################################
-
-
-
-
+fig, axn = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(7,6))
+cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
+cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
+for i, ax in enumerate(axn.flat):
+    basal_noise_beta = basal_noise_peak_width_comb[i][0]
+    peak_width_std = round(basal_noise_peak_width_comb[i][1],6)
+    mask = ((performance_df["peak_width_std"].round(6)==round(peak_width_std,6)) & 
+            (performance_df["basal_noise_beta"].round(6)==round(basal_noise_beta,6)))
+    pivot_df = performance_df[mask].pivot("vertical_error_std", "horizontal_error_beta", metric)                                                                             
+    sns.heatmap(pivot_df, ax=ax,
+                cbar=i == 0, cmap=cmap,
+                vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
+                cbar_ax=None if i else cbar_ax)
+    
+    if i==6 or i==7 or i==8: ax.set_xlabel("$\\beta_{horizontal\_error}$")
+    else: ax.set_xlabel("")
+    if i==0 or i==3 or i==6: ax.set_ylabel("$\sigma_{vertical\_error}$")
+    else: ax.set_ylabel("")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation = 45)    
+    ax.invert_yaxis()
+    matching_mass_shifts = performance_df[mask]["matching_mass_shifts"].values[i]
+    simulated_mass_shifts = performance_df[mask]["simulated_mass_shifts"].values[i]
+    ax.set_title(str(matching_mass_shifts)+" out of "+str(simulated_mass_shifts))
+       
+fig.tight_layout(rect=[0, 0, 0.93, 1])
+###################################################################################################################
+###################################################################################################################
 

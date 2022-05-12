@@ -19,7 +19,7 @@ import utils
 class SimulateData(object):
     """
     This class creates a mass spectrum from a theoretical modform distribution.
-    Different noise types can be added to the theoretical mass spectrum.
+    Different error types and basal noise can be added to the theoretical mass spectrum.
     """
 
     
@@ -30,24 +30,23 @@ class SimulateData(object):
         self.modifications_table = modifications_table
         self.mass_grid_step = 0.02
         self.margin_mass_range = 20
-        self.vertical_noise_mean = 1.0
-        self.vertical_noise_std = None
-        self.horizontal_noise_mean = 0.0
-        self.horizontal_noise_std = None
+        self.vertical_error_mean = 1.0
+        self.vertical_error_std = None
+        self.horizontal_error_beta = None
         self.basal_noise_beta = None
-        self.sigma_mean = None
-        self.sigma_noise_std = None
+        self.peak_width_mean = None
+        self.peak_width_std = None
         
         
-    def set_sigma_mean(self, sigma_mean):
-        self.sigma_mean = sigma_mean
+    def set_peak_width_mean(self, peak_width_mean):
+        self.peak_width_mean = peak_width_mean
 
 
-    def reset_noise_levels(self):
-        self.vertical_noise_std = None
-        self.horizontal_noise_std = None
+    def reset_noise_error(self):
+        self.vertical_error_std = None
+        self.horizontal_error_beta = None
         self.basal_noise_beta = None
-        self.sigma_noise_std = None
+        self.peak_width_std = None
 
 
     def create_mass_spectrum(self, modform_distribution):       
@@ -56,7 +55,7 @@ class SimulateData(object):
         spectrum = np.array([]).reshape(0,2)
         for index, row in modform_distribution.iterrows():
             
-            modified_sequence_str = self.create_modified_seqeunce(row["modform"])
+            modified_sequence_str = self.create_modified_seqeunce(row["PTM pattern"])
             isotopic_distribution_mod = self.seq_str_to_isotopic_dist(modified_sequence_str)
             scaling_factor = row["intensity"]/isotopic_distribution_mod[:,1].max()
             isotopic_distribution_mod[:,1] *= scaling_factor   
@@ -70,41 +69,41 @@ class SimulateData(object):
             basal_noise = np.random.exponential(self.basal_noise_beta, size=spectrum.shape[0])
             spectrum[:,1] += basal_noise*scaling_factor
 
-        if self.vertical_noise_std != None and self.vertical_noise_std != 0:
-            vertical_noise = np.random.normal(self.vertical_noise_mean, self.vertical_noise_std, size=spectrum.shape[0])
-            spectrum[:,1] *= vertical_noise
+        if self.vertical_error_std != None and self.vertical_error_std != 0:
+            vertical_error = np.random.normal(self.vertical_error_mean, self.vertical_error_std, size=spectrum.shape[0])
+            spectrum[:,1] *= vertical_error
 
-        if self.horizontal_noise_std != None and self.horizontal_noise_std != 0:       
+        if self.horizontal_error_beta != None and self.horizontal_error_beta != 0:       
             for index, val in enumerate(spectrum):
-                horizontal_noise = random.gauss(self.horizontal_noise_mean, self.horizontal_noise_std)
-                spectrum[index, 0] = val[0]+horizontal_noise
+                horizontal_error = np.random.exponential(self.horizontal_error_beta)
+                spectrum[index, 0] = val[0]+horizontal_error
 
 
         intensities = np.zeros(mass_grid.shape)
         
         for peak in spectrum:
-            if self.sigma_mean == None:
-                sys.exit("Set value for sigma_mean.")
-            if self.sigma_noise_std != None and self.sigma_noise_std != 0:
-                sigma = random.gauss(self.sigma_mean, self.sigma_noise_std)
+            if self.peak_width_mean == None:
+                sys.exit("Set value for peak_width_mean.")
+            if self.peak_width_std != None and self.peak_width_std != 0:
+                peak_width = random.gauss(self.peak_width_mean, self.peak_width_std)
             else:
-                sigma = self.sigma_mean
+                peak_width = self.peak_width_mean
             # Add gaussian peak shape centered around each theoretical peak
-            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / sigma)**2)
+            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width)**2)
 
         return mass_grid, intensities
 
 
-    def add_noise(self, vertical_noise_std=None, horizontal_noise_std=None, basal_noise_beta=None, sigma_noise_std=None):
-        # set the noise std to the respective given value 
+    def add_noise(self, vertical_error_std=None, horizontal_error_beta=None, basal_noise_beta=None, peak_width_std=None):
+        # set the error/noise std/beta to the respective given value 
         # if no value is given, reset (important!) the value to None
-        if vertical_noise_std != None:
-            self.vertical_noise_std = vertical_noise_std
+        if vertical_error_std != None:
+            self.vertical_error_std = vertical_error_std
         else:
-            self.vertical_noise_std = None
+            self.vertical_error_std = None
 
-        if horizontal_noise_std != None:
-            self.horizontal_noise_std = horizontal_noise_std
+        if horizontal_error_beta != None:
+            self.horizontal_error_beta = horizontal_error_beta
         else:
             self.horizontal_noise_std = None
 
@@ -113,8 +112,8 @@ class SimulateData(object):
         else:
             self.basal_noise_beta = None
 
-        if sigma_noise_std != None:
-            self.sigma_noise_std = sigma_noise_std
+        if peak_width_std != None:
+            self.peak_width_std = peak_width_std
         else:
             self.sigma_noise_std = None
             

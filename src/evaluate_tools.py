@@ -7,8 +7,6 @@ Created on Apr 5 2022
 """
 
 import pandas as pd
-from matplotlib import pyplot as plt
-import seaborn as sns
 from sklearn.metrics import r2_score
 import numpy as np
 import itertools
@@ -19,11 +17,7 @@ from mass_shifts import MassShifts
 from modifications import Modifications
 from simulate_data import SimulateData
 import utils
-import config_sim as config
-
-sns.set_color_codes("pastel")
-paper_rc = {'lines.linewidth': 1, 'lines.markersize': 1}                  
-sns.set_context("paper", rc = paper_rc)   
+import config_sim as config 
 
 
 ###################################################################################################################
@@ -32,10 +26,10 @@ sns.set_context("paper", rc = paper_rc)
 modform_file_name = "phospho"
 aa_sequence_str = utils.read_fasta(config.fasta_file_name)
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
-modform_distribution = pd.read_csv("../data/modform_distributions/modform_distribution_"+modform_file_name+".csv", 
+modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
-error_estimate_table = pd.read_csv("../output/noise_distribution_table.csv")
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 ###################################################################################################################
 ###################################################################################################################
 
@@ -82,16 +76,16 @@ all_std_combinations = [p for p in itertools.product(*[peak_width_std_list, hori
 mod = Modifications(config.modfication_file_name, aa_sequence_str)
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
-data_simulation.set_sigma_mean(peak_width_mean)
+data_simulation.set_peak_width_mean(peak_width_mean)
 
-performance_df = pd.DataFrame(columns=["vertical_noise_std", "sigma_noise_std", "horizontal_noise_std", 
+performance_df = pd.DataFrame(columns=["vertical_error_std", "peak_width_std", "horizontal_error_beta", 
                                        "basal_noise_beta", "all_detected_mass_shifts", "simulated_mass_shifts", 
                                        "matching_mass_shifts", "r_score_mass", "r_score_abundance", 
                                        "matching_ptm_patterns"])
 
-performance_df["sigma_noise_std"] = [a_tuple[0] for a_tuple in all_std_combinations]
-performance_df["horizontal_noise_std"] = [a_tuple[1] for a_tuple in all_std_combinations]
-performance_df["vertical_noise_std"] = [a_tuple[2] for a_tuple in all_std_combinations]
+performance_df["peak_width_std"] = [a_tuple[0] for a_tuple in all_std_combinations]
+performance_df["horizontal_error_beta"] = [a_tuple[1] for a_tuple in all_std_combinations]
+performance_df["vertical_error_std"] = [a_tuple[2] for a_tuple in all_std_combinations]
 performance_df["basal_noise_beta"] = [a_tuple[3] for a_tuple in all_std_combinations]
 performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
 
@@ -103,9 +97,9 @@ matching_ptm_patterns = []
 progress = 1
 for std_comb in all_std_combinations:
     # simulated data
-    data_simulation.reset_noise_levels()
-    data_simulation.add_noise(vertical_noise_std=std_comb[0], sigma_noise_std=std_comb[1], 
-                              horizontal_noise_std=std_comb[2], basal_noise_beta=std_comb[3])
+    data_simulation.reset_noise_error()
+    data_simulation.add_noise(vertical_error_std=std_comb[0], peak_width_std=std_comb[1], 
+                              horizontal_error_beta=std_comb[2], basal_noise_beta=std_comb[3])
     masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
     
     theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
@@ -144,7 +138,7 @@ for std_comb in all_std_combinations:
                                                                             modform_distribution)
     
     mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
-    ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "modform"].values
+    ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
     abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
     mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
     ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
@@ -168,64 +162,4 @@ performance_df["matching_ptm_patterns"] = matching_ptm_patterns
 performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
 ###################################################################################################################
 ###################################################################################################################
-
-
-
-###################################################################################################################
-###################################################################################################################
-
-basal_noise_sigma_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], peak_width_std_list])]
-
-performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
-
-metric = "r_score_abundance" # "r_score_mass" "ptm_pattern_acc" 
-
-fig, axn = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(7,6))
-cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
-cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
-for i, ax in enumerate(axn.flat):
-    basal_noise_beta = basal_noise_sigma_comb[i][0]
-    sigma_std = round(basal_noise_sigma_comb[i][1],6)
-    mask = ((performance_df["sigma_noise_std"].round(6)==sigma_std) & 
-            (performance_df["basal_noise_beta"]==basal_noise_beta))
-    pivot_df = performance_df[mask].pivot("horizontal_noise_std", "vertical_noise_std", metric)                                                                             
-    sns.heatmap(pivot_df, ax=ax,
-                cbar=i == 0, cmap=cmap,
-                vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
-                cbar_ax=None if i else cbar_ax)
-    
-    ax.set_xlabel("$\sigma_{vertical\_noise}$")
-    ax.set_ylabel("$\sigma_{horizontal\_noise}$")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation = 45)    
-    ax.invert_yaxis()
-    matching_mass_shifts = performance_df[mask]["matching_mass_shifts"].values[i]
-    simulated_mass_shifts = performance_df[mask]["simulated_mass_shifts"].values[i]
-    ax.set_title(str(matching_mass_shifts)+" out of "+str(simulated_mass_shifts))
-       
-fig.tight_layout(rect=[0, 0, 0.93, 1])
-
-
-
-
-
-
-"""
-data_simulation.reset_noise_levels()
-data_simulation.add_noise(vertical_noise_std=0.125, sigma_noise_std=sigma_std/2, basal_noise_beta=1/200, 
-                          horizontal_noise_std=0.05)
-masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
-
-plt.figure(figsize=(7,3))
-plt.plot(masses, intensities, "b.-")
-plt.xlabel("mass (Da)")
-plt.ylabel("intensity (a.u.)")
-plt.xlim((43700, 44200))
-plt.ylim(ymin=-0.005)
-plt.tight_layout()
-sns.despine()
-plt.show()
-"""
-###################################################################################################################
-###################################################################################################################
-
 

@@ -1,5 +1,4 @@
-modform,intensity,mass
-1[Ox],50,15.9994
+PTM pattern,intensity,mass
 1[Cys],815,119.1423
 1[Ox]1[Cys],192,135.1417
 2[Ph]1[Ox],562,175.9592
@@ -19,7 +18,7 @@ modform,intensity,mass
 5[Ph]1[Me1],147,413.9261
 1[Ph]3[Cys],258,437.4068
 3[Ph]2[Cys],152,478.2243
-3[Ph]1[Ox]2[Cys],61,494.2237
+3[Ph]1[Ox]2[Cys],111,494.2237
 3[Ph]2[Cys]1[Na],151,500.2061
 3[Ph]1[Me2]2[Cys],179,506.2775
 2[Ph]1[Ox]3[Cys],213,533.3861
