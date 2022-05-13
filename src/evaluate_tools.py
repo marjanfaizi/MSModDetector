@@ -81,7 +81,7 @@ data_simulation.set_peak_width_mean(peak_width_mean)
 performance_df = pd.DataFrame(columns=["vertical_error_std", "peak_width_std", "horizontal_error_beta", 
                                        "basal_noise_beta", "all_detected_mass_shifts", "simulated_mass_shifts", 
                                        "matching_mass_shifts", "r_score_mass", "r_score_abundance", 
-                                       "matching_ptm_patterns"])
+                                       "matching_ptm_patterns", "indices_matches"])
 
 performance_df["peak_width_std"] = [a_tuple[0] for a_tuple in all_std_combinations]
 performance_df["horizontal_error_beta"] = [a_tuple[1] for a_tuple in all_std_combinations]
@@ -94,6 +94,7 @@ matching_mass_shifts = []
 r_score_mass = []
 r_score_abundance = []
 matching_ptm_patterns = []
+indices_matches = []
 progress = 1
 for std_comb in all_std_combinations:
     # simulated data
@@ -149,11 +150,13 @@ for std_comb in all_std_combinations:
     r_score_mass += [r2_score(mass_shift_true, mass_shift_pred)]
     r_score_abundance += [r2_score(abundance_true, abundance_pred)]
     matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+    indices_matches += [mass_shift_true_ix]
 
     print(progress, "out of", len(all_std_combinations))
     progress += 1
 
 
+performance_df["indices_matches"] = indices_matches
 performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts
 performance_df["matching_mass_shifts"] = matching_mass_shifts
 performance_df["r_score_mass"] = r_score_mass

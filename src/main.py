@@ -84,7 +84,7 @@ if __name__ == "__main__":
                     gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
          
-                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, data.rescaling_factor, cond+"_"+rep)
+                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep) #, data.rescaling_factor)
  
                 else:
                     stdout_text.append("No peaks above the SN threshold could be detected within the search window for the following condition: " + cond + "_" + rep)

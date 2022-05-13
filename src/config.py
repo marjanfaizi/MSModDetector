@@ -6,16 +6,18 @@ import utils
 file_names = "../data/raw_data/P04637/*.mzml"
 
 # list of all replicate names as they are in the file names
-replicates = ["rep5", "rep6"] # "rep1", "rep9"
+replicates = ["rep5", "rep9"] # "rep1", "rep9"
 
 # list of all condition names as they are in the file names
-conditions = ["nutlin_only", "uv_7hr"] # "xray_2hr", "xray_7hr", "xray-nutlin"
+conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
+#conditions = ["nutlin_only", "uv_7hr"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
 color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
+#color_order = [["skyblue", 0], ["mediumpurple", 1]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
@@ -52,7 +54,7 @@ mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
 bin_peaks = False
-max_bin_size = 0
+max_bin_size = 1
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6

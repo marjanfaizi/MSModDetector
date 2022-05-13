@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from pyopenms import AASequence
 import itertools
+import glob
+import re
 
 from simulate_data import SimulateData
 from mass_spec_data import MassSpecData
@@ -21,7 +23,7 @@ import utils
 
 sns.set()
 sns.set_style("white")
-
+sns.set_context("paper")
 
 ###################################################################################################################
 ############################################## INPUT AND TOY EXAMPLE ##############################################
@@ -328,7 +330,7 @@ plt.show()
 ###################################################################################################################
 #################################################### FIGURE 2 #####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "complex"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error_std_list = [0, 0.1, 0.2]
@@ -343,10 +345,10 @@ basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise_beta_l
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "ptm_pattern_acc" # "r_score_abundance" # "r_score_mass" "ptm_pattern_acc" 
+metric = "r_score_mass" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
-fig, axn = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(7,6))
-cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
+fig, axn = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(3.5,3.5))
+#cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
     basal_noise_beta = basal_noise_peak_width_comb[i][0]
@@ -354,22 +356,83 @@ for i, ax in enumerate(axn.flat):
     mask = ((performance_df["peak_width_std"].round(6)==round(peak_width_std,6)) & 
             (performance_df["basal_noise_beta"].round(6)==round(basal_noise_beta,6)))
     pivot_df = performance_df[mask].pivot("vertical_error_std", "horizontal_error_beta", metric)                                                                             
-    sns.heatmap(pivot_df, ax=ax,
-                cbar=i == 0, cmap=cmap,
-                vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
-                cbar_ax=None if i else cbar_ax)
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 8},
+                vmin=0, vmax=1,
+                #cbar=i == 0, cmap=cmap,
+                #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
+                cbar_ax=None) #if i else cbar_ax)
     
     if i==6 or i==7 or i==8: ax.set_xlabel("$\\beta_{horizontal\_error}$")
     else: ax.set_xlabel("")
     if i==0 or i==3 or i==6: ax.set_ylabel("$\sigma_{vertical\_error}$")
     else: ax.set_ylabel("")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation = 45)    
-    ax.invert_yaxis()
-    matching_mass_shifts = performance_df[mask]["matching_mass_shifts"].values[i]
-    simulated_mass_shifts = performance_df[mask]["simulated_mass_shifts"].values[i]
-    ax.set_title(str(matching_mass_shifts)+" out of "+str(simulated_mass_shifts))
-       
-fig.tight_layout(rect=[0, 0, 0.93, 1])
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)  
+    ax.invert_yaxis() 
+     
+fig.tight_layout()#(rect=[0, 0, 0.93, 1])
+###################################################################################################################
+###################################################################################################################
+
+
+
+###################################################################################################################
+#################################################### FIGURE 2 #####################################################
+###################################################################################################################
+mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
+parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
+file_names = [file for file in glob.glob(config.file_names)] 
+
+flip_spectrum = [1,-1]
+
+output_fig = plt.figure(figsize=(7,7))
+gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
+axes = gs.subplots(sharex=True, sharey=True)
+ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()
+    
+for cond in config.conditions:  
+    color_of_sample = config.color_palette[cond][0]
+    order_in_plot = config.color_palette[cond][1]
+    
+    for ix, rep in enumerate(config.replicates):
+        file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
+        
+        noise_level = parameter.loc["noise_level", cond+"_"+rep]
+    
+        sample_name = [file for file in file_names_same_replicate if re.search(cond, file)][0]
+        data = MassSpecData(sample_name)
+        ### only required to determine re-scaling factor, find a better approach
+        data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
+        all_peaks = data.picking_peaks()
+        trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
+        trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+        trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
+        ####
+                
+        masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
+        intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
+        
+        x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
+        y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
+        
+        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/data.rescaling_factor, label=cond, color=color_of_sample)
+        axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
+        axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.3)
+        axes[order_in_plot].legend(fontsize=11, loc='upper right')
+        axes[order_in_plot].yaxis.grid()
+        """
+        for avg in mass_shifts_df["average mass"].values:
+            axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
+            axes[order_in_plot].label_outer()
+        """
+        
+plt.xlim((config.mass_start_range, config.mass_end_range))
+plt.ylim((-ylim_max*1.1, ylim_max*1.1))
+
+plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity")
+output_fig.tight_layout()
+plt.show()
+
 ###################################################################################################################
 ###################################################################################################################
 

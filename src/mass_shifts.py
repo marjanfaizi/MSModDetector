@@ -32,9 +32,10 @@ class MassShifts(object):
         self.laps_run_lp = 10
 
 
-    def add_identified_masses_to_df(self, fitting_results, rescaling_factor, column_name):
+    def add_identified_masses_to_df(self, fitting_results, column_name, rescaling_factor=None):
         means = fitting_results["mean"].values
-        amplitudes = fitting_results["amplitude"].values*rescaling_factor
+        if rescaling_factor: amplitudes = fitting_results["amplitude"].values*rescaling_factor
+        else: amplitudes = fitting_results["amplitude"].values
         relative_abundances = fitting_results["relative_abundance"].values
         self.identified_masses_df.loc[means.round().astype(int), self.mass_col_name+column_name] = means
         self.identified_masses_df.loc[means.round().astype(int), self.intensity_col_name+column_name] = amplitudes
