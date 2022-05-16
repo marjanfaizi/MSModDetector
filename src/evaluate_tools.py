@@ -23,7 +23,7 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "complex"
 aa_sequence_str = utils.read_fasta(config.fasta_file_name)
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
@@ -166,3 +166,35 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=","
 ###################################################################################################################
 ###################################################################################################################
 
+"""
+###################################################################################################################
+############################################ CREATE SIMULATED SPECTRUM ############################################
+###################################################################################################################
+data_simulation = SimulateData(aa_sequence_str, modifications_table)
+data_simulation.set_peak_width_mean(peak_width_mean)
+
+data_simulation.reset_noise_error()
+#data_simulation.add_noise()
+data_simulation.add_noise(vertical_error_std=0.2, peak_width_std=peak_width_std, basal_noise_beta=1/120,
+                          horizontal_error_beta=1/20)
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
+
+proton_mass = 1.007
+masses += proton_mass
+data_simulation.save_mass_spectrum(masses, intensities, 
+                                   "../output/ptm_pattern_"+modform_file_name+"_with_error_noise.csv")
+
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(6, 3))
+plt.plot(masses, intensities, '-', color="0.3")
+plt.xlabel("mass (Da)", fontsize=10)
+plt.ylabel("intensity (a.u.)", fontsize=10)
+plt.tight_layout()
+plt.show()
+
+
+###################################################################################################################
+###################################################################################################################
+"""
