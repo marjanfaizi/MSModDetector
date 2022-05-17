@@ -127,13 +127,13 @@ class GaussianModel(object):
         all_window_sizes = np.append(self.fitting_results["window_size"].values, 0)
 
         for index, row in self.fitting_results.iterrows():
-            
+        
             max_window_size = max(all_window_sizes[index], all_window_sizes[index+1])
 
             if np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) <= max_window_size and row["p_value"] > best_pvalue:
                 best_result_ix = index
                 best_pvalue = row["p_value"]
-            
+        
             elif np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) > max_window_size:
                 ix_keep_fitting_results.append(best_result_ix)
                 best_result_ix = index
@@ -159,7 +159,7 @@ class GaussianModel(object):
                 self.fitting_results["amplitude"] = refitted_amplitudes.x
                 self.fitting_results = self.fitting_results[self.fitting_results["amplitude"] > noise_level]
                 self.fitting_results.reset_index(drop=True, inplace=True)
-                
+
                 if refit_mean:
                     error_func_mean = lambda mean, x, y: (utils.multi_gaussian(x,  self.fitting_results["amplitude"].values, mean, self.stddev) - y)**2
                     delta = 3
@@ -168,29 +168,16 @@ class GaussianModel(object):
                     refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub),
                                                              x0=self.fitting_results["mean"].values, 
                                                              args=(masses, intensities))
-                    
+
                     self.fitting_results["mean"] = refitted_means.x
-            
-            repeat_fitting -= 1
-            """
-            ix_reduced_fitting_results = []
-            for index, row in self.fitting_results.iterrows():
-                if (refitted_amplitudes.x[index] > noise_level):
-                    ix_reduced_fitting_results.append(index)
         
-            self.fitting_results = self.fitting_results.filter(items = ix_reduced_fitting_results, axis=0)
-            self.fitting_results.reset_index(drop=True, inplace=True)
-            self.fitting_results["amplitude"] = refitted_amplitudes.x[ix_reduced_fitting_results]
-            """
-    
-    
+            repeat_fitting -= 1
+
+
     def calculate_relative_abundaces(self, start_mass, end_mass):
         abundances = utils.integral_of_gaussian(self.fitting_results["amplitude"].values, self.stddev)
         total_protein_abundance = sum(abundances)
         self.fitting_results["relative_abundance"] = abundances/total_protein_abundance
         
                 
-
-
-
 

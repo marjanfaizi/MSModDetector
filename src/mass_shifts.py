@@ -115,11 +115,8 @@ class MassShifts(object):
 
         masses_df = self.identified_masses_df.filter(regex=regex_mass_shift_cols)
         score_df = self.identified_masses_df.filter(regex=regex_score_cols)
-        
-        #masses_df.sort_index(axis=1, inplace=True)
-        #score_df.sort_index(axis=1, inplace=True)
-        
-        masses_df.to_csv(output_path_name+"mass_shifts.csv", sep=',', index=False) 
+                
+        masses_df.sort_index(axis=1).to_csv(output_path_name+"mass_shifts.csv", sep=',', index=False) 
         score_df.to_csv(output_path_name+"scores.csv", sep=',', index=False)
 
 

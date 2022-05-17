@@ -6,18 +6,18 @@ import utils
 file_names = "../data/raw_data/P04637/*.mzml"
 
 # list of all replicate names as they are in the file names
-replicates = ["rep5", "rep9"] # "rep1", "rep9"
+replicates = ["rep5", "rep6"] # rep1, rep5, rep6, rep9
 
 # list of all condition names as they are in the file names
-conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
-#conditions = ["nutlin_only", "uv_7hr"]
+#conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
+conditions = ["nutlin_only", "uv_7hr"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
-#color_order = [["skyblue", 0], ["mediumpurple", 1]]
+#color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
+color_order = [["skyblue", 0], ["mediumpurple", 1]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
