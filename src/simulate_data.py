@@ -54,13 +54,15 @@ class SimulateData(object):
         mass_grid = self.determine_mass_spectrum_range(modform_distribution)
         spectrum = np.array([]).reshape(0,2)
         for index, row in modform_distribution.iterrows():
+            if row["PTM pattern"] == "0":
+                isotopic_distribution_mod = self.seq_str_to_isotopic_dist(self.unmodified_sequence_str)
+            else:
+                modified_sequence_str = self.create_modified_seqeunce(row["PTM pattern"])
+                isotopic_distribution_mod = self.seq_str_to_isotopic_dist(modified_sequence_str)
             
-            modified_sequence_str = self.create_modified_seqeunce(row["PTM pattern"])
-            isotopic_distribution_mod = self.seq_str_to_isotopic_dist(modified_sequence_str)
             scaling_factor = row["intensity"]/isotopic_distribution_mod[:,1].max()
             isotopic_distribution_mod[:,1] *= scaling_factor   
             spectrum = np.vstack((spectrum, isotopic_distribution_mod))
-
 
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]

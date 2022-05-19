@@ -276,7 +276,7 @@ plt.show()
 ###################################################################################################################
 ########################################### SUPPLEMENTAL FIGURE 4 AND 5 ###########################################
 ###################################################################################################################
-modform_file_name = "complex" # "phospho"
+modform_file_name = "phospho" # "complex"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
@@ -316,10 +316,10 @@ axes[4].plot(masses_phbv, intensities_phbv, color="k")
 axes[4].set_xlabel("mass (Da)", fontsize=10)
 axes[2].set_ylabel("intensity (a.u.)", fontsize=10)
 [axes[i].set_title(title[i], fontsize=10, pad=-20) for i in  range(5)]
-#[axes[i].set_xlim([43680, 44220]) for i in range(5)] # phospho
-#[axes[i].set_ylim([0, 1210]) for i in range(5)] # phospho
-[axes[i].set_xlim([43720, 44460]) for i in range(5)] # complex
-[axes[i].set_ylim([0, 2350]) for i in range(5)] # complex
+[axes[i].set_xlim([43600, 44220]) for i in range(5)] # phospho
+[axes[i].set_ylim([0, 1210]) for i in range(5)] # phospho
+#[axes[i].set_xlim([43600, 44460]) for i in range(5)] # complex
+#[axes[i].set_ylim([0, 2350]) for i in range(5)] # complex
 fig.tight_layout()
 sns.despine()
 plt.show()
