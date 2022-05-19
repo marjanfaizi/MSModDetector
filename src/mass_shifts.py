@@ -120,7 +120,7 @@ class MassShifts(object):
         score_df.to_csv(output_path_name+"scores.csv", sep=',', index=False)
 
 
-    def determine_ptm_patterns(self, modifications, mass_tolerance, objective_fun):
+    def determine_ptm_patterns(self, modifications, mass_tolerance, objective_fun, msg_progress=True):
         self.ptm_patterns_df = pd.DataFrame(columns=['mass shift', 'mass error (Da)', 'PTM pattern', 'amount of PTMs']) 
         lp_model = LinearProgramCVXOPT(np.array(modifications.ptm_masses), np.array(modifications.upper_bounds))
 
@@ -192,8 +192,9 @@ class MassShifts(object):
                 row_entries_as_df.sort_values(by=['mass error (Da)', 'amount of PTMs'], inplace=True)
             self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
 
-            progress_bar_count += 1
-            utils.progress(progress_bar_count, len(self.mass_shifts))
+            if msg_progress:
+                progress_bar_count += 1
+                utils.progress(progress_bar_count, len(self.mass_shifts))
         print('\n')
 
 

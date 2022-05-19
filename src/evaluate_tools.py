@@ -23,13 +23,15 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "overlap"
+modform_file_name = "phospho"
 aa_sequence_str = utils.read_fasta(config.fasta_file_name)
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
+
+repeat_simulation = 10
 ###################################################################################################################
 ###################################################################################################################
 
@@ -68,7 +70,6 @@ all_std_combinations = [p for p in itertools.product(*[peak_width_std_list, hori
                                                        vertical_error_std_list, basal_noise_beta_list])]
 ###################################################################################################################
 ###################################################################################################################
-import matplotlib.pyplot as plt
 
 
 ###################################################################################################################
@@ -107,13 +108,6 @@ for std_comb in all_std_combinations:
     theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
     data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
     
-    plt.figure(figsize=(6, 3))
-    plt.plot(masses, intensities, '-', color="0.3")
-    plt.xlabel("mass (Da)", fontsize=10)
-    plt.ylabel("intensity (a.u.)", fontsize=10)
-    plt.tight_layout()
-    plt.show()
-    
     # determine mass shifts and ptm patterns
     mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
         
@@ -128,9 +122,8 @@ for std_comb in all_std_combinations:
     noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
 
     gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
-    gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
-    gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)      
-    gaussian_model.remove_overlapping_fitting_results()
+    gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass)
+    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.pvalue_threshold)      
     gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=False)
     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
 
@@ -139,9 +132,9 @@ for std_comb in all_std_combinations:
     mass_shifts.calculate_avg_mass()
     mass_shifts.add_mass_shifts(config.unmodified_species_mass)
     
-    mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun)        
+    mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)        
     mass_shifts.add_ptm_patterns_to_table()
-    
+
     # determine performance of prediction
     mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
                                                                             modform_distribution)
@@ -159,6 +152,9 @@ for std_comb in all_std_combinations:
     r_score_abundance += [r2_score(abundance_true, abundance_pred)]
     matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
     indices_matches += [mass_shift_true_ix]
+
+
+
 
     print(progress, "out of", len(all_std_combinations))
     progress += 1

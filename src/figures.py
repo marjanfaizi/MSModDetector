@@ -330,7 +330,7 @@ plt.show()
 ###################################################################################################################
 #################################################### FIGURE 2 #####################################################
 ###################################################################################################################
-modform_file_name = "complex"
+modform_file_name = "phospho"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error_std_list = [0, 0.1, 0.2]
@@ -345,7 +345,7 @@ basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise_beta_l
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "r_score_mass" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "matching_ptm_patterns" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
 fig, axn = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(3.5,3.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
