@@ -12,7 +12,6 @@ from scipy import optimize
 from scipy.stats import chisquare
 import utils
 import config
-import sys
 
 class GaussianModel(object): 
     """
@@ -29,56 +28,60 @@ class GaussianModel(object):
     """
 
     def __init__(self, sample_name, stddev_isotope_distribution):
-        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "chi_score", "p_value", "window_size", "relative_abundance"]) 
+        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "chi_score", "pvalue", "window_size", "relative_abundance"]) 
         self.sample_name = sample_name
         self.stddev = stddev_isotope_distribution
         self.maxfev = 100000
         self.degree_of_freedom = 3
         self.sample_size_threshold = 5
+        self.step_size = 1
 
 
-    def fit_gaussian_to_single_peaks(self, peaks, noise_level, pvalue_threshold):
-        for peak in peaks:   
-            mass = peak[0]
-            intensity = peak[1]
-            if intensity > noise_level:  
-
-                for window_size in self.fitting_window_sizes:                    
-                    selected_region_ix = np.argwhere((peaks[:,0]<=mass+window_size) & (peaks[:,0]>=mass-window_size))[:,0]
-                    selected_region = peaks[selected_region_ix]
-                    sample_size = selected_region.shape[0]          
-                
+    def fit_gaussian_within_window(self, peaks, pvalue_threshold):
+        masses = peaks[:, 0]
+        best_fit = {"fitted_mean": masses[0], "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+                    "window_size":  self.variable_window_sizes[0]}
+        window_range_start = masses[0]; window_range_end = masses[0]
+        
+        while window_range_end <= masses[-1]:
+                            
+            best_window_size_fit = {"fitted_mean": 0, "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+                                    "window_size": 0}
+            for window_size in self.variable_window_sizes:
+                peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
+                if peaks_in_window.size:
+                    sample_size = peaks_in_window.shape[0]    
                     if sample_size >= self.sample_size_threshold:
-                        """
-                        fitted_amplitude = self.fit_gaussian(selected_region, mean=mass)[0]
-                        chi_square_result = self.chi_square_test(selected_region, fitted_amplitude, mass)
-                        """
-                        optimized_param = self.fit_gaussian(selected_region)
+                        optimized_param = self.fit_gaussian(peaks_in_window)
                         fitted_amplitude = optimized_param[0]
                         fitted_mean = optimized_param[1]
-                        chi_square_result = self.chi_square_test(selected_region, fitted_amplitude, fitted_mean)
-                                            
+                        chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
                         pvalue = chi_square_result.pvalue
                         chi_score = chi_square_result.statistic
-                        """
-                        self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, "mean": mass, "amplitude": fitted_amplitude, 
-                                                                            "chi_score": chi_score, "p_value": pvalue, "window_size": window_size}, ignore_index=True)
-                        """
-                        self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, "mean": fitted_mean, "amplitude": fitted_amplitude, 
-                                                                            "chi_score": chi_score, "p_value": pvalue, "window_size": window_size}, ignore_index=True)
-                       
+                        
+                        if pvalue > best_window_size_fit["pvalue"]:
+                            best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
+                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+
+            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*config.allowed_overlap_fitting_window
+            if np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
+                best_fit = best_window_size_fit.copy()
+    
+            elif np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) > min_distance or window_range_start + best_fit["window_size"] >= masses[-1]:
+                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                    "mean": best_fit["fitted_mean"], 
+                                                                    "amplitude": best_fit["fitted_amplitude"], 
+                                                                    "pvalue": best_fit["pvalue"],
+                                                                    "chi_score": best_fit["chi_score"], 
+                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)
+                best_fit = best_window_size_fit.copy()
 
 
-        idxmax_pvalue = self.fitting_results.groupby("mean")["p_value"].idxmax().tolist()
-        
-        if idxmax_pvalue: 
-            self.fitting_results = self.fitting_results.iloc[idxmax_pvalue]
-            self.fitting_results = self.fitting_results[self.fitting_results["p_value"] >= pvalue_threshold]
-            self.fitting_results.reset_index(drop=True, inplace=True)
-         
-        else:
-            print("\nNo peaks found above the pvalue threshold.\n")
-            sys.exit()
+            window_range_start += self.step_size
+            window_range_end = window_range_start + best_fit["window_size"]
+
+        self.fitting_results = self.fitting_results[self.fitting_results["pvalue"] >= pvalue_threshold]
+        self.fitting_results.reset_index(drop=True, inplace=True)
 
 
     def fit_gaussian(self, peaks, mean=None, amplitude=None):
@@ -89,26 +92,27 @@ class GaussianModel(object):
         if amplitude==None and mean==None:
             initial_mean = masses[index_most_abundant_peak]
             optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, self.stddev), 
-                                                    masses, intensities, maxfev=self.maxfev,
+                                                    masses, intensities, maxfev=self.maxfev, 
+                                                    bounds=([0, masses[0]], [1, masses[-1]]),
                                                     p0=[initial_amplitude, initial_mean])
         elif amplitude==None and mean!=None:
             optimized_param, _ = optimize.curve_fit(lambda x, amplitude: utils.gaussian(x, amplitude, mean, self.stddev), 
-                                                    masses, intensities, maxfev=self.maxfev,
+                                                    masses, intensities, maxfev=self.maxfev,  bounds=(0, 1),
                                                     p0=[initial_amplitude])
         
         return optimized_param
 
 
-    def determine_adaptive_window_sizes(self, mean):
+    def determine_variable_window_sizes(self, mean):
         amplitude = 1
         masses = np.arange(mean-100, mean+100)
         intensities = utils.gaussian(masses, amplitude, mean, self.stddev) 
         most_abundant_masses_lb = masses[intensities > intensities.max()*1.0-config.window_size_lb]
         most_abundant_masses_ub = masses[intensities > intensities.max()*1.0-config.window_size_ub]
-        lower_window_size = round((most_abundant_masses_lb[-1]-most_abundant_masses_lb[0])/2)
-        upper_window_size = np.ceil((most_abundant_masses_ub[-1]-most_abundant_masses_ub[0])/2)
-        window_sizes = np.arange(lower_window_size, upper_window_size, 1)
-        self.fitting_window_sizes = window_sizes
+        lower_window_size = round((most_abundant_masses_lb[-1]-most_abundant_masses_lb[0]))
+        upper_window_size = np.ceil((most_abundant_masses_ub[-1]-most_abundant_masses_ub[0]))
+        variable_window_sizes = np.arange(lower_window_size, upper_window_size, 1)
+        self.variable_window_sizes = variable_window_sizes
 
 
     def chi_square_test(self, selected_region, amplitude, mean):
@@ -118,41 +122,13 @@ class GaussianModel(object):
         return chi_square_score
 
 
-    def remove_overlapping_fitting_results(self):
-        ix_keep_fitting_results = []        
-        best_result_ix = 0
-        best_pvalue = 0.0 
-        self.fitting_results.sort_values(by="mean", inplace=True, ignore_index=True)
-        last_index = self.fitting_results.shape[0]-1
-        all_window_sizes = np.append(self.fitting_results["window_size"].values, 0)
-
-        for index, row in self.fitting_results.iterrows():
-        
-            max_window_size = max(all_window_sizes[index], all_window_sizes[index+1])
-
-            if np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) <= max_window_size and row["p_value"] > best_pvalue:
-                best_result_ix = index
-                best_pvalue = row["p_value"]
-        
-            elif np.abs(self.fitting_results.loc[best_result_ix, "mean"]-row["mean"]) > max_window_size:
-                ix_keep_fitting_results.append(best_result_ix)
-                best_result_ix = index
-                best_pvalue = row["p_value"]    
-
-            elif index == last_index:
-                ix_keep_fitting_results.append(best_result_ix)
-
-        self.fitting_results = self.fitting_results.filter(items = ix_keep_fitting_results, axis=0)
-        self.fitting_results.reset_index(drop=True, inplace=True)
-
-
     def refit_results(self, peaks, noise_level, refit_mean=False):
         repeat_fitting = 2
         while repeat_fitting > 0:
             if not self.fitting_results.empty:
                 masses = peaks[:,0]; intensities = peaks[:,1]
                 error_func_amp = lambda amplitude, x, y: (utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y)**2         
-                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, np.inf),
+                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 1),
                                                              x0=self.fitting_results["amplitude"].values, 
                                                              args=(masses, intensities))
                 

@@ -41,7 +41,7 @@ class MassShifts(object):
         self.identified_masses_df.loc[means.round().astype(int), self.intensity_col_name+column_name] = amplitudes
         self.identified_masses_df.loc[means.round().astype(int), self.abundance_col_name+column_name] = relative_abundances
      
-        pvalue = fitting_results["p_value"].values
+        pvalue = fitting_results["pvalue"].values
         chi_score = fitting_results["chi_score"].values
         self.identified_masses_df.loc[means.round().astype(int), self.pvalue_col_name+column_name] = pvalue
         self.identified_masses_df.loc[means.round().astype(int), self.chi_score_col_name+column_name] = chi_score

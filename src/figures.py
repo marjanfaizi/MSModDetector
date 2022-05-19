@@ -376,7 +376,7 @@ fig.tight_layout()#(rect=[0, 0, 0.93, 1])
 
 
 ###################################################################################################################
-#################################################### FIGURE 2 #####################################################
+#################################################### FIGURE 3 #####################################################
 ###################################################################################################################
 mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
 parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
@@ -417,7 +417,7 @@ for cond in config.conditions:
         axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/data.rescaling_factor, label=cond, color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
-        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.3)
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/data.rescaling_factor, c='r', lw=0.3)
         axes[order_in_plot].legend(fontsize=11, loc='upper right')
         axes[order_in_plot].yaxis.grid()
         """
