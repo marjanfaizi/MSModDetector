@@ -153,6 +153,7 @@ class GaussianModel(object):
     def calculate_relative_abundaces(self, start_mass, end_mass):
         abundances = utils.integral_of_gaussian(self.fitting_results["amplitude"].values, self.stddev)
         total_protein_abundance = sum(abundances)
+        self.total_protein_abundance = total_protein_abundance
         self.fitting_results["relative_abundance"] = abundances/total_protein_abundance
         
                 

@@ -42,7 +42,7 @@ if __name__ == "__main__":
     progress_bar_count = 0
     
     sample_names= [cond+"_"+rep for cond, rep in product(config.conditions, config.replicates)]
-    parameter = pd.DataFrame(columns=sample_names)
+    parameter = pd.DataFrame(index=["noise_level", "rescaling_factor", "total_protein_abundance"], columns=sample_names)
     
     for rep in config.replicates:
         
@@ -72,7 +72,8 @@ if __name__ == "__main__":
 
             if trimmed_peaks_in_search_window.size:
                 noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
-                parameter.loc[0, cond+"_"+rep] = noise_level*data.rescaling_factor
+                parameter.loc["noise_level", cond+"_"+rep] = noise_level
+                parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
 
                 if any(trimmed_peaks_in_search_window[:,1]>noise_level):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
@@ -82,6 +83,7 @@ if __name__ == "__main__":
                     gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.pvalue_threshold)      
                     gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+                    parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  
          
                     mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep) #, data.rescaling_factor)
  
@@ -117,8 +119,6 @@ if __name__ == "__main__":
             mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           
         mass_shifts.save_tables("../output/")
-       
-        parameter.rename(index={0:"noise_level"}, inplace=True)
         parameter.to_csv("../output/parameter.csv", sep=",") 
 
     print(63*"-"+"\n\n")

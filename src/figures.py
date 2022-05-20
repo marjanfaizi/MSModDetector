@@ -397,39 +397,39 @@ for cond in config.conditions:
         file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
         
         noise_level = parameter.loc["noise_level", cond+"_"+rep]
+        rescaling_factor = parameter.loc["rescaling_factor", cond+"_"+rep]
+        total_protein_abundance = parameter.loc["total_protein_abundance", cond+"_"+rep]
     
         sample_name = [file for file in file_names_same_replicate if re.search(cond, file)][0]
         data = MassSpecData(sample_name)
-        ### only required to determine re-scaling factor, find a better approach
-        data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
-        all_peaks = data.picking_peaks()
-        trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
-        trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
-        trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
-        ####
                 
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
         intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
+        abundances = mass_shifts_df["rel. abundances "+cond+"_"+rep].dropna().values
         
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
-        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/data.rescaling_factor, label=cond, color=color_of_sample)
+
+        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/rescaling_factor, label=cond, color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
-        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/data.rescaling_factor, c='r', lw=0.3)
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.3)
+        """
+        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/(rescaling_factor*total_protein_abundance), label=cond, color=color_of_sample)
+        axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities/total_protein_abundance, '.', color='0.3')
+        axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
+        """
         axes[order_in_plot].legend(fontsize=11, loc='upper right')
-        axes[order_in_plot].yaxis.grid()
-        """
-        for avg in mass_shifts_df["average mass"].values:
-            axes[order_in_plot].axvline(x=avg, c='0.3', ls='--', lw=0.3, zorder=0)
-            axes[order_in_plot].label_outer()
-        """
+        axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
+
         
 plt.xlim((config.mass_start_range, config.mass_end_range))
 plt.ylim((-ylim_max*1.1, ylim_max*1.1))
+#plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
 
-plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity")
+plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity") #plt.ylabel("rel. abundance")
 output_fig.tight_layout()
 plt.show()
 
