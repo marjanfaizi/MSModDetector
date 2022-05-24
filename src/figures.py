@@ -198,12 +198,7 @@ sns.set_style("ticks")
 
 protein_sequence = AASequence.fromString(utils.read_fasta(config.fasta_file_name))
 distribution = utils.get_theoretical_isotope_distribution(protein_sequence, 100)
-
-mass_grid = np.arange(distribution[0,0], distribution[-1,0], 0.02)
-intensities = np.zeros(mass_grid.shape)
-peak_width = 0.2
-for peak in distribution:
-    intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width)**2)
+mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
 
 mean_p53, stddev_p53 = utils.mean_and_stddev_of_isotope_distribution(config.fasta_file_name, 100)
 
@@ -435,4 +430,60 @@ plt.show()
 
 ###################################################################################################################
 ###################################################################################################################
+
+
+
+
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 6 ##############################################
+###################################################################################################################
+from pyopenms import AASequence
+proteome = utils.read_fasta("../data/fasta_files/human_proteome_reviewed_23_05_22.fasta")
+results_df = pd.read_csv("../output/fit_gaussian_to_proteome.csv", index_col=False)
+
+plt.figure(figsize=(4, 3))
+plt.plot(results_df["monoisotopic_mass"], results_df["pvalue"], '.', color="0.3")
+plt.xlabel("monoisotopic mass (Da)", fontsize=10)
+plt.ylabel("p-value", fontsize=10)
+plt.tight_layout()
+sns.despine()
+plt.show()
+
+
+protein_id1 = results_df.query("(monoisotopic_mass>10000 & monoisotopic_mass<20000)").sample(n=1).protein_id.item()
+distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(proteome[protein_id1]), 100)
+mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
+
+plt.figure(figsize=(4, 3))
+plt.plot(mass_grid, intensities, '-', color="0.3")
+plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), 
+                                   results_df[results_df["protein_id"]==protein_id1]["mean"].item(), 
+                                   results_df[results_df["protein_id"]==protein_id1]["standard_deviation"].item()), 'r-')
+plt.xlabel("mass (Da)", fontsize=10)
+plt.ylabel("intensity (a.u.)", fontsize=10)
+plt.tight_layout()
+sns.despine()
+plt.show()
+###################################################################################################################
+###################################################################################################################
+
+
+
+"""
+plt.plot(mass_grid, intensities, '-', color="0.3")
+plt.plot(observed_masses, predicted_intensities, 'r-')
+
+
+observed_masses = distribution[:,0] 
+observed_intensities = distribution[:,1]
+predicted_intensities = utils.gaussian(observed_masses, intensities.max(), 
+                                   results_df[results_df["protein_id"]==protein_id1]["mean"].item(), 
+                                   results_df[results_df["protein_id"]==protein_id1]["standard_deviation"].item())
+score = chisquare(observed_intensities[:46], f_exp=predicted_intensities[:46])
+"""
+
+
+
+
+
 

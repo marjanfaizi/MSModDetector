@@ -30,8 +30,9 @@ if __name__ == "__main__":
         print("\nFiles do not exist.\n")
         sys.exit()
     
-    aa_sequence_str = utils.read_fasta(config.fasta_file_name)
-    mod = Modifications(config.modfication_file_name, aa_sequence_str)
+    protein_entries = utils.read_fasta(config.fasta_file_name)
+    protein_sequence = list(protein_entries.values())[0]
+    mod = Modifications(config.modfication_file_name, protein_sequence)
 
     mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
     

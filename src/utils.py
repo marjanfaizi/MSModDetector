@@ -53,9 +53,7 @@ def progress(count, total, status=''):
     sys.stdout.flush() 
 
 
-def mean_and_stddev_of_isotope_distribution(fasta_file_name, isotope_pattern_resolution):
-    protein_sequence = read_fasta(fasta_file_name)
-
+def isotope_distribution_fit_par(protein_sequence, isotope_pattern_resolution):
     distribution =  get_theoretical_isotope_distribution(pyopenms.AASequence.fromString(protein_sequence), 
                                                          isotope_pattern_resolution)
     masses = distribution[:,0]
@@ -65,22 +63,26 @@ def mean_and_stddev_of_isotope_distribution(fasta_file_name, isotope_pattern_res
     initial_amplitude = intensities[index_most_abundant_peak]
     intial_stddev = 1.0
     initial_mean = masses[index_most_abundant_peak]
+    if not np.isnan(masses).all() and not  np.isnan(intensities).all(): 
+        optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=10000000,
+                                                p0=[initial_amplitude, initial_mean, intial_stddev])
+        amplitude = optimized_param[0]
+        mean = optimized_param[1]
+        stddev = optimized_param[2]
+        return mean, stddev, amplitude
     
-    optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=10000000,
-                                            p0=[initial_amplitude, initial_mean, intial_stddev])
-            
-    mean = optimized_param[1]
-    stddev = optimized_param[2]
-    return mean, stddev
+    else:
+        return 0, 0, 0
 
 
 def read_fasta(fasta_file_name):
     entries = []
     fasta_file = pyopenms.FASTAFile()
     fasta_file.load(fasta_file_name, entries)
+    protein_sequences = {}
     for e in entries:
-        protein_sequence = e.sequence
-    return protein_sequence
+        protein_sequences[e.identifier] = e.sequence
+    return protein_sequences
 
 
 def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution, modus="coarse"):
@@ -100,6 +102,13 @@ def get_theoretical_isotope_distribution(sequence, isotope_pattern_resolution, m
         
     isotopes_asarray = np.asarray(isotopes_aslist)
     return isotopes_asarray   
+
+def fine_grain_isotope_distribution(distribution, peak_width, grid_step_size):
+    mass_grid = np.arange(distribution[0, 0], distribution[-1, 0], grid_step_size)
+    intensities = np.zeros(mass_grid.shape)
+    for peak in distribution:
+        intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width)**2)
+    return mass_grid, intensities
 
 
 def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=None):

@@ -34,6 +34,7 @@ class GaussianModel(object):
         self.maxfev = 100000
         self.degree_of_freedom = 3
         self.sample_size_threshold = 5
+        self.intensity_threshold = 1e-10
         self.step_size = 1
 
 
@@ -49,19 +50,20 @@ class GaussianModel(object):
                                     "window_size": 0}
             for window_size in self.variable_window_sizes:
                 peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
-                if peaks_in_window.size:
-                    sample_size = peaks_in_window.shape[0]    
-                    if sample_size >= self.sample_size_threshold:
-                        optimized_param = self.fit_gaussian(peaks_in_window)
-                        fitted_amplitude = optimized_param[0]
-                        fitted_mean = optimized_param[1]
-                        chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
-                        pvalue = chi_square_result.pvalue
-                        chi_score = chi_square_result.statistic
-                        
-                        if pvalue > best_window_size_fit["pvalue"]:
-                            best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
-                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+                non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)
+                peaks_in_window = peaks_in_window[non_zero_intensity_ix]
+                sample_size = peaks_in_window.shape[0]   
+                if sample_size >= self.sample_size_threshold:
+                    optimized_param = self.fit_gaussian(peaks_in_window)
+                    fitted_amplitude = optimized_param[0]
+                    fitted_mean = optimized_param[1]
+                    chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
+                    pvalue = chi_square_result.pvalue
+                    chi_score = chi_square_result.statistic
+                    
+                    if pvalue > best_window_size_fit["pvalue"]:
+                        best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
+                                                "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
 
             min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*config.allowed_overlap_fitting_window
             if np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
