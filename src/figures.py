@@ -221,6 +221,7 @@ plt.show()
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
+from scipy import stats
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
 
@@ -266,6 +267,43 @@ plt.show()
 
 ###################################################################################################################
 ###################################################################################################################
+
+
+
+
+
+
+
+plt.hist(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
+
+ab,bb = stats.expon.fit(error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"])  
+xt = plt.xticks()[0]   
+xmin, xmax = min(xt), max(xt)  
+lnspc = np.linspace(xmin, xmax, len(error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"]))
+
+pdf_expon = stats.expon.pdf(lnspc, ab,bb)  
+plt.plot(lnspc, pdf_expon, label="Exponential")
+
+
+
+#sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)])
+#plt.hist(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
+#plt.hist(x="vertical error (rel.)", data=error_estimate_table[(error_estimate_table["vertical error (rel.)"]>0.5) & (error_estimate_table["vertical error (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
+# not working for horizontal error, try another
+#.hist(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
+plt.hist(x="basal noise (a.u.)", data=error_estimate_table, density=True, bins=30)
+
+xt = plt.xticks()[0]   
+xmin, xmax = min(xt), max(xt)  
+lnspc = np.linspace(xmin, xmax, len(error_estimate_table["basal noise (a.u.)"]))
+ab,bb,cb,db = stats.beta.fit(error_estimate_table["basal noise (a.u.)"])  
+pdf_beta = stats.beta.pdf(lnspc, ab, bb,cb, db)  
+pdf_beta2 = stats.beta.pdf(lnspc, ab, bb)
+plt.plot(lnspc, pdf_beta, label="Beta")
+plt.plot(lnspc, pdf_beta2, label="Beta2")
+
+
+
 
 
 ###################################################################################################################
@@ -437,9 +475,17 @@ plt.show()
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 6 ##############################################
 ###################################################################################################################
+"""
+20,376 proteins from the human proteome were downloaded from uniprot on the 23rd of May 2022. Isoforms are not 
+included and only reviewed proteins were downloaded. Isotopic distribtions of proteins with a mass between 
+~10kDa and ~100kDa are well suited to be approximated by Gaussian distributions.
+"""
+
+sns.set_style("ticks")
+
 from pyopenms import AASequence
 proteome = utils.read_fasta("../data/fasta_files/human_proteome_reviewed_23_05_22.fasta")
-results_df = pd.read_csv("../output/fit_gaussian_to_proteome.csv", index_col=False)
+results_df = pd.read_csv("../output/fit_gaussian_to_proteome.csv")
 
 plt.figure(figsize=(4, 3))
 plt.plot(results_df["monoisotopic_mass"], results_df["pvalue"], '.', color="0.3")
@@ -449,39 +495,33 @@ plt.tight_layout()
 sns.despine()
 plt.show()
 
+lb = [1000, 3000, 5000, 7000, 9000, 15000, 30000, 50000, 70000, 95000, 120000, 140000, 160000, 180000, 200000, 400000]
+ub = [2000, 4000, 6000, 8000, 10000, 20000, 40000, 60000, 80000, 105000, 130000, 150000, 170000, 190000, 210000, 500000]
 
-protein_id1 = results_df.query("(monoisotopic_mass>10000 & monoisotopic_mass<20000)").sample(n=1).protein_id.item()
-distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(proteome[protein_id1]), 100)
-mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
+fig, axn = plt.subplots(4, 4, sharey=True, figsize=(7, 8))
+for i, ax in enumerate(axn.flat):
+    protein_id = results_df.query("(monoisotopic_mass>"+str(lb[i])+" & monoisotopic_mass<"+str(ub[i])+")").sample(n=1).protein_id.item()
+    distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(proteome[protein_id]), 100)
+    mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
+    intensities_norm = intensities/intensities.max()
+    non_zero_intensity_ix = np.where(intensities > 1e-5)[0]
+    ax.plot(mass_grid, intensities_norm, '-', color="0.3", lw=0.7)
+    ax.plot(mass_grid, utils.gaussian(mass_grid, results_df[results_df["protein_id"]==protein_id]["amplitude"].item()/intensities.max(), 
+                                      results_df[results_df["protein_id"]==protein_id]["mean"].item(), 
+                                      results_df[results_df["protein_id"]==protein_id]["standard_deviation"].item()), 'r-')
+    
+    ax.set_xlim([mass_grid[non_zero_intensity_ix].min(), mass_grid[non_zero_intensity_ix].max()])
+    if i>=12 and i<=15: ax.set_xlabel("mass (Da)", fontsize=10)
+    else: ax.set_xlabel("")
+    if  i==0 or i==4 or i==8 or i==12: ax.set_ylabel("intensity (a.u.)", fontsize=10)
+    else: ax.set_ylabel("")
 
-plt.figure(figsize=(4, 3))
-plt.plot(mass_grid, intensities, '-', color="0.3")
-plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), 
-                                   results_df[results_df["protein_id"]==protein_id1]["mean"].item(), 
-                                   results_df[results_df["protein_id"]==protein_id1]["standard_deviation"].item()), 'r-')
-plt.xlabel("mass (Da)", fontsize=10)
-plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.tight_layout()
+fig.tight_layout()
 sns.despine()
 plt.show()
+
 ###################################################################################################################
 ###################################################################################################################
-
-
-
-"""
-plt.plot(mass_grid, intensities, '-', color="0.3")
-plt.plot(observed_masses, predicted_intensities, 'r-')
-
-
-observed_masses = distribution[:,0] 
-observed_intensities = distribution[:,1]
-predicted_intensities = utils.gaussian(observed_masses, intensities.max(), 
-                                   results_df[results_df["protein_id"]==protein_id1]["mean"].item(), 
-                                   results_df[results_df["protein_id"]==protein_id1]["standard_deviation"].item())
-score = chisquare(observed_intensities[:46], f_exp=predicted_intensities[:46])
-"""
-
 
 
 

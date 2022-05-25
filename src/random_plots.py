@@ -122,7 +122,7 @@ for rep in config.replicates:
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
-        if config.number_of_conditions > 2:
+        if config.number_of_conditions >= 2:
             axes[order_in_plot].plot(data.masses, data.intensities,label=cond, color=color_of_sample)
             axes[order_in_plot].plot(masses, intensities, '.', color='0.3')
             axes[order_in_plot].plot(x_gauss_func, y_gauss_func, color='0.3')

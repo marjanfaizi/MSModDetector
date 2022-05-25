@@ -37,7 +37,7 @@ mass_end_range = 44520.0
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
-noise_level_fraction = 0.5
+noise_level_fraction = 0.25
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other

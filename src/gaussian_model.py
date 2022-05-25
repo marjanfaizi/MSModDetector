@@ -50,7 +50,7 @@ class GaussianModel(object):
                                     "window_size": 0}
             for window_size in self.variable_window_sizes:
                 peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
-                non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)
+                non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
                 peaks_in_window = peaks_in_window[non_zero_intensity_ix]
                 sample_size = peaks_in_window.shape[0]   
                 if sample_size >= self.sample_size_threshold:

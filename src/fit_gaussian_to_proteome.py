@@ -24,18 +24,19 @@ for protein_id in proteome:
         continue
     else:
         distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(sequence), 100)
-        non_zero_intensity_ix = np.where(distribution[:,1] > 1e-10)
-        observed_masses = distribution[non_zero_intensity_ix, 0]
-        observed_intensities = distribution[non_zero_intensity_ix, 1]
-        predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, std)
-        score = chisquare(observed_intensities, f_exp=predicted_intensities, ddof=3)
-        pvalue = score.pvalue
-        chi_square = score.statistic
-        
-        results.append((protein_id, monoisotopic_mass, mean, std, pvalue, chi_square))
+        non_zero_intensity_ix = np.where(distribution[:, 1] > 1e-10)[0]
+        sample_size = distribution[non_zero_intensity_ix].shape[0]
+        if sample_size >= 5:
+            observed_masses = distribution[non_zero_intensity_ix, 0]
+            observed_intensities = distribution[non_zero_intensity_ix, 1]
+            predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, std)
+            score = chisquare(observed_intensities, f_exp=predicted_intensities, ddof=3)
+            pvalue = score.pvalue
+            chi_square = score.statistic
+            
+            results.append((protein_id, monoisotopic_mass, amplitude, mean, std, pvalue, chi_square))
 
 
-results_df = pd.DataFrame(results, columns=("protein_id", "monoisotopic_mass", "mean", "standard_deviation", 
-                                            "pvalue", "chi_square"))
+results_df = pd.DataFrame(results, columns=("protein_id", "monoisotopic_mass", "amplitude", "mean", 
+                                            "standard_deviation", "pvalue", "chi_square"))
 results_df.to_csv("../output/fit_gaussian_to_proteome.csv", index=False)
-
