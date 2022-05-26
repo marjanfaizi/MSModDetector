@@ -175,3 +175,10 @@ class SimulateData(object):
         return mass_spectrum
 
 
+"""
+# exponential for horizontal error
+plt.hist(np.random.exponential(scale, 1200)+loc, density=True, bins=30)
+# beta for all other distributions
+plt.hist(scale*(np.random.beta(a, b, 4000))+loc, density=True, bins=50)
+
+"""

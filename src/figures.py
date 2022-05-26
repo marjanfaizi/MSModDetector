@@ -14,6 +14,8 @@ from pyopenms import AASequence
 import itertools
 import glob
 import re
+from scipy import stats
+from optimize import minimize
 
 from simulate_data import SimulateData
 from mass_spec_data import MassSpecData
@@ -221,88 +223,60 @@ plt.show()
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
-from scipy import stats
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-
-def exponential(x, beta):
-    return (1/beta)*np.exp(-(x/beta))
-
-
-peak_width_mean = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].mean()
-peak_width_std = error_estimate_table[(error_estimate_table["peak width"]<0.4) & (error_estimate_table["is_signal"]==True)]["peak width"].std()
-
+spacing_between_peaks = 1.003355
 lw = 1.3
 
-fig, axes = plt.subplots(2, 2, figsize=(7,5))
-sns.histplot(x="basal noise (a.u.)", data=error_estimate_table, bins=70, ax=axes[0][0])
-#axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 8*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/100), color="purple", lw=lw)
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/120), color="purple", lw=lw)
-axes[0][0].plot(error_estimate_table["basal noise (a.u.)"].sort_values(), 2.5*exponential(error_estimate_table["basal noise (a.u.)"].sort_values(), 1/240), color="red", lw=lw)
-axes[0][0].set_xlim([0,0.04])
-sns.histplot(x="peak width", data=error_estimate_table[error_estimate_table["peak width"]<0.5], bins=40, ax=axes[0][1], label="all peaks")
-sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)], bins=40, ax=axes[0][1], color="orange", label="signal only")
-#axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std), color="purple", lw=lw)
-axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std), color="purple", lw=lw)
-axes[0][1].plot(error_estimate_table["peak width"].sort_values(), utils.gaussian(error_estimate_table["peak width"].sort_values(), 100, peak_width_mean, peak_width_std/2), color="red", lw=lw)
-axes[0][1].set_xlim([0.1,0.5])
-plt.legend(frameon=False, fontsize=10)
-sns.histplot(x="horizontal error (Da)", data=error_estimate_table[error_estimate_table["horizontal error (Da)"]<1], bins=45, ax=axes[1][0])
-sns.histplot(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], bins=45, ax=axes[1][0], color="orange")
-#[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), utils.gaussian(error_estimate_table["horizontal error (Da)"].sort_values(), 1e3, 0, 0.1), color="purple", lw=lw)
-axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), 30*exponential(error_estimate_table["horizontal error (Da)"].sort_values(), 1/20), color="purple", lw=lw)
-axes[1][0].plot(error_estimate_table["horizontal error (Da)"].sort_values(), 15*exponential(error_estimate_table["horizontal error (Da)"].sort_values(), 1/40), color="red", lw=lw)
-axes[1][0].set_xlim([0,1])
-sns.histplot(x="vertical error (rel.)", data=error_estimate_table[error_estimate_table["vertical error (rel.)"]<2.5], bins=50, ax=axes[1][1])
-sns.histplot(x="vertical error (rel.)", data=error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], bins=50, ax=axes[1][1], color="orange")
-#plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 300, 1, 0.25), color="purple", lw=lw)
-plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 100, 1, 0.2), color="purple", lw=lw)
-plt.plot(error_estimate_table["vertical error (rel.)"].sort_values(), utils.gaussian(error_estimate_table["vertical error (rel.)"].sort_values(), 100, 1, 0.1), color="red", lw=lw)
-axes[1][1].set_xlim([0,2.5])
-axes[1][1].set_ylim([-1,300])
-axes[1][1].set_yticks([50, 100, 150])
+fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
+# basal noise
+basal_noise = error_estimate_table["basal noise (a.u.)"].values
+axes[0][0].hist(basal_noise, bins=30, density=True, alpha=0.5)
+axes[0][0].set_xlabel("basal noise (a.u)")
+axes[0][0].set_ylabel("density")
+x = np.linspace(-1e-3, basal_noise.max(), len(basal_noise))
+a, b, loc, scale = stats.beta.fit(basal_noise)  
+pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
+axes[0][0].plot(x, pdf_beta, color="purple", lw=lw)
+# peak width variation
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
+                                  (error_estimate_table["is_signal"]==True)]["peak width"].values
+axes[0][1].hist(peak_width, bins=30, density=True, alpha=0.5)
+axes[0][1].set_xlabel("peak width")
+axes[0][1].set_ylabel("density")
+x = np.linspace(peak_width.min(), peak_width.max(), len(peak_width))
+a, b, loc, scale = stats.beta.fit(peak_width)  
+pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
+axes[0][1].plot(x, pdf_beta, color="purple", lw=lw)
+func = lambda x: -stats.beta.pdf(x, a, b, loc, scale)  
+peak_width_mode = minimize(func, 0.2).x
+
+# horizontal error
+horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values%spacing_between_peaks
+axes[1][0].hist(horizontal_error, bins=30, density=True, alpha=0.5)
+axes[1][0].set_xlabel("horizontal error (Da)")
+axes[1][0].set_ylabel("density")
+loc, scale = stats.expon.fit(horizontal_error)  
+x = np.linspace(-1e-2, horizontal_error.max(), len(horizontal_error))
+pdf_expon = stats.expon.pdf(x, loc, scale) 
+axes[1][0].plot(x, pdf_expon, color="purple", lw=lw)
+# vertical error
+vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<4) &
+                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+axes[1][1].hist(vertical_error, bins=30, density=True, alpha=0.5)
+axes[1][1].set_xlabel("vertical error (rel.)")
+axes[1][1].set_ylabel("density")
+x = np.linspace(-0.1, vertical_error.max(), len(vertical_error))
+a, b, loc, scale = stats.beta.fit(vertical_error[vertical_error>0.2])  
+pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
+axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
+# plot layout
 sns.despine()
 plt.tight_layout()
 plt.show()
 
 ###################################################################################################################
 ###################################################################################################################
-
-
-
-
-
-
-
-plt.hist(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
-
-ab,bb = stats.expon.fit(error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"])  
-xt = plt.xticks()[0]   
-xmin, xmax = min(xt), max(xt)  
-lnspc = np.linspace(xmin, xmax, len(error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"]))
-
-pdf_expon = stats.expon.pdf(lnspc, ab,bb)  
-plt.plot(lnspc, pdf_expon, label="Exponential")
-
-
-
-#sns.histplot(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)])
-#plt.hist(x="peak width", data=error_estimate_table[(error_estimate_table["peak width"]<0.5) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
-#plt.hist(x="vertical error (rel.)", data=error_estimate_table[(error_estimate_table["vertical error (rel.)"]>0.5) & (error_estimate_table["vertical error (rel.)"]<2.5) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
-# not working for horizontal error, try another
-#.hist(x="horizontal error (Da)", data=error_estimate_table[(error_estimate_table["horizontal error (Da)"]<1) & (error_estimate_table["is_signal"]==True)], density=True, bins=30)
-plt.hist(x="basal noise (a.u.)", data=error_estimate_table, density=True, bins=30)
-
-xt = plt.xticks()[0]   
-xmin, xmax = min(xt), max(xt)  
-lnspc = np.linspace(xmin, xmax, len(error_estimate_table["basal noise (a.u.)"]))
-ab,bb,cb,db = stats.beta.fit(error_estimate_table["basal noise (a.u.)"])  
-pdf_beta = stats.beta.pdf(lnspc, ab, bb,cb, db)  
-pdf_beta2 = stats.beta.pdf(lnspc, ab, bb)
-plt.plot(lnspc, pdf_beta, label="Beta")
-plt.plot(lnspc, pdf_beta2, label="Beta2")
-
-
 
 
 
