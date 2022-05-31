@@ -15,7 +15,7 @@ import itertools
 import glob
 import re
 from scipy import stats
-from optimize import minimize
+from scipy.optimize import minimize
 
 from simulate_data import SimulateData
 from mass_spec_data import MassSpecData
@@ -37,7 +37,8 @@ cond = "xray_7hr"
 data = MassSpecData(file_name)
 data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)  
 
-aa_sequence_str = utils.read_fasta(config.fasta_file_name)
+protein_entries = utils.read_fasta(config.fasta_file_name)
+aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
 ###################################################################################################################
 ###################################################################################################################
@@ -198,11 +199,15 @@ plt.show()
 ###################################################################################################################
 sns.set_style("ticks")
 
-protein_sequence = AASequence.fromString(utils.read_fasta(config.fasta_file_name))
+
+protein_entries = utils.read_fasta(config.fasta_file_name)
+mean_p53, stddev_p53, amplitude__p53 = utils.isotope_distribution_fit_par(list(protein_entries.values())[0], 100)
+
+protein_sequence = AASequence.fromString(list(protein_entries.values())[0])
 distribution = utils.get_theoretical_isotope_distribution(protein_sequence, 100)
 mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
 
-mean_p53, stddev_p53 = utils.mean_and_stddev_of_isotope_distribution(config.fasta_file_name, 100)
+
 
 plt.figure(figsize=(6, 3))
 plt.plot(mass_grid, intensities, '-', color="0.3", label="isotopic distribution of p53")
@@ -213,6 +218,48 @@ plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
 plt.xlim((43630, 43680))
 plt.legend(frameon=False, fontsize=10)
+plt.tight_layout()
+sns.despine()
+plt.show()
+
+############## For poster only
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
+basal_noise = error_estimate_table["basal noise (a.u.)"].values
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
+                                  (error_estimate_table["is_signal"]==True)]["peak width"].values
+horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values
+vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) &
+                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+
+vertical_error_par = list(stats.beta.fit(vertical_error))
+horizontal_error_par = list(stats.expon.fit(horizontal_error))
+peak_width_par = list(stats.beta.fit(peak_width))
+basal_noise_par = list(stats.beta.fit(basal_noise))
+
+distribution = utils.get_theoretical_isotope_distribution(protein_sequence, 100)
+scaling_factor = distribution[:,1].max()
+
+basal_noise = (basal_noise_par[3]*np.random.beta(*basal_noise_par[:2], size=distribution.shape[0]))+basal_noise_par[2]
+distribution[:,1] += 4*basal_noise*scaling_factor
+
+vertical_error = (vertical_error_par[3]*np.random.beta(*vertical_error_par[:2], size=distribution.shape[0]))+vertical_error_par[2]
+distribution[:,1] *= vertical_error
+
+horizontal_error = np.random.exponential(horizontal_error_par[1], size=distribution.shape[0])+horizontal_error_par[0]
+distribution[:,0] += horizontal_error
+
+mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
+
+
+plt.figure(figsize=(5, 2.5))
+plt.plot(mass_grid, intensities, '-', color="0.3", label="isotopic distribution of p53")
+plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), mean_p53, stddev_p53)/1.5, 'r-', 
+         label="Gaussian fit") 
+plt.plot(mean_p53, intensities.max()/1.5, "r.")
+plt.xlabel("mass (Da)", fontsize=10)
+plt.ylabel("intensity (a.u.)", fontsize=10)
+plt.xlim((43630, 43680))
+#plt.legend(frameon=False, fontsize=10)
 plt.tight_layout()
 sns.despine()
 plt.show()
@@ -252,7 +299,7 @@ func = lambda x: -stats.beta.pdf(x, a, b, loc, scale)
 peak_width_mode = minimize(func, 0.2).x
 
 # horizontal error
-horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values%spacing_between_peaks
+horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values
 axes[1][0].hist(horizontal_error, bins=30, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
@@ -283,30 +330,43 @@ plt.show()
 ###################################################################################################################
 ########################################### SUPPLEMENTAL FIGURE 4 AND 5 ###########################################
 ###################################################################################################################
-modform_file_name = "phospho" # "complex"
+basal_noise = error_estimate_table["basal noise (a.u.)"].values
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
+                                  (error_estimate_table["is_signal"]==True)]["peak width"].values
+horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values
+vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) &
+                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+
+vertical_error_par = list(stats.beta.fit(vertical_error))
+horizontal_error_par = list(stats.expon.fit(horizontal_error))
+peak_width_par = list(stats.beta.fit(peak_width))
+basal_noise_par = list(stats.beta.fit(basal_noise))
+
+modform_file_name = "complex" # "phospho"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
-data_simulation.set_peak_width_mean(peak_width_mean)
+data_simulation.set_peak_width_mode(peak_width_mode[0])
 
 data_simulation.reset_noise_error()
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_std=peak_width_std)
+data_simulation.add_noise(peak_width_par=peak_width_par)
 masses_p, intensities_p = data_simulation.create_mass_spectrum(modform_distribution)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20)
+data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par)
 masses_ph, intensities_ph = data_simulation.create_mass_spectrum(modform_distribution)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20, basal_noise_beta=1/120)
+data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par, 
+                          basal_noise_par=basal_noise_par)
 masses_phb, intensities_phb = data_simulation.create_mass_spectrum(modform_distribution)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_std=peak_width_std,  horizontal_error_beta=1/20, basal_noise_beta=1/120,
-                          vertical_error_std=0.2)
+data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par, 
+                          basal_noise_par=basal_noise_par, vertical_error_par=vertical_error_par)
 masses_phbv, intensities_phbv = data_simulation.create_mass_spectrum(modform_distribution)
 
 title = ["no noise or error", "peak width variation", "peak width variation + horizontal error",
@@ -330,6 +390,20 @@ axes[2].set_ylabel("intensity (a.u.)", fontsize=10)
 fig.tight_layout()
 sns.despine()
 plt.show()
+
+
+fig = plt.figure(figsize=(10,6))
+gs = fig.add_gridspec(2, hspace=0)
+axes = gs.subplots(sharex=True, sharey=True)
+axes[0].plot(masses, intensities, color="0.3") 
+axes[1].plot(masses_phbv, intensities_phbv, color="0.3") 
+axes[1].set_xlabel("mass (Da)")#, fontsize=10)
+axes[1].set_ylabel("intensity (a.u.)")#, fontsize=10)
+[axes[i].set_xlim([43600, 44460]) for i in range(2)] # complex
+[axes[i].set_ylim([0, 2350]) for i in range(2)] # complex
+fig.tight_layout()
+sns.despine()
+plt.show()
 ###################################################################################################################
 ###################################################################################################################
 
@@ -337,43 +411,44 @@ plt.show()
 ###################################################################################################################
 #################################################### FIGURE 2 #####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "complex"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
-vertical_error_std_list = [0, 0.1, 0.2]
-horizontal_error_std_list = [0, 1/40, 1/20]
-peak_width_std_list = [0., peak_width_std/2, peak_width_std]
-basal_noise_beta_list = [0, 1/240, 1/120]
+vertical_error = [0, 1]
+horizontal_error = [0, 1]
+peak_width = [0, 1]
+basal_noise = [0, 1]
 
-all_std_combinations = [p for p in itertools.product(*[peak_width_std_list, horizontal_error_std_list, 
-                                                       vertical_error_std_list, basal_noise_beta_list])]
+all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error, 
+                                                   vertical_error, basal_noise])]
 
-basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise_beta_list[::-1], peak_width_std_list])]
+basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "matching_ptm_patterns" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "matching_mass_shifts" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
-fig, axn = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(3.5,3.5))
+fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(3.5,3.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
-    basal_noise_beta = basal_noise_peak_width_comb[i][0]
-    peak_width_std = round(basal_noise_peak_width_comb[i][1],6)
-    mask = ((performance_df["peak_width_std"].round(6)==round(peak_width_std,6)) & 
-            (performance_df["basal_noise_beta"].round(6)==round(basal_noise_beta,6)))
-    pivot_df = performance_df[mask].pivot("vertical_error_std", "horizontal_error_beta", metric)                                                                             
+    basal_noise = basal_noise_peak_width_comb[i][0]
+    peak_width = basal_noise_peak_width_comb[i][1]
+    mask = ((performance_df["peak_width_variation"]==peak_width) & 
+            (performance_df["basal_noise"]==basal_noise))
+    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)                                                                             
     sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 8},
                 vmin=0, vmax=1,
                 #cbar=i == 0, cmap=cmap,
                 #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)
     
-    if i==6 or i==7 or i==8: ax.set_xlabel("$\\beta_{horizontal\_error}$")
+    if i==2 or i==3: ax.set_xlabel("$\\beta_{horizontal\_error}$")
     else: ax.set_xlabel("")
-    if i==0 or i==3 or i==6: ax.set_ylabel("$\sigma_{vertical\_error}$")
+    if i==0 or i==2: ax.set_ylabel("$\sigma_{vertical\_error}$")
     else: ax.set_ylabel("")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)  
+    ax.set_xticklabels(["no","yes"], rotation=45)
+    ax.set_yticklabels(["no","yes"], rotation=90)
     ax.invert_yaxis() 
      
 fig.tight_layout()#(rect=[0, 0, 0.93, 1])
@@ -385,13 +460,15 @@ fig.tight_layout()#(rect=[0, 0, 0.93, 1])
 ###################################################################################################################
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
+sns.set_style("ticks")
+
 mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
 parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
 file_names = [file for file in glob.glob(config.file_names)] 
 
 flip_spectrum = [1,-1]
 
-output_fig = plt.figure(figsize=(7,7))
+output_fig = plt.figure(figsize=(8.5, 4))
 gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()
@@ -417,7 +494,7 @@ for cond in config.conditions:
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
-
+        """
         axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/rescaling_factor, label=cond, color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
@@ -426,17 +503,17 @@ for cond in config.conditions:
         axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/(rescaling_factor*total_protein_abundance), label=cond, color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities/total_protein_abundance, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
-        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
-        """
+        #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
+
         axes[order_in_plot].legend(fontsize=11, loc='upper right')
-        axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
+        #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
         
 plt.xlim((config.mass_start_range, config.mass_end_range))
-plt.ylim((-ylim_max*1.1, ylim_max*1.1))
-#plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
+#plt.ylim((-ylim_max*1.1, ylim_max*1.1))
+plt.ylim((-(ylim_max/total_protein_abundance)*1.4, (ylim_max/total_protein_abundance)*1.4))
 
-plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity") #plt.ylabel("rel. abundance")
+plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") # plt.ylabel("rel. intensity")
 output_fig.tight_layout()
 plt.show()
 

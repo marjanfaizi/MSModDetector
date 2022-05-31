@@ -30,23 +30,22 @@ class SimulateData(object):
         self.modifications_table = modifications_table
         self.mass_grid_step = 0.02
         self.margin_mass_range = 20
-        self.vertical_error_mean = 1.0
-        self.vertical_error_std = None
-        self.horizontal_error_beta = None
-        self.basal_noise_beta = None
-        self.peak_width_mean = None
-        self.peak_width_std = None
+        self.vertical_error_par = None
+        self.horizontal_error_par = None
+        self.basal_noise_par = None
+        self.peak_width_mode = None
+        self.peak_width_par = None
         
         
-    def set_peak_width_mean(self, peak_width_mean):
-        self.peak_width_mean = peak_width_mean
+    def set_peak_width_mode(self, peak_width_mode):
+        self.peak_width_mode = peak_width_mode
 
 
     def reset_noise_error(self):
-        self.vertical_error_std = None
-        self.horizontal_error_beta = None
-        self.basal_noise_beta = None
-        self.peak_width_std = None
+        self.vertical_error_par = None
+        self.horizontal_error_par = None
+        self.basal_noise_par = None
+        self.peak_width_par = None
 
 
     def create_mass_spectrum(self, modform_distribution):       
@@ -67,57 +66,60 @@ class SimulateData(object):
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]
 
-        if self.basal_noise_beta != None and self.basal_noise_beta != 0:
-            basal_noise = np.random.exponential(self.basal_noise_beta, size=spectrum.shape[0])
+        if self.basal_noise_par != None:
+            basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
             spectrum[:,1] += basal_noise*scaling_factor
 
-        if self.vertical_error_std != None and self.vertical_error_std != 0:
-            vertical_error = np.random.normal(self.vertical_error_mean, self.vertical_error_std, size=spectrum.shape[0])
+        if self.vertical_error_par != None:
+            vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
             spectrum[:,1] *= vertical_error
 
-        if self.horizontal_error_beta != None and self.horizontal_error_beta != 0:       
+        if self.horizontal_error_par != None: 
+            horizontal_error = np.random.exponential(self.horizontal_error_par[1], size=spectrum.shape[0])+self.horizontal_error_par[0]
+            spectrum[:,0] += horizontal_error
+            """
             for index, val in enumerate(spectrum):
                 horizontal_error = np.random.exponential(self.horizontal_error_beta)
                 spectrum[index, 0] = val[0]+horizontal_error
-
-
+            """
+        
         intensities = np.zeros(mass_grid.shape)
         
         for peak in spectrum:
-            if self.peak_width_mean == None:
-                sys.exit("Set value for peak_width_mean.")
-            if self.peak_width_std != None and self.peak_width_std != 0:
-                peak_width = random.gauss(self.peak_width_mean, self.peak_width_std)
+            if self.peak_width_mode == None:
+                sys.exit("Set value for peak_width_mode.")
+            if self.peak_width_par != None:
+                peak_width = (self.peak_width_par[3]*np.random.beta(*self.peak_width_par[:2]))+self.peak_width_par[2]
             else:
-                peak_width = self.peak_width_mean
+                peak_width = self.peak_width_mode
             # Add gaussian peak shape centered around each theoretical peak
             intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width)**2)
 
         return mass_grid, intensities
 
 
-    def add_noise(self, vertical_error_std=None, horizontal_error_beta=None, basal_noise_beta=None, peak_width_std=None):
+    def add_noise(self, vertical_error_par=None, horizontal_error_par=None, basal_noise_par=None, peak_width_par=None):
         # set the error/noise std/beta to the respective given value 
         # if no value is given, reset (important!) the value to None
-        if vertical_error_std != None:
-            self.vertical_error_std = vertical_error_std
+        if vertical_error_par != None:
+            self.vertical_error_par = vertical_error_par
         else:
-            self.vertical_error_std = None
+            self.vertical_error_par = None
 
-        if horizontal_error_beta != None:
-            self.horizontal_error_beta = horizontal_error_beta
+        if horizontal_error_par != None:
+            self.horizontal_error_par = horizontal_error_par
         else:
-            self.horizontal_noise_std = None
+            self.horizontal_noise_par = None
 
-        if basal_noise_beta != None:
-            self.basal_noise_beta = basal_noise_beta
+        if basal_noise_par != None:
+            self.basal_noise_par = basal_noise_par
         else:
-            self.basal_noise_beta = None
+            self.basal_noise_par = None
 
-        if peak_width_std != None:
-            self.peak_width_std = peak_width_std
+        if peak_width_par != None:
+            self.peak_width_par = peak_width_par
         else:
-            self.sigma_noise_std = None
+            self.sigma_noise_par = None
             
 
     def save_mass_spectrum(self, masses, intensities, file_name):
@@ -175,10 +177,3 @@ class SimulateData(object):
         return mass_spectrum
 
 
-"""
-# exponential for horizontal error
-plt.hist(np.random.exponential(scale, 1200)+loc, density=True, bins=30)
-# beta for all other distributions
-plt.hist(scale*(np.random.beta(a, b, 4000))+loc, density=True, bins=50)
-
-"""

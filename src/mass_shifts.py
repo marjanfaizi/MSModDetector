@@ -185,6 +185,28 @@ class MassShifts(object):
                         else:        
                             break
 
+            if objective_fun == "min_both":
+                    min_both_solution = 0
+                    multiplier = 1
+                    while count_laps < self.laps_run_lp:
+                        status, solution_min_both = lp_model.solve_lp_min_error(min_both_solution)
+                        if solution_min_both:
+                            ptm_pattern = self.array_to_ptm_annotation(list(solution_min_both[:-1]), modifications.ptm_ids)
+                            error = lp_model.get_error(solution_min_both[:-1])
+                            is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
+                            if not is_solution_in_list:
+                                count_laps += 1
+                                error = lp_model.get_error(solution_min_both[:-1])
+                                number_ptms = int(sum(solution_min_both[:-1]))
+                                row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
+                                min_both_solution = error*number_ptms + 1e-3
+                            else:
+                                min_both_solution = error*number_ptms + 1e-3*multiplier
+                                multiplier += 1
+                        else:        
+                            break
+
+
             row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
             if objective_fun == "min_ptm":
                 row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
