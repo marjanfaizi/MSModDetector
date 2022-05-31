@@ -25,7 +25,7 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "complex"
+modform_file_name = "phospho"
 protein_entries = utils.read_fasta(config.fasta_file_name)
 aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=';')
@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-repeat_simulation = 3
+repeat_simulation = 5
 ###################################################################################################################
 ###################################################################################################################
 
@@ -154,40 +154,48 @@ for comb in all_combinations:
         gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
     
         mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") # data.rescaling_factor
-        
-        mass_shifts.calculate_avg_mass()
-        mass_shifts.add_mass_shifts(config.unmodified_species_mass)
-        
-        mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)        
-        mass_shifts.add_ptm_patterns_to_table()
-    
-        # determine performance of prediction
-        mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
-                                                                                modform_distribution)
-        
-        mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
-        ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
-        abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
-        mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
-        ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
-        abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
-    
-        all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
-        matching_mass_shifts += [len(mass_shift_pred)]
-        matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
-        #indices_matches += [mass_shift_true_ix]
-        if len(mass_shift_true)>1:
-            r_score_mass += [r2_score(mass_shift_true, mass_shift_pred)]
-            r_score_abundance += [r2_score(abundance_true, abundance_pred)]
-        else:
+        print(mass_shifts.identified_masses_df.empty)
+        if mass_shifts.identified_masses_df.empty:
+            all_detected_mass_shifts += [0]
+            matching_mass_shifts += [0]
+            matching_ptm_patterns += [0]
             r_score_mass += [np.nan]
             r_score_abundance += [np.nan]
+                
+        else:
+            mass_shifts.calculate_avg_mass()
+            mass_shifts.add_mass_shifts(config.unmodified_species_mass)
+            
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)        
+            mass_shifts.add_ptm_patterns_to_table()
+        
+            # determine performance of prediction
+            mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
+                                                                                    modform_distribution)
+            
+            mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
+            ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
+            abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
+            mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
+            ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
+            abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
+        
+            all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
+            matching_mass_shifts += [len(mass_shift_pred)]
+            matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+            #indices_matches += [mass_shift_true_ix]
+            if len(mass_shift_true)>1:
+                r_score_mass += [r2_score(mass_shift_true, mass_shift_pred)]
+                r_score_abundance += [r2_score(abundance_true, abundance_pred)]
+            else:
+                r_score_mass += [np.nan]
+                r_score_abundance += [np.nan]
             
    
     all_detected_mass_shifts_avg += [np.mean(np.array(all_detected_mass_shifts))]
-#    print(all_detected_mass_shifts)
-#    print(all_detected_mass_shifts_avg)
     matching_mass_shifts_avg += [np.mean(np.array(matching_mass_shifts))]
+    print(matching_mass_shifts)
+    print(matching_mass_shifts_avg)
     matching_ptm_patterns_avg += [np.mean(np.array(matching_ptm_patterns))]
     r_score_mass_avg += [np.nanmean(np.array(r_score_mass))]
     r_score_abundance_avg += [np.nanmean(np.array(r_score_abundance))]
@@ -211,6 +219,7 @@ performance_df["matching_ptm_patterns"] = matching_ptm_patterns_avg
 performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
 ###################################################################################################################
 ###################################################################################################################
+
 
 """
 ###################################################################################################################

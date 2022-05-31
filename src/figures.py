@@ -342,7 +342,7 @@ horizontal_error_par = list(stats.expon.fit(horizontal_error))
 peak_width_par = list(stats.beta.fit(peak_width))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-modform_file_name = "complex" # "phospho"
+modform_file_name = "phospho" # "complex"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
@@ -392,15 +392,19 @@ sns.despine()
 plt.show()
 
 
-fig = plt.figure(figsize=(10,6))
+sns.set_context("poster", font_scale=0.8)
+
+fig = plt.figure(figsize=(13.5,3.5))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 axes[0].plot(masses, intensities, color="0.3") 
 axes[1].plot(masses_phbv, intensities_phbv, color="0.3") 
 axes[1].set_xlabel("mass (Da)")#, fontsize=10)
 axes[1].set_ylabel("intensity (a.u.)")#, fontsize=10)
-[axes[i].set_xlim([43600, 44460]) for i in range(2)] # complex
-[axes[i].set_ylim([0, 2350]) for i in range(2)] # complex
+[axes[i].set_xlim([43615, 44180]) for i in range(2)] # phospho
+[axes[i].set_ylim([0, 1510]) for i in range(2)] # phospho
+#[axes[i].set_xlim([43600, 44460]) for i in range(2)] # complex
+#[axes[i].set_ylim([0, 2450]) for i in range(2)] # complex
 fig.tight_layout()
 sns.despine()
 plt.show()
@@ -422,30 +426,39 @@ basal_noise = [0, 1]
 all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error, 
                                                    vertical_error, basal_noise])]
 
-basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
+#basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
+vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
+
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "matching_mass_shifts" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "r_score_abundance" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
-fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(3.5,3.5))
+fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(4,4))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
-    basal_noise = basal_noise_peak_width_comb[i][0]
-    peak_width = basal_noise_peak_width_comb[i][1]
-    mask = ((performance_df["peak_width_variation"]==peak_width) & 
-            (performance_df["basal_noise"]==basal_noise))
-    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)                                                                             
-    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 8},
+#    basal_noise = basal_noise_peak_width_comb[i][0]
+#    peak_width = basal_noise_peak_width_comb[i][1]
+#    mask = ((performance_df["peak_width_variation"]==peak_width) & 
+#            (performance_df["basal_noise"]==basal_noise))
+#    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
+    vertical_error = vertical_horizontal_comb[i][0]
+    horizontal_error = vertical_horizontal_comb[i][1]
+    mask = ((performance_df["horizontal_error"]==horizontal_error) & 
+            (performance_df["vertical_error"]==vertical_error))
+    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)                                                                                 
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 14},
                 vmin=0, vmax=1,
                 #cbar=i == 0, cmap=cmap,
                 #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)
     
-    if i==2 or i==3: ax.set_xlabel("$\\beta_{horizontal\_error}$")
+#    if i==2 or i==3: ax.set_xlabel("$error_{horizontal}$")
+    if i==2 or i==3: ax.set_xlabel("peak width")
     else: ax.set_xlabel("")
-    if i==0 or i==2: ax.set_ylabel("$\sigma_{vertical\_error}$")
+#    if i==0 or i==2: ax.set_ylabel("$error_{vertical}$")
+    if i==0 or i==2: ax.set_ylabel("basal noise")
     else: ax.set_ylabel("")
     ax.set_xticklabels(["no","yes"], rotation=45)
     ax.set_yticklabels(["no","yes"], rotation=90)
@@ -454,7 +467,6 @@ for i, ax in enumerate(axn.flat):
 fig.tight_layout()#(rect=[0, 0, 0.93, 1])
 ###################################################################################################################
 ###################################################################################################################
-
 
 
 ###################################################################################################################
@@ -468,7 +480,7 @@ file_names = [file for file in glob.glob(config.file_names)]
 
 flip_spectrum = [1,-1]
 
-output_fig = plt.figure(figsize=(8.5, 4))
+output_fig = plt.figure(figsize=(12.5, 7))
 gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()
@@ -505,13 +517,13 @@ for cond in config.conditions:
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
         #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
 
-        axes[order_in_plot].legend(fontsize=11, loc='upper right')
+        axes[order_in_plot].legend(loc='upper right')
         #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
         
 plt.xlim((config.mass_start_range, config.mass_end_range))
 #plt.ylim((-ylim_max*1.1, ylim_max*1.1))
-plt.ylim((-(ylim_max/total_protein_abundance)*1.4, (ylim_max/total_protein_abundance)*1.4))
+plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
 
 plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") # plt.ylabel("rel. intensity")
 output_fig.tight_layout()
