@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-repeat_simulation = 5
+repeat_simulation = 1
 ###################################################################################################################
 ###################################################################################################################
 
@@ -166,9 +166,14 @@ for comb in all_combinations:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(config.unmodified_species_mass)
             
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)        
+            print("before optimization")
+            
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)     
+            
+            print("after optimization")
+            
             mass_shifts.add_ptm_patterns_to_table()
-        
+            
             # determine performance of prediction
             mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
                                                                                     modform_distribution)

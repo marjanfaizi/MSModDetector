@@ -415,7 +415,7 @@ plt.show()
 ###################################################################################################################
 #################################################### FIGURE 2 #####################################################
 ###################################################################################################################
-modform_file_name = "complex"
+modform_file_name = "phospho"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
@@ -432,24 +432,27 @@ vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1],
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "r_score_abundance" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "matching_ptm_patterns" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
-fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(4,4))
+fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(5.5,4.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
-#    basal_noise = basal_noise_peak_width_comb[i][0]
-#    peak_width = basal_noise_peak_width_comb[i][1]
-#    mask = ((performance_df["peak_width_variation"]==peak_width) & 
-#            (performance_df["basal_noise"]==basal_noise))
-#    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
+    """  
+    basal_noise = basal_noise_peak_width_comb[i][0]
+    peak_width = basal_noise_peak_width_comb[i][1]
+    mask = ((performance_df["peak_width_variation"]==peak_width) & 
+            (performance_df["basal_noise"]==basal_noise))
+    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
+    """
     vertical_error = vertical_horizontal_comb[i][0]
     horizontal_error = vertical_horizontal_comb[i][1]
     mask = ((performance_df["horizontal_error"]==horizontal_error) & 
             (performance_df["vertical_error"]==vertical_error))
-    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)                                                                                 
+    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
+                                                                         
     sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 14},
-                vmin=0, vmax=1,
+                vmin=0, vmax=7,
                 #cbar=i == 0, cmap=cmap,
                 #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)
