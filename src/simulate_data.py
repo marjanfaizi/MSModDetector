@@ -66,22 +66,17 @@ class SimulateData(object):
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]
 
-        if self.basal_noise_par != None:
-            basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
-            spectrum[:,1] += basal_noise*scaling_factor
-
         if self.vertical_error_par != None:
             vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
             spectrum[:,1] *= vertical_error
 
+        if self.basal_noise_par != None:
+            basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
+            spectrum[:,1] += basal_noise*scaling_factor
+
         if self.horizontal_error_par != None: 
-            horizontal_error = np.random.exponential(self.horizontal_error_par[1], size=spectrum.shape[0])+self.horizontal_error_par[0]
-            spectrum[:,0] += horizontal_error
-            """
-            for index, val in enumerate(spectrum):
-                horizontal_error = np.random.exponential(self.horizontal_error_beta)
-                spectrum[index, 0] = val[0]+horizontal_error
-            """
+            horizontal_error = (self.horizontal_error_par[3]*np.random.beta(*self.horizontal_error_par[:2], size=spectrum.shape[0]))+self.horizontal_error_par[2]
+            spectrum[:,0] += horizontal_error/2
         
         intensities = np.zeros(mass_grid.shape)
         

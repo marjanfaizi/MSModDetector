@@ -11,11 +11,11 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
 import utils
-import config
+
 
 class GaussianModel(object): 
     """
-    This class fits a gaussian distribution to a protein"s isotope distribution observed in the mass spectra.
+    This class fits a gaussian distribution to a protein's isotope distribution observed in the mass spectra.
     The standard deviation is given by a function that maps protein mass to the standard deviation of the respective isotope cluster.
     This mapping function is determined by calculating the theoretical isotope distribution of every human proteome.
     The goodness of fit is measured with the chi-squared test: a high p-value indicates that both distributions are similar.
@@ -33,12 +33,12 @@ class GaussianModel(object):
         self.stddev = stddev_isotope_distribution
         self.maxfev = 100000
         self.degree_of_freedom = 3
-        self.sample_size_threshold = 5
+        self.sample_size_threshold = 7
         self.intensity_threshold = 1e-10
         self.step_size = 1
 
 
-    def fit_gaussian_within_window(self, peaks, pvalue_threshold):
+    def fit_gaussian_within_window(self, peaks, allowed_overlap_fitting_window, pvalue_threshold, noise_level):
         masses = peaks[:, 0]
         best_fit = {"fitted_mean": masses[0], "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
                     "window_size":  self.variable_window_sizes[0]}
@@ -52,20 +52,22 @@ class GaussianModel(object):
                 peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
                 non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
                 peaks_in_window = peaks_in_window[non_zero_intensity_ix]
-                sample_size = peaks_in_window.shape[0]   
-                if sample_size >= self.sample_size_threshold:
+                if len(peaks_in_window) >= self.sample_size_threshold:
                     optimized_param = self.fit_gaussian(peaks_in_window)
                     fitted_amplitude = optimized_param[0]
                     fitted_mean = optimized_param[1]
-                    chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
-                    pvalue = chi_square_result.pvalue
-                    chi_score = chi_square_result.statistic
-                    
-                    if pvalue > best_window_size_fit["pvalue"]:
-                        best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
-                                                "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+                    peaks_around_fitted_mean = peaks[(masses >= fitted_mean-window_size/2) & (masses <= fitted_mean+window_size/2)]
 
-            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*config.allowed_overlap_fitting_window
+                    if len(peaks_around_fitted_mean[peaks_around_fitted_mean[:,1]>noise_level]) >= self.sample_size_threshold:
+                        chi_square_result = self.chi_square_test(peaks_around_fitted_mean, fitted_amplitude, fitted_mean)
+                        pvalue = chi_square_result.pvalue
+                        chi_score = chi_square_result.statistic
+                        
+                        if pvalue > best_window_size_fit["pvalue"]:
+                            best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
+                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+
+            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*allowed_overlap_fitting_window
             if np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
                 best_fit = best_window_size_fit.copy()
     
@@ -81,6 +83,15 @@ class GaussianModel(object):
 
             window_range_start += self.step_size
             window_range_end = window_range_start + best_fit["window_size"]
+
+        if not best_fit["fitted_mean"] in self.fitting_results["mean"]:
+            self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                "mean": best_fit["fitted_mean"], 
+                                                                "amplitude": best_fit["fitted_amplitude"], 
+                                                                "pvalue": best_fit["pvalue"],
+                                                                "chi_score": best_fit["chi_score"], 
+                                                                "window_size": best_fit["window_size"]}, ignore_index=True)
+
 
         self.fitting_results = self.fitting_results[self.fitting_results["pvalue"] >= pvalue_threshold]
         self.fitting_results.reset_index(drop=True, inplace=True)
@@ -105,12 +116,12 @@ class GaussianModel(object):
         return optimized_param
 
 
-    def determine_variable_window_sizes(self, mean):
+    def determine_variable_window_sizes(self, mean, window_size_lb, window_size_ub):
         amplitude = 1
         masses = np.arange(mean-100, mean+100)
         intensities = utils.gaussian(masses, amplitude, mean, self.stddev) 
-        most_abundant_masses_lb = masses[intensities > intensities.max()*1.0-config.window_size_lb]
-        most_abundant_masses_ub = masses[intensities > intensities.max()*1.0-config.window_size_ub]
+        most_abundant_masses_lb = masses[intensities > intensities.max()*1.0-window_size_lb]
+        most_abundant_masses_ub = masses[intensities > intensities.max()*1.0-window_size_ub]
         lower_window_size = round((most_abundant_masses_lb[-1]-most_abundant_masses_lb[0]))
         upper_window_size = np.ceil((most_abundant_masses_ub[-1]-most_abundant_masses_ub[0]))
         variable_window_sizes = np.arange(lower_window_size, upper_window_size, 1)

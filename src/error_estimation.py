@@ -61,18 +61,19 @@ for rep in config.replicates:
             peaks_in_search_window[:,1] = data.normalize_intensities(peaks_in_search_window[:,1])
             
             noise_level =  config.noise_level_fraction*peaks_in_search_window[:,1].std()
+            peaks_in_search_window_above_noise = peaks_in_search_window[peaks_in_search_window[:,1]>noise_level]
+
             gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
-            gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
-            gaussian_model.fit_gaussian_to_single_peaks(peaks_in_search_window, noise_level, config.pvalue_threshold)
-            gaussian_model.remove_overlapping_fitting_results()
-            gaussian_model.refit_results(peaks_in_search_window, noise_level, refit_mean=True)
+            gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+            gaussian_model.fit_gaussian_within_window(peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold)      
+            gaussian_model.refit_results(peaks_in_search_window_above_noise, noise_level, refit_mean=True)
 
             x_gauss_func = peaks_in_search_window[:,0]
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
             vertical_error += (y_gauss_func / peaks_in_search_window[:,1]).tolist()
 
             spacing_between_peaks = 1.003355
-            horizontal_error += (abs(abs(peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks) % spacing_between_peaks).tolist()
+            horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks).tolist()
 
             for peak in peaks_in_search_window:
                 window_size = 0.6

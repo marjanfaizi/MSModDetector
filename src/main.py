@@ -73,16 +73,18 @@ if __name__ == "__main__":
 
             if trimmed_peaks_in_search_window.size:
                 noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
+                trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>noise_level]
+
                 parameter.loc["noise_level", cond+"_"+rep] = noise_level
                 parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
 
-                if any(trimmed_peaks_in_search_window[:,1]>noise_level):  
+                if len(trimmed_peaks_in_search_window_above_noise):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
-                    gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass)
-                    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.pvalue_threshold)      
-                    gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
+                    gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+                    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+                    gaussian_model.refit_results(trimmed_peaks_in_search_window_above_noise, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
                     parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  
          

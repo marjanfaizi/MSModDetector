@@ -111,6 +111,12 @@ def fine_grain_isotope_distribution(distribution, peak_width, grid_step_size):
     return mass_grid, intensities
 
 
+
+def calculate_abundance_from_ptm_pattern():
+    pass
+
+
+
 def plot_spectra(data, peaks, gaussian_model, title, unmodified_species_mass=None):
     x = np.arange(data.search_window_start_mass, data.search_window_end_mass)
     y = multi_gaussian(x, gaussian_model.amplitudes, gaussian_model.means, gaussian_model.stddev)

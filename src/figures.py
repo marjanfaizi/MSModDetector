@@ -297,24 +297,26 @@ pdf_beta = stats.beta.pdf(x, a, b, loc, scale)
 axes[0][1].plot(x, pdf_beta, color="purple", lw=lw)
 func = lambda x: -stats.beta.pdf(x, a, b, loc, scale)  
 peak_width_mode = minimize(func, 0.2).x
-
 # horizontal error
-horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values
+horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
+                                        (error_estimate_table["horizontal error (Da)"]>-0.3) &
+                                        (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
 axes[1][0].hist(horizontal_error, bins=30, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
-loc, scale = stats.expon.fit(horizontal_error)  
-x = np.linspace(-1e-2, horizontal_error.max(), len(horizontal_error))
-pdf_expon = stats.expon.pdf(x, loc, scale) 
-axes[1][0].plot(x, pdf_expon, color="purple", lw=lw)
+x = np.linspace(-0.3, horizontal_error.max(), len(horizontal_error))
+#loc, scale = stats.expon.fit(horizontal_error[(horizontal_error<0.5) & (horizontal_error>-0.5)])  
+a, b, loc, scale = stats.beta.fit(horizontal_error)  
+pdf_beta = stats.beta.pdf(x, a, b, loc, scale) 
+axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
-vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<4) &
+vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<5) &
                                       (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 axes[1][1].hist(vertical_error, bins=30, density=True, alpha=0.5)
 axes[1][1].set_xlabel("vertical error (rel.)")
 axes[1][1].set_ylabel("density")
 x = np.linspace(-0.1, vertical_error.max(), len(vertical_error))
-a, b, loc, scale = stats.beta.fit(vertical_error[vertical_error>0.2])  
+a, b, loc, scale = stats.beta.fit(vertical_error[(vertical_error>0.5) & (vertical_error<2)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
 # plot layout
@@ -432,7 +434,7 @@ vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1],
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "matching_ptm_patterns" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "matching_mass_shifts" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(5.5,4.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
