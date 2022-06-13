@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-repeat_simulation = 1
+repeat_simulation = 2
 ###################################################################################################################
 ###################################################################################################################
 
@@ -157,7 +157,7 @@ for comb in all_combinations:
         gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
     
         mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") # data.rescaling_factor
-        print(mass_shifts.identified_masses_df.empty)
+
         if mass_shifts.identified_masses_df.empty:
             all_detected_mass_shifts += [0]
             matching_mass_shifts += [0]
@@ -168,9 +168,7 @@ for comb in all_combinations:
         else:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(config.unmodified_species_mass)
-            print("before")
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)     
-            print("after")            
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)    
             mass_shifts.add_ptm_patterns_to_table()
             
             # determine performance of prediction
@@ -224,8 +222,8 @@ data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
-                          horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
+#data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
+#                          horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
@@ -253,6 +251,7 @@ gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config
 plt.figure(figsize=(6, 3))
 plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
 plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
+plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
 plt.axhline(y=noise_level, color='r', linestyle='-')
 plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
@@ -268,7 +267,7 @@ mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulat
 mass_shifts.calculate_avg_mass()
 mass_shifts.add_mass_shifts(config.unmodified_species_mass)
 
-mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)     
+mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=True)     
   
 mass_shifts.add_ptm_patterns_to_table()
 
@@ -298,6 +297,39 @@ plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
 plt.tight_layout()
 plt.show()
+
+
+
+
+
+
+import numpy as np
+from cvxopt import matrix, glpk
+from modifications import Modifications
+
+import utils
+import config_sim as config 
+
+protein_entries = utils.read_fasta(config.fasta_file_name)
+aa_sequence_str = list(protein_entries.values())[0]
+mod = Modifications(config.modfication_file_name, aa_sequence_str)
+
+observed_mass_shift = 1
+max_mass_error = config.mass_tolerance
+min_number_ptms = 0
+
+
+
+number_variables = len(mod.ptm_masses)
+ones = np.ones(number_variables)
+inequality_lhs = np.vstack([np.array(mod.ptm_masses), -np.array(mod.ptm_masses), -np.identity(number_variables), np.identity(number_variables), -ones])
+A = matrix(inequality_lhs)
+lower_bounds = np.zeros(number_variables)
+inequality_rhs = np.vstack([observed_mass_shift+max_mass_error, -observed_mass_shift+max_mass_error, lower_bounds.reshape(-1,1), 
+                            np.array(mod.upper_bounds).reshape(-1,1), -min_number_ptms])
+b = matrix(inequality_rhs)
+c = matrix(ones)
+status, solution = glpk.ilp(c, A, b, I=set(range(number_variables)))
 
 
 ###################################################################################################################

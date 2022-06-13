@@ -3,7 +3,7 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/simulated_data/*.mzML'
+file_names = '../data/simulated_data/*.mzmL'
 
 # list of all replicate names as they are in the file names
 replicates = ['rep1']
@@ -43,12 +43,12 @@ pvalue_threshold = 0.1
 
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
-window_size_lb = 0.3
-window_size_ub = 0.8
+window_size_lb = 0.2
+window_size_ub = 0.5
 allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton
-mass_error_ppm = 20
+mass_error_ppm = 25
 
 # This mass tolerance in Da is used as default for the linear programming problem 
 mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass

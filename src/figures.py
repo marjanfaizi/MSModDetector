@@ -434,7 +434,7 @@ vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1],
 
 performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
 
-metric = "matching_mass_shifts" # "matching_mass_shifts" "r_score_abundance" # "r_score_mass" "matching_ptm_patterns" 
+metric = "matching_ptm_patterns" # "matching_mass_shifts", "r_score_abundance", "matching_ptm_patterns" 
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(5.5,4.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
