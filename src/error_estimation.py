@@ -65,7 +65,7 @@ for rep in config.replicates:
 
             gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
             gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-            gaussian_model.fit_gaussian_within_window(peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold)      
+            gaussian_model.fit_gaussian_within_window(peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
             gaussian_model.refit_results(peaks_in_search_window_above_noise, noise_level, refit_mean=True)
 
             x_gauss_func = peaks_in_search_window[:,0]

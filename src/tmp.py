@@ -16,21 +16,22 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-import config_sim as config
+import config as config
 from scipy import optimize
 
-modform_distribution =  pd.read_csv('../data/modifications/modform_distribution.csv', sep=',')
-mod_amplitude = modform_distribution["intensity"]
-mod_mean = modform_distribution["mass"]+config.unmodified_species_mass
+#modform_distribution =  pd.read_csv('../data/modifications/modform_distribution.csv', sep=',')
+#mod_amplitude = modform_distribution["intensity"]
+#mod_mean = modform_distribution["mass"]+config.unmodified_species_mass
 
-file_name = [file for file in glob.glob(config.file_names)][0] 
+file_name = [file for file in glob.glob(config.file_names)][1] 
 rep = config.replicates[0]
 cond = config.conditions[0]
 
-aa_sequence_str = utils.read_fasta(config.fasta_file_name)
+protein_entries = utils.read_fasta(config.fasta_file_name)
+protein_sequence = list(protein_entries.values())[0]
+mod = Modifications(config.modfication_file_name, protein_sequence)
 
-mod = Modifications(config.modfication_file_name, aa_sequence_str)
-mass_shifts = MassShifts()
+mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
 data = MassSpecData(file_name)
 data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
 
@@ -40,10 +41,30 @@ trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
 trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
 
 noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
+trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>noise_level]
 
 gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
-gaussian_model.determine_adaptive_window_sizes(config.unmodified_species_mass)
-gaussian_model.fit_gaussian_to_single_peaks(trimmed_peaks_in_search_window, noise_level, config.pvalue_threshold)      
+gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+gaussian_model.refit_results(trimmed_peaks_in_search_window_above_noise, noise_level, refit_mean=True)
+
+
+
+all_points = data.raw_spectrum[(data.raw_spectrum[:,0]>=config.mass_start_range) & (data.raw_spectrum[:,0]<=config.mass_end_range)][:,0]
+
+mass_peak = all_peaks[(all_peaks[:,0]>=config.mass_start_range) & (all_peaks[:,0]<=config.mass_end_range)][:,0]
+mean = gaussian_model.fitting_results["mean"].to_numpy()
+
+diff_all_points = np.subtract.outer(all_points,all_points)[np.tril_indices(all_points.shape[0], k = -1)]
+diff_mass_peaks = np.subtract.outer(mass_peak,mass_peak)[np.tril_indices(mass_peak.shape[0], k = -1)]
+diff_mean = np.subtract.outer(mean,mean)[np.tril_indices(mean.shape[0], k = -1)]
+
+
+
+plt.hist(diff_mean, bins=600)
+
+
+
 
 mean = gaussian_model.fitting_results["mean"]
 amplitude = gaussian_model.fitting_results["amplitude"]
@@ -53,10 +74,8 @@ gaussian_model.remove_overlapping_fitting_results()
 mean2 = gaussian_model.fitting_results["mean"]
 amplitude2 = gaussian_model.fitting_results["amplitude"]
 
-gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
+
 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-
-
 
 ####todo refit mean and compare with actual modform masses   
 error_func_mean = lambda mean, x, y: (utils.multi_gaussian(x, amplitude*data.rescaling_factor, mean, config.stddev_isotope_distribution) - y)**2

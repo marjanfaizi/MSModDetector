@@ -3,13 +3,13 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/simulated_data/*.mzmL'
+file_names = '../data/simulated_data/*.mzML'
 
 # list of all replicate names as they are in the file names
 replicates = ['rep1']
 
 # list of all condition names as they are in the file names
-conditions = ['simulated']
+conditions = ['simluated']
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
@@ -66,7 +66,8 @@ laps_run_lp = 10
 # Choose between two objective functions: 
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
-objective_fun = "min_ptm"
+# 3) min_both: minimize error and total amount of PTMs
+objective_fun = "min_both"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

@@ -222,8 +222,8 @@ data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
-#data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
-#                          horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
+data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
+                          horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
