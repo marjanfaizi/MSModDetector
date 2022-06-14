@@ -478,6 +478,9 @@ fig.tight_layout()#(rect=[0, 0, 0.93, 1])
 ###################################################################################################################
 sns.set_style("ticks")
 
+cond_mapping = {"nutlin_only": "Nutlin-3a", "xray_2hr": "X-ray (2hr)", "xray_7hr": "X-ray (7hr)",
+                "xray-nutlin": "X-ray + Nutlin-3a", "uv_7hr": "UV"}
+
 mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
 parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
 file_names = [file for file in glob.glob(config.file_names)] 
@@ -514,12 +517,12 @@ for cond in config.conditions:
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]* y_gauss_func, color='0.3')
         axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.3)
         """
-        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/(rescaling_factor*total_protein_abundance), label=cond, color=color_of_sample)
+        axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/(rescaling_factor*total_protein_abundance), label=cond_mapping[cond], color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities/total_protein_abundance, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
         #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
 
-        axes[order_in_plot].legend(loc='upper right')
+        if flip_spectrum[ix] > 0: axes[order_in_plot].legend(loc='upper right')
         #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
