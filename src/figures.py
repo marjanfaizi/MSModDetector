@@ -323,7 +323,6 @@ axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
 sns.despine()
 plt.tight_layout()
 plt.show()
-
 ###################################################################################################################
 ###################################################################################################################
 
@@ -488,8 +487,7 @@ flip_spectrum = [1,-1]
 output_fig = plt.figure(figsize=(12.5, 7))
 gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
-ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()
-    
+
 for cond in config.conditions:  
     color_of_sample = config.color_palette[cond][0]
     order_in_plot = config.color_palette[cond][1]
@@ -506,7 +504,6 @@ for cond in config.conditions:
                 
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
         intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
-        abundances = mass_shifts_df["rel. abundances "+cond+"_"+rep].dropna().values
         
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
@@ -523,12 +520,12 @@ for cond in config.conditions:
         #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
 
         axes[order_in_plot].legend(loc='upper right')
-        #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
+        axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
-        
+ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
 plt.xlim((config.mass_start_range, config.mass_end_range))
 #plt.ylim((-ylim_max*1.1, ylim_max*1.1))
-plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
+plt.ylim((-(ylim_max/total_protein_abundance)*1.7, (ylim_max/total_protein_abundance)*1.7))
 
 plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") # plt.ylabel("rel. intensity")
 output_fig.tight_layout()

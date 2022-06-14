@@ -9,15 +9,15 @@ file_names = "../data/raw_data/P04637/*.mzml"
 replicates = ["rep5", "rep6"] # rep1, rep5, rep6, rep9
 
 # list of all condition names as they are in the file names
-#conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
-conditions = ["nutlin_only", "uv_7hr"]
+conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
+#conditions = ["nutlin_only", "uv_7hr"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-#color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
-color_order = [["skyblue", 0], ["mediumpurple", 1]]
+color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
+#color_order = [["skyblue", 0], ["mediumpurple", 1]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
@@ -46,11 +46,11 @@ pvalue_threshold = 0.1
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
-window_size_ub = 0.8
+window_size_ub = 0.4
 allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton
-mass_error_ppm = 20
+mass_error_ppm = 25
 
 # This mass tolerance in Da is used as default for the linear programming problem 
 mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
