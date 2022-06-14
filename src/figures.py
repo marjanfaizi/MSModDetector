@@ -520,7 +520,7 @@ for cond in config.conditions:
         #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
 
         axes[order_in_plot].legend(loc='upper right')
-        axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
+        #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
 plt.xlim((config.mass_start_range, config.mass_end_range))
