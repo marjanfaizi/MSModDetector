@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-repeat_simulation = 2
+repeat_simulation = 10
 ###################################################################################################################
 ###################################################################################################################
 
@@ -94,7 +94,7 @@ data_simulation.set_peak_width_mode(peak_width_mode)
 performance_df = pd.DataFrame(columns=["vertical_error", "peak_width_variation", "horizontal_error", 
                                        "basal_noise", "all_detected_mass_shifts", "simulated_mass_shifts", 
                                        "matching_mass_shifts", "r_score_abundance", 
-                                       "matching_ptm_patterns", "indices_matches"])
+                                       "matching_ptm_patterns", "mass_shift_deviation"])
 
 performance_df["vertical_error"] = [a_tuple[0] for a_tuple in all_combinations]
 performance_df["peak_width_variation"] = [a_tuple[1] for a_tuple in all_combinations]
@@ -103,6 +103,7 @@ performance_df["basal_noise"] = [a_tuple[3] for a_tuple in all_combinations]
 performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
 
 #indices_matches = []
+mass_shift_deviation_avg = []
 all_detected_mass_shifts_avg = []
 matching_mass_shifts_avg = []
 matching_ptm_patterns_avg = []
@@ -112,6 +113,7 @@ r_score_abundance_avg = []
 progress = 1
 
 for comb in all_combinations:
+    mass_shift_deviation = []
     all_detected_mass_shifts = []
     matching_mass_shifts = []
     r_score_mass = []
@@ -182,6 +184,7 @@ for comb in all_combinations:
             ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
             abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
         
+            mass_shift_deviation += [np.mean(abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance)]
             all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
             matching_mass_shifts += [len(mass_shift_pred)]
             matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
@@ -191,6 +194,7 @@ for comb in all_combinations:
             else:
                 r_score_abundance += [np.nan]
     
+    mass_shift_deviation_avg += [np.mean(np.array(mass_shift_deviation))]
     all_detected_mass_shifts_avg += [np.mean(np.array(all_detected_mass_shifts))]
     matching_mass_shifts_avg += [np.mean(np.array(matching_mass_shifts))]
     matching_ptm_patterns_avg += [np.mean(np.array(matching_ptm_patterns))]
@@ -199,7 +203,7 @@ for comb in all_combinations:
     print(progress, "out of", len(all_combinations))
     progress += 1
 
-performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts_avg
+performance_df["mass_shift_deviation"] = mass_shift_deviation_avg
 performance_df["matching_mass_shifts"] = matching_mass_shifts_avg
 performance_df["r_score_abundance"] = r_score_abundance_avg
 performance_df["matching_ptm_patterns"] = matching_ptm_patterns_avg
@@ -222,12 +226,17 @@ data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
+
+data_simulation.reset_noise_error()
 data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
                           horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
-masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
+masses_noise, intensities_noise = data_simulation.create_mass_spectrum(modform_distribution)
 
 theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
 data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
+#data_simulation.save_mass_spectrum(masses_noise, intensities_noise, theoretical_spectrum_file_name)
+
 
 # determine mass shifts and ptm patterns
 mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
@@ -247,18 +256,6 @@ gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
 gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
 gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
 
-
-plt.figure(figsize=(6, 3))
-plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
-plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
-plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
-plt.axhline(y=noise_level, color='r', linestyle='-')
-plt.xlabel("mass (Da)", fontsize=10)
-plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.tight_layout()
-plt.show()
-
-
 gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
 
@@ -270,6 +267,42 @@ mass_shifts.add_mass_shifts(config.unmodified_species_mass)
 mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=True)     
   
 mass_shifts.add_ptm_patterns_to_table()
+
+ptm_pattern_no_noise = mass_shifts.identified_masses_df["PTM pattern"]
+
+mean = gaussian_model.fitting_results["mean"]
+amplitude = gaussian_model.fitting_results["amplitude"]*data.rescaling_factor
+
+mean_noise = gaussian_model.fitting_results["mean"]
+amplitude_noise = gaussian_model.fitting_results["amplitude"]*data.rescaling_factor
+
+#plt.figure(figsize=(6, 3))
+#plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
+#plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
+#plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
+#plt.axhline(y=noise_level, color='r', linestyle='-')
+#plt.xlabel("mass (Da)", fontsize=10)
+#plt.ylabel("intensity (a.u.)", fontsize=10)
+#plt.tight_layout()
+#plt.show()
+
+
+fig = plt.figure(figsize=(14,3.5))
+gs = fig.add_gridspec(2, hspace=0)
+axes = gs.subplots(sharex=True, sharey=True)
+axes[0].plot(masses, intensities, color="0.3") 
+axes[1].plot(masses_noise, intensities_noise, color="0.3") 
+axes[0].plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], 'o', color="b")
+axes[1].plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], 'o', color="b")
+axes[0].plot(mean, amplitude, 'o', color="r")
+axes[1].plot(mean_noise, amplitude_noise, 'o', color="r")
+axes[1].set_xlabel("mass (Da)")#, fontsize=10)
+axes[1].set_ylabel("intensity (a.u.)")#, fontsize=10)
+[axes[i].set_xlim([43615, 44180]) for i in range(2)] # phospho
+[axes[i].set_ylim([0, 1410]) for i in range(2)] # phospho
+fig.tight_layout()
+sns.despine()
+plt.show()
 
 
 

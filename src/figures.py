@@ -301,7 +301,7 @@ peak_width_mode = minimize(func, 0.2).x
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.3) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
-axes[1][0].hist(horizontal_error, bins=30, density=True, alpha=0.5)
+axes[1][0].hist(horizontal_error, bins=25, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
 x = np.linspace(-0.3, horizontal_error.max(), len(horizontal_error))
@@ -338,14 +338,13 @@ horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]
 vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) &
                                       (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 
-vertical_error_par = list(stats.beta.fit(vertical_error))
-horizontal_error_par = list(stats.expon.fit(horizontal_error))
+vertical_error_par = list(stats.beta.fit(vertical_error[(vertical_error>0.5) & (vertical_error<2)]))
+horizontal_error_par = list(stats.beta.fit(horizontal_error))
 peak_width_par = list(stats.beta.fit(peak_width))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
 modform_file_name = "phospho" # "complex"
-modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
-                                   sep=",")
+modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode[0])
 
@@ -431,11 +430,9 @@ all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error,
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 
-performance_df["ptm_pattern_acc"]=performance_df["matching_ptm_patterns"]/performance_df["simulated_mass_shifts"]
+metric = "mass_shift_deviation" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
-metric = "r_score_abundance" # "matching_mass_shifts", "r_score_abundance", "matching_ptm_patterns" 
-
-fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(5.5,4.5))
+fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
@@ -452,8 +449,8 @@ for i, ax in enumerate(axn.flat):
             (performance_df["vertical_error"]==vertical_error))
     pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
                                                                          
-    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 14},
-                vmin=0, vmax=7,
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
+                vmin=0, vmax=1,
                 #cbar=i == 0, cmap=cmap,
                 #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)
