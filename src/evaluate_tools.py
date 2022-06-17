@@ -170,7 +170,7 @@ for comb in all_combinations:
         else:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(config.unmodified_species_mass)
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=False)    
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp, msg_progress=False)    
             mass_shifts.add_ptm_patterns_to_table()
             
             # determine performance of prediction
@@ -221,6 +221,7 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=","
 ############################################ CREATE SIMULATED SPECTRUM ############################################
 ###################################################################################################################
 from gaussian_model import GaussianModel
+from mass_shifts import MassShifts
 import config_sim as config 
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
@@ -261,7 +262,7 @@ mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulat
 mass_shifts.calculate_avg_mass()
 mass_shifts.add_mass_shifts(config.unmodified_species_mass)
 
-mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, msg_progress=True)     
+mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp)     
   
 mass_shifts.add_ptm_patterns_to_table()
 
@@ -275,6 +276,7 @@ plt.ylabel("intensity (a.u.)", fontsize=10)
 plt.tight_layout()
 plt.show()
 
+mass_shifts.identified_masses_df
 
 fig = plt.figure(figsize=(14,3.5))
 gs = fig.add_gridspec(2, hspace=0)

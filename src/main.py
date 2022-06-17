@@ -117,7 +117,7 @@ if __name__ == "__main__":
         if config.determine_ptm_patterns == True:
             print("\nSearching for PTM combinations:")
 
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun)        
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           

@@ -76,7 +76,7 @@ class LinearProgramCVXOPT(object):
         return error
 
 
-    def solve_lp_min_ptms(self, min_number_ptms):
+    def solve_lp_ptms(self, min_number_ptms, optimization_type="min"):
         number_variables = len(self.ptm_mass_shifts)
         ones = np.ones(number_variables)
         inequality_lhs = np.vstack([self.ptm_mass_shifts, -self.ptm_mass_shifts, -np.identity(number_variables), np.identity(number_variables), -ones])
@@ -85,7 +85,8 @@ class LinearProgramCVXOPT(object):
         inequality_rhs = np.vstack([self.observed_mass_shift+self.max_mass_error, -self.observed_mass_shift+self.max_mass_error, lower_bounds.reshape(-1,1), 
                                     self.upper_bounds.reshape(-1,1), -min_number_ptms])
         b = matrix(inequality_rhs)
-        c = matrix(ones)
+        if optimization_type == "min": c = matrix(ones)
+        elif optimization_type == "max": c = matrix(-ones)       
         status, solution = glpk.ilp(c, A, b, I=set(range(number_variables)))
         return status, solution
 
@@ -141,38 +142,53 @@ class LinearProgramCVXOPT(object):
 
 
 
-    def solve_lp_min_both(self, previous_solution):
-        max_number_ptms = sum(self.upper_bounds)        
-        number_variables = len(self.ptm_mass_shifts)
+    def solve_lp_min_both(self, previous_solution, max_number_ptms):      
+        number_variables = len(self.ptm_mass_shifts)+1
         zeros = np.zeros(number_variables) 
-        lower_bounds = zeros.reshape(-1,1)
-        
-        # mininimize  ptm_mass_shifts * x - observed_mass_shift, if ptm_mass_shifts * x >= observed_mass_shift
-        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([(1/max_number_ptms)+(self.ptm_mass_shifts/self.max_mass_error), -1/self.max_mass_error]),                                     
-                                    -np.identity(number_variables+1), np.identity(number_variables+1),
-                                    np.hstack([-self.ptm_mass_shifts, 0])])         
+        lower_bounds = zeros.reshape(-1,1)       
+        # if ptm_mass_shifts * x >= observed_mass_shift, then ...
+#        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([(1/max_number_ptms)+(self.ptm_mass_shifts/self.max_mass_error), -1/self.max_mass_error]),                                     
+#                                    -np.identity(number_variables+1), np.identity(number_variables+1),
+#                                    np.hstack([-self.ptm_mass_shifts, 0])])  
+#        inequality_rhs = np.vstack([self.max_mass_error, -previous_solution, lower_bounds, -self.observed_mass_shift, 
+#                                    self.upper_bounds.reshape(-1,1), self.observed_mass_shift, -self.observed_mass_shift])
+        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
+                                    -np.identity(number_variables), np.identity(number_variables), 
+                                    np.hstack([-np.ones(number_variables-1)/max_number_ptms, -1/self.max_mass_error])])           
         A = matrix(inequality_lhs)
-        inequality_rhs = np.vstack([self.max_mass_error, -previous_solution, lower_bounds, -self.observed_mass_shift, 
-                                    self.upper_bounds.reshape(-1,1), self.observed_mass_shift, -self.observed_mass_shift])
+        inequality_rhs = np.vstack([self.observed_mass_shift, -self.observed_mass_shift, lower_bounds,
+                                    self.upper_bounds.reshape(-1,1), self.max_mass_error, -previous_solution])
         b = matrix(inequality_rhs)
-        c = matrix(np.hstack([(4/max_number_ptms)+(self.ptm_mass_shifts/self.max_mass_error), -1/self.max_mass_error]))
-        status_min, solution_min = glpk.ilp(c, A, b, I=set(range(number_variables)))
+        c = matrix(np.hstack([np.ones(number_variables-1)/max_number_ptms, 1/self.max_mass_error]))
+        status_min, solution_min = glpk.ilp(c, A, b, I=set(range(number_variables-1)))
         
-        # maximize ptm_mass_shifts * x - observed_mass_shift, if ptm_mass_shifts * x <= observed_mass_shift
-        inequality_lhs = np.vstack([np.hstack([(1/max_number_ptms)+(-self.ptm_mass_shifts/self.max_mass_error), 1/self.max_mass_error]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
-                                    -np.identity(number_variables+1), np.identity(number_variables+1),
-                                    np.hstack([self.ptm_mass_shifts, 0])])       
+        # if ptm_mass_shifts * x <= observed_mass_shift, then ...
+        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, 1]), np.hstack([-self.ptm_mass_shifts, -1]),                                     
+                                    -np.identity(number_variables), np.identity(number_variables), 
+                                    np.hstack([-np.ones(number_variables-1)/max_number_ptms, -1/self.max_mass_error])])  
         A = matrix(inequality_lhs)
-        inequality_rhs = np.vstack([-previous_solution, self.max_mass_error, lower_bounds,  -self.observed_mass_shift, 
-                                    self.upper_bounds.reshape(-1,1), self.observed_mass_shift, self.observed_mass_shift])
+        inequality_rhs = np.vstack([self.observed_mass_shift, -self.observed_mass_shift, lower_bounds,
+                                    self.upper_bounds.reshape(-1,1), self.max_mass_error, -previous_solution])
         b = matrix(inequality_rhs)
-        c = matrix(np.hstack([(4/max_number_ptms)+(-self.ptm_mass_shifts/self.max_mass_error), 1/self.max_mass_error]))
-        status_max, solution_max = glpk.ilp(c, A, b, I=set(range(number_variables)))
+        c = matrix(np.hstack([np.ones(number_variables-1)/max_number_ptms, 1/self.max_mass_error]))
+        status_max, solution_max = glpk.ilp(c, A, b, I=set(range(number_variables-1)))
         
-        if solution_min <= solution_max:
+        if solution_min and solution_max:
+            print(solution_min)
+            if sum(solution_min) <= sum(solution_max):
+                return status_min, solution_min
+            
+            else:
+                return status_max, solution_max
+    
+        elif solution_min and not solution_max:
             return status_min, solution_min
         
         else:
-            return status_max, solution_max
+            return status_max, solution_max        
+        
+        
+        
+
 
 
