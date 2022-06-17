@@ -430,7 +430,7 @@ all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error,
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 
-metric = "mass_shift_deviation" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
@@ -450,7 +450,7 @@ for i, ax in enumerate(axn.flat):
     pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
                                                                          
     sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
-                vmin=0, vmax=1,
+                vmin=0, vmax=7,
                 #cbar=i == 0, cmap=cmap,
                 #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)

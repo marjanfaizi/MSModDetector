@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
-repeat_simulation = 10
+repeat_simulation = 5
 ###################################################################################################################
 ###################################################################################################################
 
@@ -220,22 +220,19 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=","
 ###################################################################################################################
 ############################################ CREATE SIMULATED SPECTRUM ############################################
 ###################################################################################################################
+from gaussian_model import GaussianModel
 import config_sim as config 
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
-masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
-
-data_simulation.reset_noise_error()
 data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
                           horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
-masses_noise, intensities_noise = data_simulation.create_mass_spectrum(modform_distribution)
+masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
 data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
-#data_simulation.save_mass_spectrum(masses_noise, intensities_noise, theoretical_spectrum_file_name)
 
 
 # determine mass shifts and ptm patterns
@@ -268,23 +265,15 @@ mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_
   
 mass_shifts.add_ptm_patterns_to_table()
 
-ptm_pattern_no_noise = mass_shifts.identified_masses_df["PTM pattern"]
-
-mean = gaussian_model.fitting_results["mean"]
-amplitude = gaussian_model.fitting_results["amplitude"]*data.rescaling_factor
-
-mean_noise = gaussian_model.fitting_results["mean"]
-amplitude_noise = gaussian_model.fitting_results["amplitude"]*data.rescaling_factor
-
-#plt.figure(figsize=(6, 3))
-#plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
-#plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
-#plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
-#plt.axhline(y=noise_level, color='r', linestyle='-')
-#plt.xlabel("mass (Da)", fontsize=10)
-#plt.ylabel("intensity (a.u.)", fontsize=10)
-#plt.tight_layout()
-#plt.show()
+plt.figure(figsize=(6, 3))
+plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
+plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
+plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
+plt.axhline(y=noise_level, color='r', linestyle='-')
+plt.xlabel("mass (Da)", fontsize=10)
+plt.ylabel("intensity (a.u.)", fontsize=10)
+plt.tight_layout()
+plt.show()
 
 
 fig = plt.figure(figsize=(14,3.5))
