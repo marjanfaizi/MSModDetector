@@ -484,7 +484,7 @@ file_names = [file for file in glob.glob(config.file_names)]
 
 flip_spectrum = [1,-1]
 
-output_fig = plt.figure(figsize=(12.5, 7))
+output_fig = plt.figure(figsize=(7, 4))
 gs = output_fig.add_gridspec(config.number_of_conditions, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 
@@ -498,7 +498,7 @@ for cond in config.conditions:
         noise_level = parameter.loc["noise_level", cond+"_"+rep]
         rescaling_factor = parameter.loc["rescaling_factor", cond+"_"+rep]
         total_protein_abundance = parameter.loc["total_protein_abundance", cond+"_"+rep]
-    
+
         sample_name = [file for file in file_names_same_replicate if re.search(cond, file)][0]
         data = MassSpecData(sample_name)
                 
@@ -525,12 +525,31 @@ for cond in config.conditions:
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
 plt.xlim((config.mass_start_range, config.mass_end_range))
 #plt.ylim((-ylim_max*1.1, ylim_max*1.1))
-plt.ylim((-(ylim_max/total_protein_abundance)*1.7, (ylim_max/total_protein_abundance)*1.7))
+plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
 
 plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") # plt.ylabel("rel. intensity")
 output_fig.tight_layout()
 plt.show()
 
+
+mass_error_nutlin = abs(mass_shifts_df["masses nutlin_only_rep5"] - mass_shifts_df["masses nutlin_only_rep6"])
+mass_error_uv = abs(mass_shifts_df["masses uv_7hr_rep5"] - mass_shifts_df["masses uv_7hr_rep6"])
+mass_error_all =  mass_shifts_df.filter(regex="masses ").max(axis=1).values - \
+                  mass_shifts_df.filter(regex="masses ").min(axis=1).values
+
+
+
+fig = plt.figure(figsize=(7, 1.5))
+plt.plot(mass_shifts_df["average mass"]-config.unmodified_species_mass, mass_error_nutlin, ".", color="skyblue", label="Nutlin-3a")
+plt.plot(mass_shifts_df["average mass"]-config.unmodified_species_mass, mass_error_uv, ".", color="mediumpurple", label="UV")
+plt.plot(mass_shifts_df["average mass"]-config.unmodified_species_mass, mass_error_all, ".", color="0.3", label="All conditions")
+plt.xlim((config.mass_start_range-config.unmodified_species_mass, config.mass_end_range-config.unmodified_species_mass))
+plt.legend()
+plt.ylabel("mass error [Da]")
+plt.xlabel("mass shift [$\Delta$ Da]")
+sns.despine()
+fig.tight_layout()
+plt.show()
 ###################################################################################################################
 ###################################################################################################################
 

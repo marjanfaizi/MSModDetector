@@ -147,11 +147,6 @@ class LinearProgramCVXOPT(object):
         zeros = np.zeros(number_variables) 
         lower_bounds = zeros.reshape(-1,1)       
         # if ptm_mass_shifts * x >= observed_mass_shift, then ...
-#        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([(1/max_number_ptms)+(self.ptm_mass_shifts/self.max_mass_error), -1/self.max_mass_error]),                                     
-#                                    -np.identity(number_variables+1), np.identity(number_variables+1),
-#                                    np.hstack([-self.ptm_mass_shifts, 0])])  
-#        inequality_rhs = np.vstack([self.max_mass_error, -previous_solution, lower_bounds, -self.observed_mass_shift, 
-#                                    self.upper_bounds.reshape(-1,1), self.observed_mass_shift, -self.observed_mass_shift])
         inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
                                     -np.identity(number_variables), np.identity(number_variables), 
                                     np.hstack([-np.ones(number_variables-1)/max_number_ptms, -1/self.max_mass_error])])           
@@ -174,7 +169,6 @@ class LinearProgramCVXOPT(object):
         status_max, solution_max = glpk.ilp(c, A, b, I=set(range(number_variables-1)))
         
         if solution_min and solution_max:
-            print(solution_min)
             if sum(solution_min) <= sum(solution_max):
                 return status_min, solution_min
             

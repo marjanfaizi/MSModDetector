@@ -9,15 +9,15 @@ file_names = "../data/raw_data/P04637/*.mzml"
 replicates = ["rep5", "rep6"] # rep1, rep5, rep6, rep9
 
 # list of all condition names as they are in the file names
-conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
-#conditions = ["nutlin_only", "uv_7hr"]
+#conditions = ["nutlin_only", "xray_2hr", "xray_7hr", "xray-nutlin", "uv_7hr"]
+conditions = ["nutlin_only", "uv_7hr"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
-#color_order = [["skyblue", 0], ["mediumpurple", 1]]
+#color_order = [["skyblue", 0], ["yellowgreen", 1], ["lightseagreen", 2], ["chocolate", 3], ["mediumpurple", 4]]
+color_order = [["skyblue", 0], ["mediumpurple", 1]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
@@ -46,7 +46,7 @@ pvalue_threshold = 0.1
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
-window_size_ub = 0.4
+window_size_ub = 0.5
 allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton
@@ -56,8 +56,8 @@ mass_error_ppm = 25
 mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
-bin_peaks = False
-max_bin_size = 1
+bin_peaks = True
+max_bin_size = mass_tolerance 
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6
@@ -69,7 +69,7 @@ laps_run_lp = 10
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
 # 3) min_both: minimize error and total amount of PTMs
-objective_fun = "min_ptm"
+objective_fun = "min_both"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

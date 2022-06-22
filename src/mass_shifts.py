@@ -83,16 +83,16 @@ class MassShifts(object):
             indices_to_combine = np.unravel_index(np.nanargmin(distance_matrix, axis=None), distance_matrix.shape)
             self.identified_masses_df.iloc[indices_to_combine[0]] = self.identified_masses_df.iloc[list(indices_to_combine)].max()
             self.identified_masses_df.iloc[indices_to_combine[1]] = np.nan 
-            self.identified_masses_df.calculate_avg_mass()
+            self.calculate_avg_mass()
             max_distances_between_bins = self.identified_masses_df.filter(regex="masses ").max(axis=1).values[1:] - \
                                          self.identified_masses_df.filter(regex="masses ").min(axis=1).values[:-1]  
-
 
 
     def calculate_avg_mass(self):
         self.identified_masses_df[self.avg_mass_col_name] = self.identified_masses_df.filter(regex=self.mass_col_name).mean(axis=1).values
         self.identified_masses_df.dropna(axis=0, how='all', inplace=True)
         self.identified_masses_df.reset_index(drop=True, inplace=True)
+
 
     def __create_distance_matrix(self, array):
         m, n = np.meshgrid(array, array)
@@ -191,7 +191,6 @@ class MassShifts(object):
                     min_both_solution = 0
                     multiplier = 1
                     while count_laps < laps_run_lp:
-                        print(max_number_ptms)
                         status, solution_min_both = lp_model.solve_lp_min_both(min_both_solution, max_number_ptms)
                         if solution_min_both:
                             ptm_pattern = self.array_to_ptm_annotation(list(solution_min_both[:-1]), modifications.ptm_ids)
