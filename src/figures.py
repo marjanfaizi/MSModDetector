@@ -412,74 +412,18 @@ plt.show()
 ###################################################################################################################
 
 
+
 ###################################################################################################################
 #################################################### FIGURE 2 #####################################################
-###################################################################################################################
-modform_file_name = "phospho"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
-
-vertical_error = [0, 1]
-horizontal_error = [0, 1]
-peak_width = [0, 1]
-basal_noise = [0, 1]
-
-all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error, 
-                                                   vertical_error, basal_noise])]
-
-#basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
-vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
-
-
-metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
-
-fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
-#cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
-cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
-for i, ax in enumerate(axn.flat):
-    """  
-    basal_noise = basal_noise_peak_width_comb[i][0]
-    peak_width = basal_noise_peak_width_comb[i][1]
-    mask = ((performance_df["peak_width_variation"]==peak_width) & 
-            (performance_df["basal_noise"]==basal_noise))
-    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
-    """
-    vertical_error = vertical_horizontal_comb[i][0]
-    horizontal_error = vertical_horizontal_comb[i][1]
-    mask = ((performance_df["horizontal_error"]==horizontal_error) & 
-            (performance_df["vertical_error"]==vertical_error))
-    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
-                                                                         
-    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
-                vmin=0, vmax=7,
-                #cbar=i == 0, cmap=cmap,
-                #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
-                cbar_ax=None) #if i else cbar_ax)
-    
-#    if i==2 or i==3: ax.set_xlabel("$error_{horizontal}$")
-    if i==2 or i==3: ax.set_xlabel("peak width")
-    else: ax.set_xlabel("")
-#    if i==0 or i==2: ax.set_ylabel("$error_{vertical}$")
-    if i==0 or i==2: ax.set_ylabel("basal noise")
-    else: ax.set_ylabel("")
-    ax.set_xticklabels(["no","yes"], rotation=45)
-    ax.set_yticklabels(["no","yes"], rotation=90)
-    ax.invert_yaxis() 
-     
-fig.tight_layout()#(rect=[0, 0, 0.93, 1])
-###################################################################################################################
-###################################################################################################################
-
-
-###################################################################################################################
-#################################################### FIGURE 3 #####################################################
 ###################################################################################################################
 sns.set_style("ticks")
 
 cond_mapping = {"nutlin_only": "Nutlin-3a", "xray_2hr": "X-ray (2hr)", "xray_7hr": "X-ray (7hr)",
                 "xray-nutlin": "X-ray + Nutlin-3a", "uv_7hr": "UV"}
 
-mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
-parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
+mass_shifts_df = pd.read_csv("../output/mass_shifts_all_possibilities.csv", sep=",")
+ptm_patterns_df = pd.read_csv("../output/ptm_patterns_table_all_possibilities.csv", sep=",")
+parameter = pd.read_csv("../output/parameter_all_possibilities.csv", sep=",", index_col=[0])
 file_names = [file for file in glob.glob(config.file_names)] 
 
 flip_spectrum = [1,-1]
@@ -550,9 +494,72 @@ plt.xlabel("mass shift [$\Delta$ Da]")
 sns.despine()
 fig.tight_layout()
 plt.show()
+
+
+ptm_patterns_df.groupby("mass shift").size()
+
 ###################################################################################################################
 ###################################################################################################################
 
+
+
+
+###################################################################################################################
+#################################################### FIGURE 3 #####################################################
+###################################################################################################################
+modform_file_name = "phospho"
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
+
+vertical_error = [0, 1]
+horizontal_error = [0, 1]
+peak_width = [0, 1]
+basal_noise = [0, 1]
+
+all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error, 
+                                                   vertical_error, basal_noise])]
+
+#basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
+vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
+
+
+metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+
+fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
+#cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
+cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
+for i, ax in enumerate(axn.flat):
+    """  
+    basal_noise = basal_noise_peak_width_comb[i][0]
+    peak_width = basal_noise_peak_width_comb[i][1]
+    mask = ((performance_df["peak_width_variation"]==peak_width) & 
+            (performance_df["basal_noise"]==basal_noise))
+    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
+    """
+    vertical_error = vertical_horizontal_comb[i][0]
+    horizontal_error = vertical_horizontal_comb[i][1]
+    mask = ((performance_df["horizontal_error"]==horizontal_error) & 
+            (performance_df["vertical_error"]==vertical_error))
+    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
+                                                                         
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
+                vmin=0, vmax=7,
+                #cbar=i == 0, cmap=cmap,
+                #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
+                cbar_ax=None) #if i else cbar_ax)
+    
+#    if i==2 or i==3: ax.set_xlabel("$error_{horizontal}$")
+    if i==2 or i==3: ax.set_xlabel("peak width")
+    else: ax.set_xlabel("")
+#    if i==0 or i==2: ax.set_ylabel("$error_{vertical}$")
+    if i==0 or i==2: ax.set_ylabel("basal noise")
+    else: ax.set_ylabel("")
+    ax.set_xticklabels(["no","yes"], rotation=45)
+    ax.set_yticklabels(["no","yes"], rotation=90)
+    ax.invert_yaxis() 
+     
+fig.tight_layout()#(rect=[0, 0, 0.93, 1])
+###################################################################################################################
+###################################################################################################################
 
 
 

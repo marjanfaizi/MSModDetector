@@ -167,7 +167,8 @@ class MassShifts(object):
                 if objective_fun == "min_err":
                     min_error = 0
                     multiplier = 1
-                    while count_laps < laps_run_lp and min_error <= mass_tolerance:
+#                    while count_laps < laps_run_lp and min_error <= mass_tolerance:
+                    while min_error <= mass_tolerance:
                         status, solution_min_error = lp_model.solve_lp_min_error(min_error)
                         if solution_min_error:
                             ptm_pattern = self.array_to_ptm_annotation(list(solution_min_error[:-1]), modifications.ptm_ids)
@@ -207,7 +208,7 @@ class MassShifts(object):
                                 multiplier += 1
                         else:        
                             break
-    
+
 
                 row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
                 if objective_fun == "min_ptm":
