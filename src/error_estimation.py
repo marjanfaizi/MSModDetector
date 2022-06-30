@@ -70,7 +70,7 @@ for rep in config.replicates:
 
             x_gauss_func = peaks_in_search_window[:,0]
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
-            vertical_error += (y_gauss_func / peaks_in_search_window[:,1]).tolist()
+            vertical_error += (y_gauss_func - peaks_in_search_window[:,1]).tolist()
 
             spacing_between_peaks = 1.003355
             horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks).tolist()

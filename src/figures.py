@@ -274,7 +274,7 @@ error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_
 
 spacing_between_peaks = 1.003355
 lw = 1.3
-binsize = 30
+binsize = 25
 fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
 # basal noise
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
@@ -306,17 +306,18 @@ axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
 x = np.linspace(-0.3, horizontal_error.max(), len(horizontal_error))
 #loc, scale = stats.expon.fit(horizontal_error[(horizontal_error<0.5) & (horizontal_error>-0.5)])  
-a, b, loc, scale = stats.beta.fit(horizontal_error)  
+a, b, loc, scale = stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale) 
 axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
-vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<5) &
-                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+#vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<5) &
+#                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 axes[1][1].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
 axes[1][1].set_xlabel("vertical error (rel.)")
 axes[1][1].set_ylabel("density")
-x = np.linspace(-0.1, vertical_error.max(), len(vertical_error))
-a, b, loc, scale = stats.beta.fit(vertical_error[(vertical_error>0.5) & (vertical_error<2)])  
+x = np.linspace(-0.2, vertical_error.max(), len(vertical_error))
+a, b, loc, scale = stats.beta.fit(vertical_error[(vertical_error>-0.1)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
 # plot layout

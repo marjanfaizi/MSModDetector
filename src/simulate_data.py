@@ -29,6 +29,7 @@ class SimulateData(object):
         self.isotopic_distribution_unmodified_species = self.seq_str_to_isotopic_dist(self.unmodified_sequence_str)
         self.modifications_table = modifications_table
         self.mass_grid_step = 0.02
+        self.spacing_between_peaks = 1.003355
         self.margin_mass_range = 20
         self.vertical_error_par = None
         self.horizontal_error_par = None
@@ -65,19 +66,19 @@ class SimulateData(object):
 
         masses_sorted_ix = np.argsort(spectrum, axis=0)[:,0]
         spectrum = spectrum[masses_sorted_ix]
-
-        if self.vertical_error_par != None:
-            vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
-            spectrum[:,1] *= vertical_error
-
-        if self.basal_noise_par != None:
-            basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
-            spectrum[:,1] += basal_noise*scaling_factor
-
+        
         if self.horizontal_error_par != None: 
             horizontal_error = (self.horizontal_error_par[3]*np.random.beta(*self.horizontal_error_par[:2], size=spectrum.shape[0]))+self.horizontal_error_par[2]
             spectrum[:,0] += horizontal_error/2
-        
+
+        if self.vertical_error_par != None:
+            vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
+            spectrum[:,1] += abs(vertical_error)*scaling_factor
+
+        if self.basal_noise_par != None:
+            basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
+            spectrum[:,1] += basal_noise#*scaling_factor
+
         intensities = np.zeros(mass_grid.shape)
         
         for peak in spectrum:
@@ -141,7 +142,7 @@ class SimulateData(object):
             selected_pos = random.sample(unoccupied_pos, k=int(mod_amount[ix]))
             unimod_id = self.modifications_table[self.modifications_table["ptm_id"] == m]["unimod_id"].values[0]
             mod_pos_dict.update(dict(zip(selected_pos, [unimod_id]*int(mod_amount[ix]))))
-            
+
         unimod_pos_dict = dict(sorted(mod_pos_dict.items()))
         modified_sequence_str = str()
         unimod_ids = list(unimod_pos_dict.values())
