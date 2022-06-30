@@ -33,7 +33,7 @@ class GaussianModel(object):
         self.stddev = stddev_isotope_distribution
         self.maxfev = 100000
         self.degree_of_freedom = 3
-        self.sample_size_threshold = 5
+        self.sample_size_threshold = 7
         self.intensity_threshold = 1e-10
         self.step_size = 1
 

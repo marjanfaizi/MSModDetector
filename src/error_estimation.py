@@ -31,7 +31,7 @@ import config
 file_names = [file for file in glob.glob(config.file_names)] 
 
 sample_names = [cond+"_"+rep for cond, rep in product(config.conditions, config.replicates)]
-mass_start_range = 43600
+mass_start_range = 43700
 mass_end_range = 44600
 noise_start_range = 47000
 noise_end_range = 49000
@@ -99,7 +99,7 @@ error_estimate_table["vertical error (rel.)"] = vertical_error
 error_estimate_table["basal noise (a.u.)"] = basal_noise
 error_estimate_table["is_signal"] = signal
 
-error_estimate_table.to_csv("../output/error_noise_distribution_table.csv", index=False)
+error_estimate_table.to_csv("../output/error_noise_distribution_table_06_29_22.csv", index=False)
 
 
 

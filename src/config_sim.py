@@ -44,7 +44,7 @@ pvalue_threshold = 0.1
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
-window_size_ub = 0.5
+window_size_ub = 0.4
 allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton
@@ -67,7 +67,7 @@ laps_run_lp = 10
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
 # 3) min_both: minimize error and total amount of PTMs
-objective_fun = "min_both"
+objective_fun = "min_ptm"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

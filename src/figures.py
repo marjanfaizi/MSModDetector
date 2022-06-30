@@ -270,15 +270,15 @@ plt.show()
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
-error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_29_22.csv")
 
 spacing_between_peaks = 1.003355
 lw = 1.3
-
+binsize = 30
 fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
 # basal noise
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
-axes[0][0].hist(basal_noise, bins=30, density=True, alpha=0.5)
+axes[0][0].hist(basal_noise, bins=binsize, density=True, alpha=0.5)
 axes[0][0].set_xlabel("basal noise (a.u)")
 axes[0][0].set_ylabel("density")
 x = np.linspace(-1e-3, basal_noise.max(), len(basal_noise))
@@ -286,9 +286,9 @@ a, b, loc, scale = stats.beta.fit(basal_noise)
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[0][0].plot(x, pdf_beta, color="purple", lw=lw)
 # peak width variation
-peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.45) & 
                                   (error_estimate_table["is_signal"]==True)]["peak width"].values
-axes[0][1].hist(peak_width, bins=30, density=True, alpha=0.5)
+axes[0][1].hist(peak_width, bins=binsize, density=True, alpha=0.5)
 axes[0][1].set_xlabel("peak width")
 axes[0][1].set_ylabel("density")
 x = np.linspace(peak_width.min(), peak_width.max(), len(peak_width))
@@ -301,7 +301,7 @@ peak_width_mode = minimize(func, 0.2).x
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.3) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
-axes[1][0].hist(horizontal_error, bins=25, density=True, alpha=0.5)
+axes[1][0].hist(horizontal_error, bins=binsize, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
 x = np.linspace(-0.3, horizontal_error.max(), len(horizontal_error))
@@ -312,7 +312,7 @@ axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
 vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<5) &
                                       (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
-axes[1][1].hist(vertical_error, bins=30, density=True, alpha=0.5)
+axes[1][1].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
 axes[1][1].set_xlabel("vertical error (rel.)")
 axes[1][1].set_ylabel("density")
 x = np.linspace(-0.1, vertical_error.max(), len(vertical_error))
@@ -448,7 +448,7 @@ for cond in config.conditions:
                 
         masses = mass_shifts_df["masses "+cond+"_"+rep].dropna().values
         intensities = mass_shifts_df["raw intensities "+cond+"_"+rep].dropna().values
-        
+
         x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, config.stddev_isotope_distribution)
         
@@ -507,7 +507,7 @@ ptm_patterns_df.groupby("mass shift").size()
 ###################################################################################################################
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "phospho_acetyl"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
@@ -522,7 +522,7 @@ all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error,
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 
-metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+metric = "matching_mass_shifts" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
