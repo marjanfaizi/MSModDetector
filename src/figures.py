@@ -279,14 +279,14 @@ fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
 # basal noise
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
 axes[0][0].hist(basal_noise, bins=binsize, density=True, alpha=0.5)
-axes[0][0].set_xlabel("basal noise (a.u)")
+axes[0][0].set_xlabel("basal noise (rel.)")
 axes[0][0].set_ylabel("density")
 x = np.linspace(-1e-3, basal_noise.max(), len(basal_noise))
 a, b, loc, scale = stats.beta.fit(basal_noise)  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[0][0].plot(x, pdf_beta, color="purple", lw=lw)
 # peak width variation
-peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.45) & 
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.4) & 
                                   (error_estimate_table["is_signal"]==True)]["peak width"].values
 axes[0][1].hist(peak_width, bins=binsize, density=True, alpha=0.5)
 axes[0][1].set_xlabel("peak width")
@@ -304,19 +304,16 @@ horizontal_error = error_estimate_table[(error_estimate_table["horizontal error 
 axes[1][0].hist(horizontal_error, bins=binsize, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
-x = np.linspace(-0.3, horizontal_error.max(), len(horizontal_error))
-#loc, scale = stats.expon.fit(horizontal_error[(horizontal_error<0.5) & (horizontal_error>-0.5)])  
-a, b, loc, scale = stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)])  
+x = np.linspace(-0.32, 0.32, len(horizontal_error))
+a, b, loc, scale = stats.beta.fit(horizontal_error)  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale) 
 axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
-#vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<5) &
-#                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 axes[1][1].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
 axes[1][1].set_xlabel("vertical error (rel.)")
 axes[1][1].set_ylabel("density")
-x = np.linspace(-0.2, vertical_error.max(), len(vertical_error))
+x = np.linspace(-0.22, 0.22, len(vertical_error))
 a, b, loc, scale = stats.beta.fit(vertical_error[(vertical_error>-0.1)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
@@ -422,9 +419,9 @@ sns.set_style("ticks")
 cond_mapping = {"nutlin_only": "Nutlin-3a", "xray_2hr": "X-ray (2hr)", "xray_7hr": "X-ray (7hr)",
                 "xray-nutlin": "X-ray + Nutlin-3a", "uv_7hr": "UV"}
 
-mass_shifts_df = pd.read_csv("../output/mass_shifts_all_possibilities.csv", sep=",")
-ptm_patterns_df = pd.read_csv("../output/ptm_patterns_table_all_possibilities.csv", sep=",")
-parameter = pd.read_csv("../output/parameter_all_possibilities.csv", sep=",", index_col=[0])
+mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
+ptm_patterns_df = pd.read_csv("../output/ptm_patterns_table.csv", sep=",")
+parameter = pd.read_csv("../output/parameter.csv", sep=",", index_col=[0])
 file_names = [file for file in glob.glob(config.file_names)] 
 
 flip_spectrum = [1,-1]
@@ -462,19 +459,19 @@ for cond in config.conditions:
         axes[order_in_plot].plot(data.masses, flip_spectrum[ix]*data.intensities/(rescaling_factor*total_protein_abundance), label=cond_mapping[cond], color=color_of_sample)
         axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities/total_protein_abundance, '.', color='0.3')
         axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
-        #axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
-
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
         if flip_spectrum[ix] > 0: axes[order_in_plot].legend(loc='upper right')
         #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
-plt.xlim((config.mass_start_range, config.mass_end_range))
+plt.xlim((config.mass_start_range, 49000.0))#config.mass_end_range))
 #plt.ylim((-ylim_max*1.1, ylim_max*1.1))
 plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
 
 plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") # plt.ylabel("rel. intensity")
 output_fig.tight_layout()
 plt.show()
+
 
 
 mass_error_nutlin = abs(mass_shifts_df["masses nutlin_only_rep5"] - mass_shifts_df["masses nutlin_only_rep6"])
@@ -508,7 +505,7 @@ ptm_patterns_df.groupby("mass shift").size()
 ###################################################################################################################
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
-modform_file_name = "phospho_acetyl"
+modform_file_name = "overlap"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
@@ -523,7 +520,7 @@ all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error,
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 
-metric = "matching_mass_shifts" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])

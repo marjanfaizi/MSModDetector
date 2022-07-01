@@ -73,11 +73,11 @@ class SimulateData(object):
 
         if self.vertical_error_par != None:
             vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
-            spectrum[:,1] += abs(vertical_error)*scaling_factor
+            spectrum[:,1] += spectrum[:,1]*vertical_error
 
         if self.basal_noise_par != None:
             basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
-            spectrum[:,1] += basal_noise#*scaling_factor
+            spectrum[:,1] += basal_noise*spectrum[:,1].max()
 
         intensities = np.zeros(mass_grid.shape)
         

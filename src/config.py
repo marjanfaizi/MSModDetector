@@ -37,7 +37,8 @@ mass_end_range = 44520.0
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
-noise_level_fraction = 0.5
+noise_level_fraction = 0.3
+
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
@@ -69,7 +70,7 @@ laps_run_lp = 10
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
 # 3) min_both: minimize error and total amount of PTMs
-objective_fun = "min_err"
+objective_fun = "min_ptm"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

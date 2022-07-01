@@ -25,7 +25,7 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "phospho_acetyl"
+modform_file_name = "overlap"
 protein_entries = utils.read_fasta(config.fasta_file_name)
 aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=";")
@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_29_22.csv")
 
-repeat_simulation = 3
+repeat_simulation = 2
 ###################################################################################################################
 ###################################################################################################################
 
@@ -62,19 +62,18 @@ def determine_matching_mass_shifts(detected_mass_shifts, modform_distribution_si
 ############################################## DETERMINE NOISE LEVEL ##############################################
 ###################################################################################################################
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
-peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
+peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.4) & 
                                   (error_estimate_table["is_signal"]==True)]["peak width"].values
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.3) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
-vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<4) &
-                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 
 func = lambda x: -stats.beta.pdf(x, *stats.beta.fit(peak_width))  
 peak_width_mode = minimize(func, 0.2).x
 
-vertical_error_par = list(stats.beta.fit(vertical_error))
-horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)])) 
+vertical_error_par = list(stats.beta.fit(vertical_error[vertical_error>-0.1]))
+horizontal_error_par = list(stats.beta.fit(horizontal_error)) 
 peak_width_par = list(stats.beta.fit(peak_width))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
@@ -228,10 +227,9 @@ data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
-#data_simulation.add_noise(vertical_error_par=vertical_error_par, peak_width_par=peak_width_par, 
-#                          horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par)
-data_simulation.add_noise(horizontal_error_par=horizontal_error_par, peak_width_par=peak_width_par,
-                          basal_noise_par=basal_noise_par, vertical_error_par=vertical_error_par)
+data_simulation.add_noise(vertical_error_par=vertical_error_par, horizontal_error_par=horizontal_error_par,
+                          basal_noise_par=basal_noise_par, peak_width_par=peak_width_par)
+
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"

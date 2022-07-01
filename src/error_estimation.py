@@ -33,8 +33,8 @@ file_names = [file for file in glob.glob(config.file_names)]
 sample_names = [cond+"_"+rep for cond, rep in product(config.conditions, config.replicates)]
 mass_start_range = 43700
 mass_end_range = 44600
-noise_start_range = 47000
-noise_end_range = 49000
+noise_start_range = 45000
+noise_end_range = 47000
 
 basal_noise = []
 width_sinlge_peak = []
@@ -76,7 +76,7 @@ for rep in config.replicates:
             horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks).tolist()
 
             for peak in peaks_in_search_window:
-                window_size = 0.6
+                window_size = 0.5
                 selected_region_ix = np.argwhere((data_in_search_window[:,0]<=peak[0]+window_size) & (data_in_search_window[:,0]>=peak[1]-window_size))[:,0]
                 selected_region = data_in_search_window[selected_region_ix]
                 guess = 0.2

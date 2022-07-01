@@ -98,4 +98,6 @@ class MassSpecData(object):
             return self.remove_adjacent_peaks(removed_adjacent_peaks, distance_threshold)
         else:
             return removed_adjacent_peaks    
-    
+
+
+
