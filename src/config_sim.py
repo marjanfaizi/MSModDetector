@@ -67,7 +67,7 @@ laps_run_lp = 10
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
 # 3) min_both: minimize error and total amount of PTMs
-objective_fun = "min_ptm"
+objective_fun = "min_both"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

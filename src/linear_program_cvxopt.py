@@ -102,6 +102,56 @@ class LinearProgramCVXOPT(object):
             max_number_ptms = number_ptms
         else:
             min_number_ptms = 0
+            max_number_ptms = sum(self.upper_bounds)
+        
+        # if ptm_mass_shifts * x >= observed_mass_shift, then ...
+        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
+                                    -np.identity(number_variables+1), np.identity(number_variables+1), 
+                                    np.hstack([-ones, 0]), np.hstack([ones, 0])])           
+        A = matrix(inequality_lhs)
+        inequality_rhs = np.vstack([self.observed_mass_shift, -self.observed_mass_shift, lower_bounds, -min_error,
+                                    self.upper_bounds.reshape(-1,1), self.max_mass_error, -min_number_ptms, max_number_ptms])
+        b = matrix(inequality_rhs)
+        c = matrix(np.hstack([np.zeros(number_variables), 1]))
+        status_min, solution_min = glpk.ilp(c, A, b, I=set(range(number_variables)))
+
+        # if ptm_mass_shifts * x <= observed_mass_shift, then ...
+        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, 1]), np.hstack([-self.ptm_mass_shifts, -1]),                                     
+                                    -np.identity(number_variables+1), np.identity(number_variables+1), 
+                                    np.hstack([-ones, 0]), np.hstack([ones, 0])])    
+        A = matrix(inequality_lhs)
+        inequality_rhs = np.vstack([self.observed_mass_shift, -self.observed_mass_shift, lower_bounds, -min_error,
+                                    self.upper_bounds.reshape(-1,1), self.max_mass_error, -min_number_ptms, max_number_ptms])
+        b = matrix(inequality_rhs)
+        c = matrix(np.hstack([np.zeros(number_variables), 1]))
+        status_max, solution_max = glpk.ilp(c, A, b, I=set(range(number_variables)))
+        
+        if solution_min and solution_max:
+            if solution_min[-1] <= solution_max[-1]:
+                return status_min, solution_min
+            else:
+                return status_max, solution_max
+    
+        elif solution_min and not solution_max:
+            return status_min, solution_min
+        
+        else:
+            return status_max, solution_max
+
+
+
+    """
+    def solve_lp_min_error(self, min_error, number_ptms=None):
+        number_variables = len(self.ptm_mass_shifts)
+        ones = np.ones(number_variables)
+        zeros = np.zeros(number_variables) 
+        lower_bounds = zeros.reshape(-1,1)
+        
+        if number_ptms != None:
+            min_number_ptms = number_ptms
+            max_number_ptms = number_ptms
+        else:
+            min_number_ptms = 0
             max_number_ptms = 20
         
         # mininimize  ptm_mass_shifts * x - observed_mass_shift, if ptm_mass_shifts * x >= observed_mass_shift
@@ -139,7 +189,7 @@ class LinearProgramCVXOPT(object):
         
         else:
             return status_max, solution_max
-
+        """
 
 
     def solve_lp_min_both(self, previous_solution, max_number_ptms):      
