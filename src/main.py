@@ -17,7 +17,7 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-import config as config
+import config_sim as config
 
 file_names = [file for file in glob.glob(config.file_names)] 
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             print("\nSearching for PTM combinations:")
 
             mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp)        
-            mass_shifts.add_ptm_patterns_to_table(config.objective_fun)
+            mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           
         mass_shifts.save_tables("../output/")

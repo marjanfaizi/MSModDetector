@@ -24,7 +24,12 @@ def gaussian(x, amplitude, mean, stddev):
 def integral_of_gaussian(amplitude, stddev):
     return np.sqrt(2*np.pi)*amplitude*stddev
 
-    
+
+def two_gaussian(x, amp1, amp2, mean1, mean2, stddev):
+    y = np.zeros(len(x))
+    y += gaussian(x, amp1, mean1, stddev) + gaussian(x, amp2, mean2, stddev)
+    return y  
+ 
 def multi_gaussian(x, amplitude, mean, stddev):
     y = np.zeros(len(x))
     for i in range(len(mean)):

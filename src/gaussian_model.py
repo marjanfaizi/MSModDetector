@@ -37,6 +37,70 @@ class GaussianModel(object):
         self.intensity_threshold = 1e-10
         self.step_size = 1
 
+#########################################################################################################################
+#########################################################################################################################
+    def fit_two_gaussian_within_window(self, peaks, allowed_overlap_fitting_window, pvalue_threshold, noise_level):
+        masses = peaks[:, 0]
+        best_fit = {"fitted_mean": masses[0], "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+                    "window_size":  self.variable_window_sizes[0]}
+        window_range_start = masses[0]; window_range_end = masses[0]
+        
+        while window_range_end <= masses[-1]:
+                            
+            best_window_size_fit = {"fitted_mean": 0, "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+                                    "window_size": 0}
+            for window_size in self.variable_window_sizes:
+                peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
+                non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
+                peaks_in_window = peaks_in_window[non_zero_intensity_ix]
+                if len(peaks_in_window) >= self.sample_size_threshold:
+                    optimized_param = self.fit_gaussian(peaks_in_window, two_gaussians=True)
+                    fitted_amp1, fitted_amp2, fitted_mean1, fitted_mean2 = optimized_param
+
+                    if fitted_mean1 <= fitted_mean2:
+                        peaks_around_fitted_mean = peaks[(masses >= fitted_mean1-window_size/2) & (masses <= fitted_mean2+window_size/2)]
+                    else:
+                        peaks_around_fitted_mean = peaks[(masses >= fitted_mean2-window_size/2) & (masses <= fitted_mean1+window_size/2)]
+    
+                    if len(peaks_around_fitted_mean[peaks_around_fitted_mean[:,1]>noise_level]) >= self.sample_size_threshold:
+                        chi_square_result = self.chi_square_test(peaks_around_fitted_mean, fitted_amp1, fitted_mean1, fitted_amp2, fitted_mean2)
+                        pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
+                        if pvalue > best_window_size_fit["pvalue"]:
+                            best_window_size_fit = {"fitted_mean": np.array([fitted_mean1, fitted_mean2]), 
+                                                    "fitted_amplitude": [fitted_amp1, fitted_amp2], 
+                                                    "pvalue": [pvalue, pvalue], "chi_score": [chi_score, chi_score], 
+                                                    "window_size": [window_size, window_size]}
+
+            min_distance = (0.5*best_fit["window_size"][1] + 0.5*best_window_size_fit["window_size"][1])*allowed_overlap_fitting_window
+            if np.abs(best_window_size_fit["fitted_mean"].min()-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"][1] > best_fit["pvalue"][1]:
+                best_fit = best_window_size_fit.copy()
+    
+            elif np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) > min_distance or window_range_start + best_fit["window_size"] >= masses[-1]:
+                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                    "mean": best_fit["fitted_mean"], 
+                                                                    "amplitude": best_fit["fitted_amplitude"], 
+                                                                    "pvalue": best_fit["pvalue"],
+                                                                    "chi_score": best_fit["chi_score"], 
+                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)
+                best_fit = best_window_size_fit.copy()
+
+
+            window_range_start += self.step_size
+            window_range_end = window_range_start + best_fit["window_size"]
+
+        if not best_fit["fitted_mean"] in self.fitting_results["mean"]:
+            self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                "mean": best_fit["fitted_mean"], 
+                                                                "amplitude": best_fit["fitted_amplitude"], 
+                                                                "pvalue": best_fit["pvalue"],
+                                                                "chi_score": best_fit["chi_score"], 
+                                                                "window_size": best_fit["window_size"]}, ignore_index=True)
+
+
+        self.fitting_results = self.fitting_results[self.fitting_results["pvalue"] >= pvalue_threshold]
+        self.fitting_results.reset_index(drop=True, inplace=True)
+#########################################################################################################################
+#########################################################################################################################
 
     def fit_gaussian_within_window(self, peaks, allowed_overlap_fitting_window, pvalue_threshold, noise_level):
         masses = peaks[:, 0]
@@ -54,15 +118,12 @@ class GaussianModel(object):
                 peaks_in_window = peaks_in_window[non_zero_intensity_ix]
                 if len(peaks_in_window) >= self.sample_size_threshold:
                     optimized_param = self.fit_gaussian(peaks_in_window)
-                    fitted_amplitude = optimized_param[0]
-                    fitted_mean = optimized_param[1]
+                    fitted_amplitude, fitted_mean = optimized_param
                     peaks_around_fitted_mean = peaks[(masses >= fitted_mean-window_size/2) & (masses <= fitted_mean+window_size/2)]
 
                     if len(peaks_around_fitted_mean[peaks_around_fitted_mean[:,1]>noise_level]) >= self.sample_size_threshold:
                         chi_square_result = self.chi_square_test(peaks_around_fitted_mean, fitted_amplitude, fitted_mean)
-                        pvalue = chi_square_result.pvalue
-                        chi_score = chi_square_result.statistic
-                        
+                        pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
                         if pvalue > best_window_size_fit["pvalue"]:
                             best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
                                                     "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
@@ -97,17 +158,23 @@ class GaussianModel(object):
         self.fitting_results.reset_index(drop=True, inplace=True)
 
 
-    def fit_gaussian(self, peaks, mean=None, amplitude=None):
+    def fit_gaussian(self, peaks, mean=None, amplitude=None, two_gaussians=False):
         masses = peaks[:, 0]; intensities = peaks[:, 1]           
         index_most_abundant_peak = intensities.argmax()
         initial_amplitude = intensities[index_most_abundant_peak]
-            
+        initial_mean = masses[index_most_abundant_peak]
+
         if amplitude==None and mean==None:
-            initial_mean = masses[index_most_abundant_peak]
-            optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, self.stddev), 
-                                                    masses, intensities, maxfev=self.maxfev, 
-                                                    bounds=([0, masses[0]], [1, masses[-1]]),
-                                                    p0=[initial_amplitude, initial_mean])
+            if not two_gaussians:
+                optimized_param, _ = optimize.curve_fit(lambda x, amplitude, mean: utils.gaussian(x, amplitude, mean, self.stddev), 
+                                                        masses, intensities, maxfev=self.maxfev, 
+                                                        bounds=([0, masses[0]], [1, masses[-1]]),
+                                                        p0=[initial_amplitude, initial_mean])        
+            else:
+                optimized_param, _ = optimize.curve_fit(lambda x, amp1, amp2, mean1, mean2: utils.two_gaussian(x, amp1, amp2, mean1, mean2, self.stddev), 
+                                                        masses, intensities, maxfev=self.maxfev, 
+                                                        bounds=([0, 0, masses[0], masses[0]], [1, 1, masses[-1], masses[-1]]),
+                                                        p0=[initial_amplitude, initial_amplitude, initial_mean, initial_mean])
         elif amplitude==None and mean!=None:
             optimized_param, _ = optimize.curve_fit(lambda x, amplitude: utils.gaussian(x, amplitude, mean, self.stddev), 
                                                     masses, intensities, maxfev=self.maxfev,  bounds=(0, 1),
@@ -128,9 +195,12 @@ class GaussianModel(object):
         self.variable_window_sizes = variable_window_sizes
 
 
-    def chi_square_test(self, selected_region, amplitude, mean):
+    def chi_square_test(self, selected_region, amplitude, mean, amplitude2=None, mean2=None):
         observed_masses = selected_region[:,0]; observed_intensities = selected_region[:,1]
-        predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, self.stddev)
+        if amplitude2 == None:
+            predicted_intensities = utils.gaussian(observed_masses, amplitude, mean, self.stddev)
+        else:
+            predicted_intensities = utils.two_gaussian(observed_masses, amplitude, amplitude2, mean, mean2, self.stddev)
         chi_square_score = chisquare(observed_intensities, f_exp=predicted_intensities, ddof=self.degree_of_freedom)
         return chi_square_score
 

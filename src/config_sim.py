@@ -6,10 +6,10 @@ import utils
 file_names = "../data/simulated_data/*.csv"
 
 # list of all replicate names as they are in the file names
-replicates = ["rep1", "rep2"]
+replicates = ["rep1"]
 
 # list of all condition names as they are in the file names
-conditions = ["phospho", "acetyl", "complex"]
+conditions = ["overlap"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)

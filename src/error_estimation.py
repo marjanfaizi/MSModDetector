@@ -34,8 +34,8 @@ file_names = [file for file in glob.glob(config.file_names)]
 sample_names = [cond+"_"+rep for cond, rep in product(config.conditions, config.replicates)]
 mass_start_range = 43700
 mass_end_range = 44600
-noise_start_range = 45000
-noise_end_range = 47000
+noise_start_range = 44600
+noise_end_range = 46000
 
 basal_noise = []
 width_sinlge_peak = []

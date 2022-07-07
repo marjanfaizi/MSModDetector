@@ -25,7 +25,7 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "overlap"
 protein_entries = utils.read_fasta(config.fasta_file_name)
 aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=";")
