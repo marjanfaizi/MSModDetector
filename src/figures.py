@@ -270,9 +270,9 @@ plt.show()
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
-error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_29_22.csv")
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
+error_estimate_table2 = pd.read_csv("../output/error_noise_distribution_table_sim.csv")
 
-spacing_between_peaks = 1.003355
 lw = 1.3
 binsize = 25
 fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
@@ -288,7 +288,10 @@ axes[0][0].plot(x, pdf_beta, color="purple", lw=lw)
 # peak width variation
 peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.4) & 
                                   (error_estimate_table["is_signal"]==True)]["peak width"].values
+peak_width2 = error_estimate_table2[(error_estimate_table2["peak width"]<0.4) & 
+                                  (error_estimate_table2["is_signal"]==True)]["peak width"].values
 axes[0][1].hist(peak_width, bins=binsize, density=True, alpha=0.5)
+axes[0][1].hist(peak_width2, bins=binsize, density=True, alpha=0.5)
 axes[0][1].set_xlabel("peak width")
 axes[0][1].set_ylabel("density")
 x = np.linspace(peak_width.min(), peak_width.max(), len(peak_width))
@@ -298,23 +301,29 @@ axes[0][1].plot(x, pdf_beta, color="purple", lw=lw)
 func = lambda x: -stats.beta.pdf(x, a, b, loc, scale)  
 peak_width_mode = minimize(func, 0.2).x
 # horizontal error
-horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
-                                        (error_estimate_table["horizontal error (Da)"]>-0.3) &
+horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.28) &
+                                        (error_estimate_table["horizontal error (Da)"]>-0.28) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
+horizontal_error2 = error_estimate_table2[(error_estimate_table2["horizontal error (Da)"]<0.28) &
+                                        (error_estimate_table2["horizontal error (Da)"]>-0.28) &
+                                        (error_estimate_table2["is_signal"]==True)]["horizontal error (Da)"].values
 axes[1][0].hist(horizontal_error, bins=binsize, density=True, alpha=0.5)
+axes[1][0].hist(horizontal_error2, bins=binsize, density=True, alpha=0.5)
 axes[1][0].set_xlabel("horizontal error (Da)")
 axes[1][0].set_ylabel("density")
-x = np.linspace(-0.32, 0.32, len(horizontal_error))
-a, b, loc, scale = stats.beta.fit(horizontal_error)  
+x = np.linspace(-0.3, 0.3, len(horizontal_error))
+a, b, loc, scale = stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale) 
 axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
 vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+vertical_error2 = error_estimate_table2[(error_estimate_table2["is_signal"]==True)]["vertical error (rel.)"].values
 axes[1][1].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
+axes[1][1].hist(vertical_error2, bins=binsize, density=True, alpha=0.5)
 axes[1][1].set_xlabel("vertical error (rel.)")
 axes[1][1].set_ylabel("density")
 x = np.linspace(-0.22, 0.22, len(vertical_error))
-a, b, loc, scale = stats.beta.fit(vertical_error[(vertical_error>-0.1)])  
+a, b, loc, scale = stats.beta.fit(vertical_error)
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
 axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
 # plot layout
@@ -510,17 +519,17 @@ performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
-peak_width = [0, 1]
+#peak_width = [0, 1]
 basal_noise = [0, 1]
 
-all_combinations = [p for p in itertools.product(*[peak_width, horizontal_error, 
+all_combinations = [p for p in itertools.product(*[horizontal_error,#peak_width, horizontal_error, 
                                                    vertical_error, basal_noise])]
 
 #basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 
-metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+metric = "mass_shift_deviation" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
 fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
 #cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])

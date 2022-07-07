@@ -3,26 +3,26 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/simulated_data/*.mzML'
+file_names = "../data/simulated_data/*.csv"
 
 # list of all replicate names as they are in the file names
-replicates = ['rep1']
+replicates = ["rep1", "rep2"]
 
 # list of all condition names as they are in the file names
-conditions = ['simluated']
+conditions = ["phospho", "acetyl", "complex"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-color_order = [['skyblue', 0]]
+color_order = [["skyblue", 0]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = '../data/modifications/modifications_P04637.csv'
+modfication_file_name = "../data/modifications/modifications_P04637.csv"
 
 # Fasta file for protein of interest
-fasta_file_name = '../data/fasta_files/P04637.fasta'
+fasta_file_name = "../data/fasta_files/P04637.fasta"
 
 # Theoretical average mass of the unmodified species (in Da)
 protein_entries = utils.read_fasta(fasta_file_name)
@@ -67,7 +67,7 @@ laps_run_lp = 10
 # 1) min_ptm: minimize total amount of PTMs on a single protein
 # 2) min_err: minimize error between observed and inferred mass shift
 # 3) min_both: minimize error and total amount of PTMs
-objective_fun = "min_ptm"
+objective_fun = "min_both"
 
 # Set this to be true if the mass shifts should be calculated and reported in the output table
 calculate_mass_shifts = True

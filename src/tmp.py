@@ -62,7 +62,19 @@ diff_mean = np.subtract.outer(mean,mean)[np.tril_indices(mean.shape[0], k = -1)]
 
 
 plt.hist(diff_mean, bins=600)
+p = []
 
+for peak in trimmed_peaks_in_search_window:
+    window_size = 0.5
+    selected_region_ix = np.argwhere((data.masses<=peak[0]+window_size) & (data.masses>=peak[0]-window_size))[:,0]
+    masses = data.masses[selected_region_ix]; intensities = data.intensities[selected_region_ix]/data.rescaling_factor
+    guess = 0.25
+    optimized_param, _ = optimize.curve_fit(lambda x, sigma: utils.gaussian(x, peak[1], peak[0], sigma), 
+                                            masses, intensities, maxfev=1000000,
+                                            p0=guess, bounds=(0, window_size))
+    p.append(optimized_param[0])
+
+plt.hist(p,bins=20)
 
 
 
@@ -108,14 +120,14 @@ mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.
 """
 
 plt.figure(figsize=(7,3))
-plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
+plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=1)
 #plt.plot(mod_mean, mod_amplitude/200*data.rescaling_factor, 'b.')
-plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
-plt.plot(mean2, amplitude2*data.rescaling_factor, 'r.')
-plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
+#plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
+#plt.plot(mean2, amplitude2*data.rescaling_factor, 'r.')
+#plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
 #plt.plot(data.raw_spectrum[:,0], utils.multi_gaussian(data.raw_spectrum[:,0], refitted_amp.x, refitted_mean.x, config.stddev_isotope_distribution), 'g-')
 #plt.plot(refitted_mean.x, refitted_amp.x, 'g.')
-plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
+#plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43600,44540))

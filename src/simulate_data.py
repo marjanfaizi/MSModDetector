@@ -29,7 +29,7 @@ class SimulateData(object):
         self.isotopic_distribution_unmodified_species = self.seq_str_to_isotopic_dist(self.unmodified_sequence_str)
         self.modifications_table = modifications_table
         self.mass_grid_step = 0.02
-        self.spacing_between_peaks = 1.003355
+        self.spacing_between_peaks = 1.0#03355
         self.margin_mass_range = 20
         self.vertical_error_par = None
         self.horizontal_error_par = None
@@ -80,16 +80,18 @@ class SimulateData(object):
             spectrum[:,1] += basal_noise*spectrum[:,1].max()
 
         intensities = np.zeros(mass_grid.shape)
-        
         for peak in spectrum:
             if self.peak_width_mode == None:
                 sys.exit("Set value for peak_width_mode.")
             if self.peak_width_par != None:
                 peak_width = (self.peak_width_par[3]*np.random.beta(*self.peak_width_par[:2]))+self.peak_width_par[2]
+                
             else:
                 peak_width = self.peak_width_mode
+            # If peak width variation is estimated from simulated data it tends to be higher than the variation of the experimental data (but why??)
+            correct_for_peak_width = 1.0#75
             # Add gaussian peak shape centered around each theoretical peak
-            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width)**2)
+            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width*correct_for_peak_width)**2)
 
         return mass_grid, intensities
 

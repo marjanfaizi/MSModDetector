@@ -71,7 +71,7 @@ class MassSpecData(object):
         return nearest_mass_idx
 
 
-    def normalize_intensities(self, intensities, method="total"):
+    def normalize_intensities(self, intensities):
         max_intensity = intensities.max()
         intensities_normalized = intensities / max_intensity
         self.rescaling_factor = max_intensity

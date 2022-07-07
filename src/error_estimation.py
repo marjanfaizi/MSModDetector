@@ -16,13 +16,14 @@ import pandas as pd
 import utils 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
+#import config_sim as config
 import config
 
 #*************************************************************************************************************#
 #*************************************************************************************************************#
 # This method estimates the following error and noise levels from given experimental data:                    #
 # - basal noise from a mass range wihtout any signal                                                          #
-# - peak width error of the single peaks within the mass range of interest                                #
+# - peak width error of the single peaks within the mass range of interest                                    #
 # - vertical error is estimated by the distance between the experimental peaks and the fitted gaussian curve  #
 # - horizontal error is calculated as the distance between one peak to another                                #
 #*************************************************************************************************************#
@@ -51,11 +52,8 @@ for rep in config.replicates:
         sample_name = [file for file in file_names_same_replicate if re.search(cond, file)]        
         if sample_name:
             sample_name = sample_name[0]
-
             data = MassSpecData(sample_name)
             data.set_search_window_mass_range(mass_start_range, mass_end_range)
-            data_in_search_window = data.determine_search_window(data.raw_spectrum)
-            data_in_search_window[:,1] = data_in_search_window[:,1] / data_in_search_window[:,1].max()
             all_peaks = data.picking_peaks()
             peaks_in_search_window = data.determine_search_window(all_peaks)
             peaks_in_search_window[:,1] = data.normalize_intensities(peaks_in_search_window[:,1])
@@ -72,16 +70,16 @@ for rep in config.replicates:
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
             vertical_error += (y_gauss_func - peaks_in_search_window[:,1]).tolist()
 
-            spacing_between_peaks = 1.003355
+            spacing_between_peaks = 1.0#03355
             horizontal_error += ((peaks_in_search_window[1:,0]-peaks_in_search_window[:-1,0]) - spacing_between_peaks).tolist()
 
             for peak in peaks_in_search_window:
                 window_size = 0.5
-                selected_region_ix = np.argwhere((data_in_search_window[:,0]<=peak[0]+window_size) & (data_in_search_window[:,0]>=peak[1]-window_size))[:,0]
-                selected_region = data_in_search_window[selected_region_ix]
-                guess = 0.2
+                selected_region_ix = np.argwhere((data.masses<=peak[0]+window_size) & (data.masses>=peak[0]-window_size))[:,0]
+                masses = data.masses[selected_region_ix]; intensities = data.intensities[selected_region_ix]/data.rescaling_factor
+                guess = 0.25
                 optimized_param, _ = optimize.curve_fit(lambda x, sigma: utils.gaussian(x, peak[1], peak[0], sigma), 
-                                                        selected_region[:,0], selected_region[:,1], maxfev=100000,
+                                                        masses, intensities, maxfev=1000000,
                                                         p0=guess, bounds=(0, window_size))
                 width_sinlge_peak.append(optimized_param[0])
 
@@ -94,12 +92,12 @@ for rep in config.replicates:
 error_estimate_table = pd.DataFrame()
 
 error_estimate_table["peak width"] = width_sinlge_peak
-error_estimate_table["horizontal error (Da)"] = horizontal_error+len(sample_names)*[0]
+error_estimate_table["horizontal error (Da)"] =  np.pad(horizontal_error, (0, len(vertical_error)-len(horizontal_error)))
 error_estimate_table["vertical error (rel.)"] = vertical_error
 error_estimate_table["basal noise (a.u.)"] = basal_noise
 error_estimate_table["is_signal"] = signal
 
-error_estimate_table.to_csv("../output/error_noise_distribution_table_06_29_22.csv", index=False)
+error_estimate_table.to_csv("../output/error_noise_distribution_table.csv", index=False)
 
 
 
