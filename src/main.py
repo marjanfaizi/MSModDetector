@@ -83,7 +83,9 @@ if __name__ == "__main__":
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
                     gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-                    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+#                    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+                    gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+
                     gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
                     parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  

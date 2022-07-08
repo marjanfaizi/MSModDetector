@@ -70,8 +70,8 @@ def multi_gaussian(x, amp1, amp2, mean1, mean2, stddev):
 
 
 optimized_param, _ = optimize.curve_fit(lambda x, amp1, amp2, mean1, mean2: multi_gaussian(x, amp1, amp2, mean1, mean2, gaussian_model.stddev), 
-                                        trimmed_peaks_in_search_window[:50,0], trimmed_peaks_in_search_window[:50,1], maxfev=1000000, 
-                                        bounds=([0, 0, trimmed_peaks_in_search_window[0,0],trimmed_peaks_in_search_window[0,0]], [1, 1, trimmed_peaks_in_search_window[40,0], trimmed_peaks_in_search_window[40,0]]),
+                                        trimmed_peaks_in_search_window[:20,0], trimmed_peaks_in_search_window[:20,1], maxfev=1000000, 
+                                        bounds=([0, 0, trimmed_peaks_in_search_window[0,0],trimmed_peaks_in_search_window[0,0]], [1, 1, trimmed_peaks_in_search_window[20,0], trimmed_peaks_in_search_window[20,0]]),
                                         p0=[0.5,0.5,43755.9483,43755.9483])
 
 

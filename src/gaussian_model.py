@@ -37,70 +37,95 @@ class GaussianModel(object):
         self.intensity_threshold = 1e-10
         self.step_size = 1
 
-#########################################################################################################################
-#########################################################################################################################
-    def fit_two_gaussian_within_window(self, peaks, allowed_overlap_fitting_window, pvalue_threshold, noise_level):
-        masses = peaks[:, 0]
-        best_fit = {"fitted_mean": masses[0], "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+
+    def fit_two_gaussian_within_window(self, peaks, pvalue_threshold, noise_level):
+        masses = peaks[:, 0]; intensities = peaks[:, 1]
+        best_fit = {"fitted_mean": np.array([masses[0], masses[0]]), "fitted_amplitude": [0,0], "pvalue": 0, "chi_score": 0, 
                     "window_size":  self.variable_window_sizes[0]}
         window_range_start = masses[0]; window_range_end = masses[0]
         
         while window_range_end <= masses[-1]:
-                            
-            best_window_size_fit = {"fitted_mean": 0, "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
+            best_window_size_fit = {"fitted_mean": np.array([0,0]), "fitted_amplitude": [0,0], "pvalue": 0, "chi_score": 0, 
                                     "window_size": 0}
+            
             for window_size in self.variable_window_sizes:
-                peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
-                non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
-                peaks_in_window = peaks_in_window[non_zero_intensity_ix]
+                peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size) &
+                                        (intensities > self.intensity_threshold)]
+                
                 if len(peaks_in_window) >= self.sample_size_threshold:
                     optimized_param = self.fit_gaussian(peaks_in_window, two_gaussians=True)
                     fitted_amp1, fitted_amp2, fitted_mean1, fitted_mean2 = optimized_param
+                    centroid = np.mean([fitted_mean1, fitted_mean2])
+                    peaks_around_fitted_means = peaks[(masses >= centroid-window_size/2) & (masses <= centroid+window_size/2)]
 
-                    if fitted_mean1 <= fitted_mean2:
-                        peaks_around_fitted_mean = peaks[(masses >= fitted_mean1-window_size/2) & (masses <= fitted_mean2+window_size/2)]
-                    else:
-                        peaks_around_fitted_mean = peaks[(masses >= fitted_mean2-window_size/2) & (masses <= fitted_mean1+window_size/2)]
-    
-                    if len(peaks_around_fitted_mean[peaks_around_fitted_mean[:,1]>noise_level]) >= self.sample_size_threshold:
-                        chi_square_result = self.chi_square_test(peaks_around_fitted_mean, fitted_amp1, fitted_mean1, fitted_amp2, fitted_mean2)
-                        pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
+                    if len(peaks_around_fitted_means[peaks_around_fitted_means[:,1]>noise_level]) >= self.sample_size_threshold:
+                        chi_square_result = self.chi_square_test(peaks_around_fitted_means, fitted_amp1, fitted_mean1, fitted_amp2, fitted_mean2)
+                        pvalue = chi_square_result.pvalue
+                        chi_score = chi_square_result.statistic       
+                        
                         if pvalue > best_window_size_fit["pvalue"]:
                             best_window_size_fit = {"fitted_mean": np.array([fitted_mean1, fitted_mean2]), 
                                                     "fitted_amplitude": [fitted_amp1, fitted_amp2], 
-                                                    "pvalue": [pvalue, pvalue], "chi_score": [chi_score, chi_score], 
-                                                    "window_size": [window_size, window_size]}
+                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
 
-            min_distance = (0.5*best_fit["window_size"][1] + 0.5*best_window_size_fit["window_size"][1])*allowed_overlap_fitting_window
-            if np.abs(best_window_size_fit["fitted_mean"].min()-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"][1] > best_fit["pvalue"][1]:
+            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])
+            if np.abs(best_window_size_fit["fitted_mean"].min()-best_fit["fitted_mean"].max()) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
                 best_fit = best_window_size_fit.copy()
-    
-            elif np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) > min_distance or window_range_start + best_fit["window_size"] >= masses[-1]:
-                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
-                                                                    "mean": best_fit["fitted_mean"], 
-                                                                    "amplitude": best_fit["fitted_amplitude"], 
-                                                                    "pvalue": best_fit["pvalue"],
-                                                                    "chi_score": best_fit["chi_score"], 
-                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)
+
+            elif np.abs(best_window_size_fit["fitted_mean"].min()-best_fit["fitted_mean"].max()) > min_distance or window_range_start + best_fit["window_size"] >= masses[-1]:
+                if best_fit["fitted_mean"].min() == best_fit["fitted_mean"].max():
+                    self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                        "mean": best_fit["fitted_mean"][0], 
+                                                                        "amplitude": best_fit["fitted_amplitude"][0], 
+                                                                        "pvalue": best_fit["pvalue"],
+                                                                        "chi_score": best_fit["chi_score"], 
+                                                                        "window_size": best_fit["window_size"]}, ignore_index=True)                
+                else:
+                    self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                        "mean": best_fit["fitted_mean"][0], 
+                                                                        "amplitude": best_fit["fitted_amplitude"][0], 
+                                                                        "pvalue": best_fit["pvalue"],
+                                                                        "chi_score": best_fit["chi_score"], 
+                                                                        "window_size": best_fit["window_size"]}, ignore_index=True)
+                    self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                        "mean": best_fit["fitted_mean"][1], 
+                                                                        "amplitude": best_fit["fitted_amplitude"][1], 
+                                                                        "pvalue": best_fit["pvalue"],
+                                                                        "chi_score": best_fit["chi_score"], 
+                                                                        "window_size": best_fit["window_size"]}, ignore_index=True)
                 best_fit = best_window_size_fit.copy()
 
 
             window_range_start += self.step_size
             window_range_end = window_range_start + best_fit["window_size"]
 
-        if not best_fit["fitted_mean"] in self.fitting_results["mean"]:
-            self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
-                                                                "mean": best_fit["fitted_mean"], 
-                                                                "amplitude": best_fit["fitted_amplitude"], 
-                                                                "pvalue": best_fit["pvalue"],
-                                                                "chi_score": best_fit["chi_score"], 
-                                                                "window_size": best_fit["window_size"]}, ignore_index=True)
+        if not best_fit["fitted_mean"][0] in self.fitting_results["mean"] and not best_fit["fitted_mean"][1] in self.fitting_results["mean"]:
+            if best_fit["fitted_mean"].min() == best_fit["fitted_mean"].max():
+                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                    "mean": best_fit["fitted_mean"][0], 
+                                                                    "amplitude": best_fit["fitted_amplitude"][0], 
+                                                                    "pvalue": best_fit["pvalue"],
+                                                                    "chi_score": best_fit["chi_score"], 
+                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)                
+            else:
+                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                    "mean": best_fit["fitted_mean"][0], 
+                                                                    "amplitude": best_fit["fitted_amplitude"][0], 
+                                                                    "pvalue": best_fit["pvalue"],
+                                                                    "chi_score": best_fit["chi_score"], 
+                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)
+                self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
+                                                                    "mean": best_fit["fitted_mean"][1], 
+                                                                    "amplitude": best_fit["fitted_amplitude"][1], 
+                                                                    "pvalue": best_fit["pvalue"],
+                                                                    "chi_score": best_fit["chi_score"], 
+                                                                    "window_size": best_fit["window_size"]}, ignore_index=True)
 
 
         self.fitting_results = self.fitting_results[self.fitting_results["pvalue"] >= pvalue_threshold]
         self.fitting_results.reset_index(drop=True, inplace=True)
-#########################################################################################################################
-#########################################################################################################################
+
+
 
     def fit_gaussian_within_window(self, peaks, allowed_overlap_fitting_window, pvalue_threshold, noise_level):
         masses = peaks[:, 0]
@@ -211,7 +236,7 @@ class GaussianModel(object):
             if not self.fitting_results.empty:
                 masses = peaks[:,0]; intensities = peaks[:,1]
                 error_func_amp = lambda amplitude, x, y: utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y    
-                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 1),
+                refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, 1), loss="soft_l1", 
                                                              x0=self.fitting_results["amplitude"].values, 
                                                              args=(masses, intensities))
                 
@@ -224,13 +249,14 @@ class GaussianModel(object):
                     delta = 3
                     lb = self.fitting_results["mean"].values-delta
                     ub = self.fitting_results["mean"].values+delta
-                    refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub),
+                    refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub), loss="soft_l1",
                                                              x0=self.fitting_results["mean"].values, 
                                                              args=(masses, intensities))
 
                     self.fitting_results["mean"] = refitted_means.x
         
             repeat_fitting -= 1
+
 
 
     def calculate_relative_abundaces(self, start_mass, end_mass):
