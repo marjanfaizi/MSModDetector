@@ -3,26 +3,26 @@ import utils
 
 
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = '../data/simulated_data/*.mzML'
+file_names = "../data/simulated_data/*.csv"
 
 # list of all replicate names as they are in the file names
-replicates = ['rep1']
+replicates = ["rep1"]
 
 # list of all condition names as they are in the file names
-conditions = ['simluated']
+conditions = ["overlap"]
 
 # used to determine the number of subplots
 number_of_conditions = len(conditions)
 
 # color for each condition and the respective order in the plots
-color_order = [['skyblue', 0]]
+color_order = [["skyblue", 0]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = '../data/modifications/modifications_P04637.csv'
+modfication_file_name = "../data/modifications/modifications_P04637.csv"
 
 # Fasta file for protein of interest
-fasta_file_name = '../data/fasta_files/P04637.fasta'
+fasta_file_name = "../data/fasta_files/P04637.fasta"
 
 # Theoretical average mass of the unmodified species (in Da)
 protein_entries = utils.read_fasta(fasta_file_name)
@@ -44,7 +44,7 @@ pvalue_threshold = 0.1
 # determine window size used to fit the gaussian distribution
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
-window_size_ub = 0.5
+window_size_ub = 0.8
 allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton

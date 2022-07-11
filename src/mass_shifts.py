@@ -120,7 +120,7 @@ class MassShifts(object):
 
 
     def determine_ptm_patterns(self, modifications, mass_tolerance, objective_fun, laps_run_lp, msg_progress=True):
-        self.ptm_patterns_df = pd.DataFrame(columns=['mass shift', 'mass error (Da)', 'PTM pattern', 'amount of PTMs']) 
+        self.ptm_patterns_df = pd.DataFrame(columns=["mass shift", "mass error (Da)", "PTM pattern", "amount of PTMs"]) 
         lp_model = LinearProgramCVXOPT(np.array(modifications.ptm_masses), np.array(modifications.upper_bounds))
         lp_model.set_max_mass_error(mass_tolerance)
 
@@ -193,7 +193,6 @@ class MassShifts(object):
                         if solution_min_both:
                             ptm_pattern = self.array_to_ptm_annotation(list(solution_min_both[:-1]), modifications.ptm_ids)
                             is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
-                            print(max_number_ptms, is_solution_in_list, solution_min_both[-1], int(sum(solution_min_both[:-1])), solution_min_both[-1]/mass_tolerance + int(sum(solution_min_both[:-1]))/max_number_ptms)
                             if not is_solution_in_list:
                                 count_laps += 1
                                 error = solution_min_both[-1]
@@ -206,12 +205,9 @@ class MassShifts(object):
                         else:        
                             break
 
-
                 row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
                 if objective_fun == "min_ptm":
-                    row_entries_as_df.sort_values(by=['amount of PTMs', 'mass error (Da)'], inplace=True)
-                else:
-                    row_entries_as_df.sort_values(by=['mass error (Da)', 'amount of PTMs'], inplace=True)
+                    row_entries_as_df.sort_values(by=["amount of PTMs", "mass error (Da)"], inplace=True)
                 self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
 
             if msg_progress:
@@ -230,11 +226,11 @@ class MassShifts(object):
         
     
     def add_ptm_patterns_to_table(self):
-        self.ptm_patterns_df["amount of PTMs"] = pd.to_numeric(self.ptm_patterns_df["amount of PTMs"])
-        best_ptm_patterns = self.ptm_patterns_df.loc[self.ptm_patterns_df.groupby("mass shift")["amount of PTMs"].idxmin()]
+        best_ptm_patterns = self.ptm_patterns_df.groupby("mass shift").head(1)
+
         self.identified_masses_df = pd.merge(best_ptm_patterns[["mass shift", "PTM pattern"]], 
-                                                self.identified_masses_df, how="outer", left_on=["mass shift"], 
-                                                right_on=["mass shift"])
+                                             self.identified_masses_df, how="outer", left_on=["mass shift"], 
+                                             right_on=["mass shift"])
         self.identified_masses_df.sort_values(by=["mass shift"], inplace=True, ignore_index=True)
         self.identified_masses_df["PTM pattern"].fillna("0", inplace=True)
 

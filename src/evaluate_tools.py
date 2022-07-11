@@ -11,7 +11,7 @@ from sklearn.metrics import r2_score
 import numpy as np
 import itertools
 from scipy import stats
-from scipy.optimize import minimize
+#from scipy.optimize import minimize
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -25,14 +25,14 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
+modform_file_name = "overlap"
 protein_entries = utils.read_fasta(config.fasta_file_name)
 aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=";")
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
-error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_29_22.csv")
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
 repeat_simulation = 10
 ###################################################################################################################
@@ -70,14 +70,14 @@ horizontal_error = error_estimate_table[(error_estimate_table["horizontal error 
 vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 
 func = lambda x: -stats.beta.pdf(x, *stats.beta.fit(peak_width))  
-peak_width_mode = minimize(func, 0.2).x
+peak_width_mode = 0.25#minimize(func, 0.2).x
 
-vertical_error_par = list(stats.beta.fit(vertical_error[vertical_error>-0.1]))
+vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error)) 
-peak_width_par = list(stats.beta.fit(peak_width))
+#peak_width_par = list(stats.beta.fit(peak_width))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-all_combinations = list(itertools.product([0, 1], repeat=4))
+all_combinations = list(itertools.product([0, 1], repeat=3))#4))
 ###################################################################################################################
 ###################################################################################################################
 
@@ -90,15 +90,15 @@ mod = Modifications(config.modfication_file_name, aa_sequence_str)
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
 
-performance_df = pd.DataFrame(columns=["vertical_error", "peak_width_variation", "horizontal_error", 
-                                       "basal_noise", "all_detected_mass_shifts", "simulated_mass_shifts", 
+performance_df = pd.DataFrame(columns=["vertical_error", "horizontal_error", "basal_noise", 
+                                       "all_detected_mass_shifts", "simulated_mass_shifts", 
                                        "matching_mass_shifts", "r_score_abundance", 
                                        "matching_ptm_patterns", "mass_shift_deviation"])
 
 performance_df["vertical_error"] = [a_tuple[0] for a_tuple in all_combinations]
-performance_df["peak_width_variation"] = [a_tuple[1] for a_tuple in all_combinations]
-performance_df["horizontal_error"] = [a_tuple[2] for a_tuple in all_combinations]
-performance_df["basal_noise"] = [a_tuple[3] for a_tuple in all_combinations]
+#performance_df["peak_width_variation"] = [a_tuple[1] for a_tuple in all_combinations]
+performance_df["horizontal_error"] = [a_tuple[1] for a_tuple in all_combinations]
+performance_df["basal_noise"] = [a_tuple[2] for a_tuple in all_combinations]
 performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
 
 #indices_matches = []
@@ -123,14 +123,14 @@ for comb in all_combinations:
         data_simulation.reset_noise_error()
         if comb[0]: vertical_error = vertical_error_par
         else: vertical_error = None
-        if comb[1]: peak_width = peak_width_par
-        else: peak_width = None
-        if comb[2]: horizontal_error = horizontal_error_par
+#        if comb[1]: peak_width = peak_width_par
+#        else: peak_width = None
+        if comb[1]: horizontal_error = horizontal_error_par
         else: horizontal_error = None
-        if comb[3]: basal_noise = basal_noise_par
+        if comb[2]: basal_noise = basal_noise_par
         else: basal_noise = None
                 
-        data_simulation.add_noise(vertical_error_par=vertical_error, peak_width_par=peak_width, 
+        data_simulation.add_noise(vertical_error_par=vertical_error, #peak_width_par=peak_width, 
                                   horizontal_error_par=horizontal_error, basal_noise_par=basal_noise)
         masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
         
@@ -221,6 +221,7 @@ performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=","
 ###################################################################################################################
 from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
+from simulate_data import SimulateData
 import config_sim as config 
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
@@ -228,7 +229,7 @@ data_simulation.set_peak_width_mode(peak_width_mode)
 
 data_simulation.reset_noise_error()
 data_simulation.add_noise(vertical_error_par=vertical_error_par, horizontal_error_par=horizontal_error_par,
-                          basal_noise_par=basal_noise_par, peak_width_par=peak_width_par)
+                          basal_noise_par=basal_noise_par)#, peak_width_par=peak_width_par)
 
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
@@ -238,7 +239,7 @@ data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_fil
 
 # determine mass shifts and ptm patterns
 mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
-    
+
 data = MassSpecData(theoretical_spectrum_file_name)
 data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
 
@@ -253,6 +254,7 @@ trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trim
 gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
 gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
 gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+#gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
 
 gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)

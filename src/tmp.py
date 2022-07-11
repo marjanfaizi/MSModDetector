@@ -63,7 +63,34 @@ diff_mean = np.subtract.outer(mean,mean)[np.tril_indices(mean.shape[0], k = -1)]
 
 plt.hist(diff_mean, bins=600)
 
+def multi_gaussian(x, amp1, amp2, mean1, mean2, stddev):
+    y = np.zeros(len(x))
+    y += utils.gaussian(x, amp1, mean1, stddev) + utils.gaussian(x, amp2, mean2, stddev)
+    return y  
 
+
+optimized_param, _ = optimize.curve_fit(lambda x, amp1, amp2, mean1, mean2: multi_gaussian(x, amp1, amp2, mean1, mean2, gaussian_model.stddev), 
+                                        trimmed_peaks_in_search_window[:20,0], trimmed_peaks_in_search_window[:20,1], maxfev=1000000, 
+                                        bounds=([0, 0, trimmed_peaks_in_search_window[0,0],trimmed_peaks_in_search_window[0,0]], [1, 1, trimmed_peaks_in_search_window[20,0], trimmed_peaks_in_search_window[20,0]]),
+                                        p0=[0.5,0.5,43755.9483,43755.9483])
+
+
+x = np.arange(43740, 43800)
+y = multi_gaussian(x, *optimized_param, gaussian_model.stddev)
+
+plt.figure(figsize=(7,3))
+plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=1)
+
+plt.plot(x, y*data.rescaling_factor, 'b-')
+plt.plot(optimized_param[[2,3]], optimized_param[[0,1]]*data.rescaling_factor, 'r.')
+#plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
+#plt.plot(data.raw_spectrum[:,0], utils.multi_gaussian(data.raw_spectrum[:,0], refitted_amp.x, refitted_mean.x, config.stddev_isotope_distribution), 'g-')
+#plt.plot(refitted_mean.x, refitted_amp.x, 'g.')
+plt.xlim((43740, 43800))
+plt.xlabel("mass (Da)")
+plt.ylabel("intensity (a.u.)")
+plt.tight_layout()
+plt.show()
 
 
 mean = gaussian_model.fitting_results["mean"]
@@ -108,14 +135,14 @@ mass_shifts.save_table(mass_shifts.identified_masses_df, "../output/mass_shifts.
 """
 
 plt.figure(figsize=(7,3))
-plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '.-', color="0.3", linewidth=1)
+plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=1)
 #plt.plot(mod_mean, mod_amplitude/200*data.rescaling_factor, 'b.')
-plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
-plt.plot(mean2, amplitude2*data.rescaling_factor, 'r.')
-plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
+#plt.plot(mean, amplitude*data.rescaling_factor, 'b.')
+#plt.plot(mean2, amplitude2*data.rescaling_factor, 'r.')
+#plt.plot(gaussian_model.fitting_results["mean"],gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, 'g.')
 #plt.plot(data.raw_spectrum[:,0], utils.multi_gaussian(data.raw_spectrum[:,0], refitted_amp.x, refitted_mean.x, config.stddev_isotope_distribution), 'g-')
 #plt.plot(refitted_mean.x, refitted_amp.x, 'g.')
-plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
+#plt.axhline(y=noise_level*data.rescaling_factor, c='r', lw=0.3)
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43600,44540))
