@@ -34,7 +34,7 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table_06_29_22.csv")
 
-repeat_simulation = 2
+repeat_simulation = 10
 ###################################################################################################################
 ###################################################################################################################
 
