@@ -271,27 +271,28 @@ plt.show()
 ############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
-error_estimate_table2 = pd.read_csv("../output/error_noise_distribution_table_sim.csv")
+#error_estimate_table2 = pd.read_csv("../output/error_noise_distribution_table_sim.csv")
 
 lw = 1.3
 binsize = 25
-fig, axes = plt.subplots(2, 2, figsize=(6,4.5))
+fig, axes = plt.subplots(1, 3, figsize=(7, 2))
 # basal noise
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
-axes[0][0].hist(basal_noise, bins=binsize, density=True, alpha=0.5)
-axes[0][0].set_xlabel("basal noise (rel.)")
-axes[0][0].set_ylabel("density")
+axes[0].hist(basal_noise, bins=binsize, density=True, alpha=0.5)
+axes[0].set_xlabel("basal noise (rel.)")
+axes[0].set_ylabel("density")
 x = np.linspace(-1e-3, basal_noise.max(), len(basal_noise))
 a, b, loc, scale = stats.beta.fit(basal_noise)  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
-axes[0][0].plot(x, pdf_beta, color="purple", lw=lw)
+axes[0].plot(x, pdf_beta, color="purple", lw=lw)
+"""
 # peak width variation
 peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.4) & 
                                   (error_estimate_table["is_signal"]==True)]["peak width"].values
-peak_width2 = error_estimate_table2[(error_estimate_table2["peak width"]<0.4) & 
+#peak_width2 = error_estimate_table2[(error_estimate_table2["peak width"]<0.4) & 
                                   (error_estimate_table2["is_signal"]==True)]["peak width"].values
 axes[0][1].hist(peak_width, bins=binsize, density=True, alpha=0.5)
-axes[0][1].hist(peak_width2, bins=binsize, density=True, alpha=0.5)
+#axes[0][1].hist(peak_width2, bins=binsize, density=True, alpha=0.5)
 axes[0][1].set_xlabel("peak width")
 axes[0][1].set_ylabel("density")
 x = np.linspace(peak_width.min(), peak_width.max(), len(peak_width))
@@ -300,32 +301,33 @@ pdf_beta = stats.beta.pdf(x, a, b, loc, scale)
 axes[0][1].plot(x, pdf_beta, color="purple", lw=lw)
 func = lambda x: -stats.beta.pdf(x, a, b, loc, scale)  
 peak_width_mode = minimize(func, 0.2).x
+"""
 # horizontal error
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.28) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.28) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
-horizontal_error2 = error_estimate_table2[(error_estimate_table2["horizontal error (Da)"]<0.28) &
-                                        (error_estimate_table2["horizontal error (Da)"]>-0.28) &
-                                        (error_estimate_table2["is_signal"]==True)]["horizontal error (Da)"].values
-axes[1][0].hist(horizontal_error, bins=binsize, density=True, alpha=0.5)
-axes[1][0].hist(horizontal_error2, bins=binsize, density=True, alpha=0.5)
-axes[1][0].set_xlabel("horizontal error (Da)")
-axes[1][0].set_ylabel("density")
+#horizontal_error2 = error_estimate_table2[(error_estimate_table2["horizontal error (Da)"]<0.28) &
+#                                        (error_estimate_table2["horizontal error (Da)"]>-0.28) &
+#                                        (error_estimate_table2["is_signal"]==True)]["horizontal error (Da)"].values
+axes[1].hist(horizontal_error, bins=binsize, density=True, alpha=0.5)
+#axes[1][0].hist(horizontal_error2, bins=binsize, density=True, alpha=0.5)
+axes[1].set_xlabel("horizontal error (Da)")
+axes[1].set_ylabel("density")
 x = np.linspace(-0.3, 0.3, len(horizontal_error))
 a, b, loc, scale = stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)])  
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale) 
-axes[1][0].plot(x, pdf_beta, color="purple", lw=lw)
+axes[1].plot(x, pdf_beta, color="purple", lw=lw)
 # vertical error
 vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
-vertical_error2 = error_estimate_table2[(error_estimate_table2["is_signal"]==True)]["vertical error (rel.)"].values
-axes[1][1].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
-axes[1][1].hist(vertical_error2, bins=binsize, density=True, alpha=0.5)
-axes[1][1].set_xlabel("vertical error (rel.)")
-axes[1][1].set_ylabel("density")
+#vertical_error2 = error_estimate_table2[(error_estimate_table2["is_signal"]==True)]["vertical error (rel.)"].values
+axes[2].hist(vertical_error, bins=binsize, density=True, alpha=0.5)
+#axes[1][1].hist(vertical_error2, bins=binsize, density=True, alpha=0.5)
+axes[2].set_xlabel("vertical error (rel.)")
+axes[2].set_ylabel("density")
 x = np.linspace(-0.22, 0.22, len(vertical_error))
 a, b, loc, scale = stats.beta.fit(vertical_error)
 pdf_beta = stats.beta.pdf(x, a, b, loc, scale)  
-axes[1][1].plot(x, pdf_beta, color="purple", lw=lw)
+axes[2].plot(x, pdf_beta, color="purple", lw=lw)
 # plot layout
 sns.despine()
 plt.tight_layout()
@@ -339,61 +341,53 @@ plt.show()
 ########################################### SUPPLEMENTAL FIGURE 4 AND 5 ###########################################
 ###################################################################################################################
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
-peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.5) & 
-                                  (error_estimate_table["is_signal"]==True)]["peak width"].values
-horizontal_error = error_estimate_table[error_estimate_table["is_signal"]==True]["horizontal error (Da)"].values
-vertical_error = error_estimate_table[(error_estimate_table["vertical error (rel.)"]<2.5) &
-                                      (error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
+horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.28) &
+                                        (error_estimate_table["horizontal error (Da)"]>-0.28) &
+                                        (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
+vertical_error = error_estimate_table[error_estimate_table["is_signal"]==True]["vertical error (rel.)"].values
 
-vertical_error_par = list(stats.beta.fit(vertical_error[(vertical_error>0.5) & (vertical_error<2)]))
-horizontal_error_par = list(stats.beta.fit(horizontal_error))
-peak_width_par = list(stats.beta.fit(peak_width))
+vertical_error_par = list(stats.beta.fit(vertical_error))
+horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)]))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-modform_file_name = "phospho" # "complex"
+modform_file_name = "overlap" # "complex" "phospho"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
-data_simulation.set_peak_width_mode(peak_width_mode[0])
+data_simulation.set_peak_width_mode(0.25)
 
 data_simulation.reset_noise_error()
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
 data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_par=peak_width_par)
-masses_p, intensities_p = data_simulation.create_mass_spectrum(modform_distribution)
+data_simulation.add_noise(horizontal_error_par=horizontal_error_par, basal_noise_par=basal_noise_par, 
+                          vertical_error_par=vertical_error_par)
+masses_error, intensities_error = data_simulation.create_mass_spectrum(modform_distribution)
 
-data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par)
-masses_ph, intensities_ph = data_simulation.create_mass_spectrum(modform_distribution)
+# phospho
+title = ["Theoretical phosphorylation patterns", "Horizontal and vertical error + basal noise"]
 
-data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par, 
-                          basal_noise_par=basal_noise_par)
-masses_phb, intensities_phb = data_simulation.create_mass_spectrum(modform_distribution)
-
-data_simulation.reset_noise_error()
-data_simulation.add_noise(peak_width_par=peak_width_par,  horizontal_error_par=horizontal_error_par, 
-                          basal_noise_par=basal_noise_par, vertical_error_par=vertical_error_par)
-masses_phbv, intensities_phbv = data_simulation.create_mass_spectrum(modform_distribution)
-
-title = ["no noise or error", "peak width variation", "peak width variation + horizontal error",
-         "peak width variation + horizontal error + basal noise",
-         "peak width variation + horizontal and vertical error + basal noise"]
-fig = plt.figure(figsize=(7,6))
-gs = fig.add_gridspec(5, hspace=0)
+fig = plt.figure(figsize=(7, 3))
+gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 axes[0].plot(masses, intensities, color="k") 
-axes[1].plot(masses_p, intensities_p, color="k") 
-axes[2].plot(masses_ph, intensities_ph, color="k") 
-axes[3].plot(masses_phb, intensities_phb, color="k") 
-axes[4].plot(masses_phbv, intensities_phbv, color="k") 
-axes[4].set_xlabel("mass (Da)", fontsize=10)
-axes[2].set_ylabel("intensity (a.u.)", fontsize=10)
-[axes[i].set_title(title[i], fontsize=10, pad=-20) for i in  range(5)]
-[axes[i].set_xlim([43600, 44220]) for i in range(5)] # phospho
-[axes[i].set_ylim([0, 1210]) for i in range(5)] # phospho
-#[axes[i].set_xlim([43600, 44460]) for i in range(5)] # complex
-#[axes[i].set_ylim([0, 2350]) for i in range(5)] # complex
+axes[1].plot(masses_error, intensities_error, color="k") 
+axes[1].set_xlabel("mass (Da)", fontsize=10)
+axes[1].set_ylabel("intensity (a.u.)", fontsize=10)
+axes[0].set_title(title[0], fontsize=10, pad=-5)
+axes[1].set_title(title[1], fontsize=10, pad=-15)
+[axes[i].set_xlim([43600, 44220]) for i in range(2)] # phospho
+[axes[i].set_ylim([0, 1210]) for i in range(2)] # phospho
+fig.tight_layout()
+sns.despine()
+plt.show()
+
+# overlap
+fig = plt.figure(figsize=(7, 1.7))
+plt.plot(masses_error, intensities_error, color="k") 
+plt.xlabel("mass (Da)", fontsize=10)
+plt.ylabel("intensity (a.u.)", fontsize=10)
+plt.xlim([43625, 44230])
+plt.ylim([-50, 1255])
 fig.tight_layout()
 sns.despine()
 plt.show()
@@ -515,51 +509,32 @@ ptm_patterns_df.groupby("mass shift").size()
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
 modform_file_name = "phospho"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_min_error.csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
-#peak_width = [0, 1]
-basal_noise = [0, 1]
+basal_noise = [1, 0]
 
-all_combinations = [p for p in itertools.product(*[horizontal_error,#peak_width, horizontal_error, 
-                                                   vertical_error, basal_noise])]
+#all_combinations = [p for p in itertools.product(*[horizontal_error, vertical_error, basal_noise])]
 
-#basal_noise_peak_width_comb = [p for p in itertools.product(*[basal_noise[::-1], peak_width])]
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
+metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
 
-metric = "mass_shift_deviation" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
-
-fig, axn = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(2.5,2.5))
-#cbar_ax = fig.add_axes([.93, 0.3, 0.02, 0.4])
+fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.6, 2.5))
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
-    """  
-    basal_noise = basal_noise_peak_width_comb[i][0]
-    peak_width = basal_noise_peak_width_comb[i][1]
-    mask = ((performance_df["peak_width_variation"]==peak_width) & 
-            (performance_df["basal_noise"]==basal_noise))
-    pivot_df = performance_df[mask].pivot("vertical_error", "horizontal_error", metric)
-    """
-    vertical_error = vertical_horizontal_comb[i][0]
-    horizontal_error = vertical_horizontal_comb[i][1]
-    mask = ((performance_df["horizontal_error"]==horizontal_error) & 
-            (performance_df["vertical_error"]==vertical_error))
-    pivot_df = performance_df[mask].pivot("basal_noise", "peak_width_variation", metric)      
+    pivot_df = performance_df[performance_df["basal_noise"]==basal_noise[i]].pivot("vertical_error", "horizontal_error", metric)      
                                                                          
     sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
-                vmin=0, vmax=7,
+                vmin=0, vmax=7, #fmt=".3",
                 #cbar=i == 0, cmap=cmap,
-                #vmin=performance_df[metric].min(), vmax=performance_df[metric].max(),
                 cbar_ax=None) #if i else cbar_ax)
     
-#    if i==2 or i==3: ax.set_xlabel("$error_{horizontal}$")
-    if i==2 or i==3: ax.set_xlabel("peak width")
+    if i==0 or i==1: ax.set_ylabel("vertical error")
+
+    if i==1: ax.set_xlabel("horizontal error")
     else: ax.set_xlabel("")
-#    if i==0 or i==2: ax.set_ylabel("$error_{vertical}$")
-    if i==0 or i==2: ax.set_ylabel("basal noise")
-    else: ax.set_ylabel("")
     ax.set_xticklabels(["no","yes"], rotation=45)
     ax.set_yticklabels(["no","yes"], rotation=90)
     ax.invert_yaxis() 

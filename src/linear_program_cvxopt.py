@@ -140,58 +140,6 @@ class LinearProgramCVXOPT(object):
 
 
 
-    """
-    def solve_lp_min_error(self, min_error, number_ptms=None):
-        number_variables = len(self.ptm_mass_shifts)
-        ones = np.ones(number_variables)
-        zeros = np.zeros(number_variables) 
-        lower_bounds = zeros.reshape(-1,1)
-        
-        if number_ptms != None:
-            min_number_ptms = number_ptms
-            max_number_ptms = number_ptms
-        else:
-            min_number_ptms = 0
-            max_number_ptms = 20
-        
-        # mininimize  ptm_mass_shifts * x - observed_mass_shift, if ptm_mass_shifts * x >= observed_mass_shift
-        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
-                                    -np.identity(number_variables+1), np.identity(number_variables+1),
-                                    np.hstack([-self.ptm_mass_shifts, 0]), np.hstack([-ones, 0]), np.hstack([ones, 0])])         
-        A = matrix(inequality_lhs)
-        inequality_rhs = np.vstack([self.max_mass_error, -min_error,  lower_bounds, -self.observed_mass_shift, self.upper_bounds.reshape(-1,1),
-                                    self.observed_mass_shift, -self.observed_mass_shift, -min_number_ptms, max_number_ptms])
-        b = matrix(inequality_rhs)
-        c = matrix(np.hstack([self.ptm_mass_shifts,-1]))
-        status_min, solution_min = glpk.ilp(c, A, b, I=set(range(number_variables)))
-        
-        # maximize ptm_mass_shifts * x - observed_mass_shift, if ptm_mass_shifts * x <= observed_mass_shift
-        inequality_lhs = np.vstack([np.hstack([self.ptm_mass_shifts, -1]), np.hstack([-self.ptm_mass_shifts, 1]),                                     
-                                    -np.identity(number_variables+1), np.identity(number_variables+1),
-                                    np.hstack([self.ptm_mass_shifts, 0]), np.hstack([-ones, 0]), np.hstack([ones, 0])])       
-        A = matrix(inequality_lhs)
-        inequality_rhs = np.vstack([-min_error, self.max_mass_error, lower_bounds, -self.observed_mass_shift, self.upper_bounds.reshape(-1,1),
-                                    self.observed_mass_shift, self.observed_mass_shift, -min_number_ptms, max_number_ptms])
-        b = matrix(inequality_rhs)
-        c = matrix(np.hstack([-self.ptm_mass_shifts,1]))
-        status_max, solution_max = glpk.ilp(c, A, b, I=set(range(number_variables)))
-        
-        if solution_min and solution_max:
-            error_min = self.get_error(solution_min[:-1]) 
-            error_max = self.get_error(solution_max[:-1]) 
-            if error_min <= error_max:
-                return status_min, solution_min
-            else:
-                return status_max, solution_max
-    
-        elif solution_min and not solution_max:
-            return status_min, solution_min
-        
-        else:
-            return status_max, solution_max
-        """
-
-
     def solve_lp_min_both(self, previous_solution, max_number_ptms):      
         number_variables = len(self.ptm_mass_shifts)+1
         zeros = np.zeros(number_variables) 

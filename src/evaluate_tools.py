@@ -96,7 +96,6 @@ performance_df = pd.DataFrame(columns=["vertical_error", "horizontal_error", "ba
                                        "matching_ptm_patterns", "mass_shift_deviation"])
 
 performance_df["vertical_error"] = [a_tuple[0] for a_tuple in all_combinations]
-#performance_df["peak_width_variation"] = [a_tuple[1] for a_tuple in all_combinations]
 performance_df["horizontal_error"] = [a_tuple[1] for a_tuple in all_combinations]
 performance_df["basal_noise"] = [a_tuple[2] for a_tuple in all_combinations]
 performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
@@ -123,15 +122,13 @@ for comb in all_combinations:
         data_simulation.reset_noise_error()
         if comb[0]: vertical_error = vertical_error_par
         else: vertical_error = None
-#        if comb[1]: peak_width = peak_width_par
-#        else: peak_width = None
         if comb[1]: horizontal_error = horizontal_error_par
         else: horizontal_error = None
         if comb[2]: basal_noise = basal_noise_par
         else: basal_noise = None
                 
-        data_simulation.add_noise(vertical_error_par=vertical_error, #peak_width_par=peak_width, 
-                                  horizontal_error_par=horizontal_error, basal_noise_par=basal_noise)
+        data_simulation.add_noise(vertical_error_par=vertical_error, horizontal_error_par=horizontal_error,
+                                  basal_noise_par=basal_noise)
         masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
         
         theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
@@ -202,6 +199,7 @@ for comb in all_combinations:
     print(progress, "out of", len(all_combinations))
     progress += 1
 
+performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts_avg
 performance_df["mass_shift_deviation"] = mass_shift_deviation_avg
 performance_df["matching_mass_shifts"] = matching_mass_shifts_avg
 performance_df["r_score_abundance"] = r_score_abundance_avg
