@@ -135,8 +135,8 @@ class MassShifts(object):
                 min_error = 0
                 min_error_and_ptms = 0
                 multiplier = 1
-                
-                if objective_fun == "min_ptm":                 
+
+                if objective_fun == "min_ptm":    
                     while count_laps < laps_run_lp:
                         status, solution_min_ptm = lp_model.solve_lp_ptms(min_number_ptms, optimization_type="min")
                         if solution_min_ptm:
@@ -187,22 +187,25 @@ class MassShifts(object):
     
                 if objective_fun == "min_both":
                     status, solution_max_ptm = lp_model.solve_lp_ptms(min_number_ptms, optimization_type="max")
-                    max_number_ptms = int(sum(solution_max_ptm))
-                    while count_laps < laps_run_lp and min_error <= mass_tolerance:
-                        status, solution_min_both = lp_model.solve_lp_min_both(min_error_and_ptms, max_number_ptms)
-                        if solution_min_both:
-                            ptm_pattern = self.array_to_ptm_annotation(list(solution_min_both[:-1]), modifications.ptm_ids)
-                            is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
-                            if not is_solution_in_list:
-                                count_laps += 1
-                                error = solution_min_both[-1]
-                                number_ptms = int(sum(solution_min_both[:-1]))
-                                row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
-                                min_error_and_ptms = error/mass_tolerance + number_ptms/max_number_ptms + 1e-4
-                            else:
-                                min_error_and_ptms = error/mass_tolerance + number_ptms/max_number_ptms + 1e-4*multiplier
-                                multiplier += 1
-                        else:        
+                    if solution_max_ptm:
+                        max_number_ptms = int(sum(solution_max_ptm))
+                        while count_laps < laps_run_lp and min_error <= mass_tolerance:
+                            status, solution_min_both = lp_model.solve_lp_min_both(min_error_and_ptms, max_number_ptms)
+                            if solution_min_both:
+                                ptm_pattern = self.array_to_ptm_annotation(list(solution_min_both[:-1]), modifications.ptm_ids)
+                                is_solution_in_list = [True for prev_sol in row_entries if np.array_equal(np.array(prev_sol[2]), np.array(ptm_pattern))]
+                                if not is_solution_in_list:
+                                    count_laps += 1
+                                    error = solution_min_both[-1]
+                                    number_ptms = int(sum(solution_min_both[:-1]))
+                                    row_entries.append([mass_shift, error, ptm_pattern, number_ptms])
+                                    min_error_and_ptms = error/mass_tolerance + number_ptms/max_number_ptms + 1e-4
+                                else:
+                                    min_error_and_ptms = error/mass_tolerance + number_ptms/max_number_ptms + 1e-4*multiplier
+                                    multiplier += 1
+                            else:        
+                                break
+                        else:
                             break
 
                 row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
@@ -226,6 +229,8 @@ class MassShifts(object):
         
     
     def add_ptm_patterns_to_table(self):
+        # Delete PTM pattern column if it already exists
+        self.identified_masses_df.drop("PTM pattern", inplace=True, axis=1, errors="ignore")
         best_ptm_patterns = self.ptm_patterns_df.groupby("mass shift").head(1)
 
         self.identified_masses_df = pd.merge(best_ptm_patterns[["mass shift", "PTM pattern"]], 

@@ -508,29 +508,26 @@ ptm_patterns_df.groupby("mass shift").size()
 ###################################################################################################################
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
-modform_file_name = "phospho"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_min_error.csv")
+modform_file_name = "overlap"
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_two_gaussian.csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
 basal_noise = [1, 0]
 
-#all_combinations = [p for p in itertools.product(*[horizontal_error, vertical_error, basal_noise])]
-
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
-metric = "matching_ptm_patterns" # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+# matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
+metric = "r_score_abundance" 
 
 fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.6, 2.5))
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
     pivot_df = performance_df[performance_df["basal_noise"]==basal_noise[i]].pivot("vertical_error", "horizontal_error", metric)      
                                                                          
-    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, annot_kws={"size": 10},
-                vmin=0, vmax=7, #fmt=".3",
-                #cbar=i == 0, cmap=cmap,
-                cbar_ax=None) #if i else cbar_ax)
-    
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, #fmt=".3",
+                vmin=0, vmax=18, annot_kws={"size": 10}, cbar_ax=None)
+
     if i==0 or i==1: ax.set_ylabel("vertical error")
 
     if i==1: ax.set_xlabel("horizontal error")
@@ -538,8 +535,8 @@ for i, ax in enumerate(axn.flat):
     ax.set_xticklabels(["no","yes"], rotation=45)
     ax.set_yticklabels(["no","yes"], rotation=90)
     ax.invert_yaxis() 
-     
-fig.tight_layout()#(rect=[0, 0, 0.93, 1])
+
+fig.tight_layout()
 ###################################################################################################################
 ###################################################################################################################
 

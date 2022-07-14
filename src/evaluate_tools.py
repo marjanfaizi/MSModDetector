@@ -33,8 +33,6 @@ modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_
                                    sep=",")
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
-
-repeat_simulation = 10
 ###################################################################################################################
 ###################################################################################################################
 
@@ -62,22 +60,14 @@ def determine_matching_mass_shifts(detected_mass_shifts, modform_distribution_si
 ############################################## DETERMINE NOISE LEVEL ##############################################
 ###################################################################################################################
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
-peak_width = error_estimate_table[(error_estimate_table["peak width"]<0.4) & 
-                                  (error_estimate_table["is_signal"]==True)]["peak width"].values
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.3) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.3) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal error (Da)"].values
 vertical_error = error_estimate_table[(error_estimate_table["is_signal"]==True)]["vertical error (rel.)"].values
 
-func = lambda x: -stats.beta.pdf(x, *stats.beta.fit(peak_width))  
-peak_width_mode = 0.25#minimize(func, 0.2).x
-
 vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error)) 
-#peak_width_par = list(stats.beta.fit(peak_width))
 basal_noise_par = list(stats.beta.fit(basal_noise))
-
-all_combinations = list(itertools.product([0, 1], repeat=3))#4))
 ###################################################################################################################
 ###################################################################################################################
 
@@ -85,58 +75,179 @@ all_combinations = list(itertools.product([0, 1], repeat=3))#4))
 ###################################################################################################################
 ################################ GENERATE SIMULATED DATA AND RUN ALGORITHM ON IT ##################################
 ###################################################################################################################
-mod = Modifications(config.modfication_file_name, aa_sequence_str)
+def variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation, 
+                                     vertical_error_par, horizontal_error_par, basal_noise_par,
+                                     gaussian_method="one"):
 
-data_simulation = SimulateData(aa_sequence_str, modifications_table)
-data_simulation.set_peak_width_mode(peak_width_mode)
-
-performance_df = pd.DataFrame(columns=["vertical_error", "horizontal_error", "basal_noise", 
-                                       "all_detected_mass_shifts", "simulated_mass_shifts", 
-                                       "matching_mass_shifts", "r_score_abundance", 
-                                       "matching_ptm_patterns", "mass_shift_deviation"])
-
-performance_df["vertical_error"] = [a_tuple[0] for a_tuple in all_combinations]
-performance_df["horizontal_error"] = [a_tuple[1] for a_tuple in all_combinations]
-performance_df["basal_noise"] = [a_tuple[2] for a_tuple in all_combinations]
-performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
-
-#indices_matches = []
-mass_shift_deviation_avg = []
-all_detected_mass_shifts_avg = []
-matching_mass_shifts_avg = []
-matching_ptm_patterns_avg = []
-r_score_mass_avg = []
-r_score_abundance_avg = []
-
-progress = 1
-
-for comb in all_combinations:
-    mass_shift_deviation = []
-    all_detected_mass_shifts = []
-    matching_mass_shifts = []
-    r_score_mass = []
-    r_score_abundance = []
-    matching_ptm_patterns = []
-    for repeat in range(repeat_simulation):
-        # simulated data
-        data_simulation.reset_noise_error()
-        if comb[0]: vertical_error = vertical_error_par
-        else: vertical_error = None
-        if comb[1]: horizontal_error = horizontal_error_par
-        else: horizontal_error = None
-        if comb[2]: basal_noise = basal_noise_par
-        else: basal_noise = None
+    error_noise_combinations = list(itertools.product([0, 1], repeat=3))#4))
+    
+    performance_df = pd.DataFrame(columns=["vertical_error", "horizontal_error", "basal_noise", 
+                                           "all_detected_mass_shifts", "simulated_mass_shifts", 
+                                           "matching_mass_shifts", "mass_shift_deviation", "r_score_abundance", 
+                                           "matching_ptm_patterns_min_ptm", "matching_ptm_patterns_min_error",
+                                           "matching_ptm_patterns_min_both"])
+    
+    performance_df["vertical_error"] = [a_tuple[0] for a_tuple in error_noise_combinations]
+    performance_df["horizontal_error"] = [a_tuple[1] for a_tuple in error_noise_combinations]
+    performance_df["basal_noise"] = [a_tuple[2] for a_tuple in error_noise_combinations]
+    performance_df["simulated_mass_shifts"] = modform_distribution.shape[0]
+    
+    objective_func = ["min_err", "min_ptm", "min_both"]
+    
+    mass_shift_deviation_avg = []
+    all_detected_mass_shifts_avg = []
+    matching_mass_shifts_avg = []
+    matching_ptm_patterns_min_err_avg = []
+    matching_ptm_patterns_min_ptm_avg = []
+    matching_ptm_patterns_min_both_avg = []
+    r_score_abundance_avg = []
+    
+    progress = 1
+    
+    for comb in error_noise_combinations:
+        mass_shift_deviation = []
+        all_detected_mass_shifts = []
+        matching_mass_shifts = []
+        r_score_mass = []
+        r_score_abundance = []
+        matching_ptm_patterns_min_err = []
+        matching_ptm_patterns_min_ptm = []
+        matching_ptm_patterns_min_both = []
+        
+        for repeat in range(repeat_simulation):
+            # simulated data
+            data_simulation.reset_noise_error()
+            if comb[0]: vertical_error = vertical_error_par
+            else: vertical_error = None
+            if comb[1]: horizontal_error = horizontal_error_par
+            else: horizontal_error = None
+            if comb[2]: basal_noise = basal_noise_par
+            else: basal_noise = None
+                    
+            data_simulation.add_noise(vertical_error_par=vertical_error, horizontal_error_par=horizontal_error,
+                                      basal_noise_par=basal_noise)
+            masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
+            
+            theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
+            data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
+            
+            # determine mass shifts and ptm patterns
+            mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
                 
+            data = MassSpecData(theoretical_spectrum_file_name)
+            data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
+            
+            all_peaks = data.picking_peaks()
+            trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
+            trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
+            trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
+            
+            noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
+            trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>noise_level]
+        
+            gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
+            gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+            
+            if gaussian_method == "one":
+                gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+            elif gaussian_method == "two":
+                gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
+            
+            gaussian_model.refit_results(trimmed_peaks_in_search_window_above_noise, noise_level, refit_mean=True)
+            gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+        
+            mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") # data.rescaling_factor
+    
+            if mass_shifts.identified_masses_df.empty:
+                all_detected_mass_shifts += [0]
+                matching_mass_shifts += [0]
+                matching_ptm_patterns_min_err += [0]
+                matching_ptm_patterns_min_ptm += [0]
+                matching_ptm_patterns_min_both += [0]
+                r_score_mass += [np.nan]
+                r_score_abundance += [np.nan]
+                    
+            else:
+                mass_shifts.calculate_avg_mass()
+                mass_shifts.add_mass_shifts(config.unmodified_species_mass)
+                
+                mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
+                                                                                        modform_distribution)
+                
+                mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
+                abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
+                mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
+               
+                abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
+            
+                mass_shift_deviation += [np.mean(abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance)]
+                all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
+                matching_mass_shifts += [len(mass_shift_pred)]
+                
+                if len(mass_shift_true)>1:
+                    r_score_abundance += [r2_score(abundance_true, abundance_pred)]
+                else:
+                    r_score_abundance += [np.nan]
+                
+                for func in objective_func:
+                    mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, func, config.laps_run_lp,  msg_progress=False)
+                    mass_shifts.add_ptm_patterns_to_table()
+                    ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
+                    ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
+                    if func == "min_err":
+                        matching_ptm_patterns_min_err += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+                    elif func == "min_ptm":
+                        matching_ptm_patterns_min_ptm += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+                    elif func == "min_both":
+                        matching_ptm_patterns_min_both += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
+                
+        mass_shift_deviation_avg += [np.mean(np.array(mass_shift_deviation))]
+        all_detected_mass_shifts_avg += [np.mean(np.array(all_detected_mass_shifts))]
+        matching_mass_shifts_avg += [np.mean(np.array(matching_mass_shifts))]
+        matching_ptm_patterns_min_err_avg += [np.mean(np.array(matching_ptm_patterns_min_err))]
+        matching_ptm_patterns_min_ptm_avg += [np.mean(np.array(matching_ptm_patterns_min_ptm))]
+        matching_ptm_patterns_min_both_avg += [np.mean(np.array(matching_ptm_patterns_min_both))]
+        r_score_abundance_avg += [np.nanmean(np.array(r_score_abundance))]
+        
+        print(progress, "out of", len(error_noise_combinations))
+        progress += 1
+    
+    performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts_avg
+    performance_df["mass_shift_deviation"] = mass_shift_deviation_avg
+    performance_df["matching_mass_shifts"] = matching_mass_shifts_avg
+    performance_df["r_score_abundance"] = r_score_abundance_avg
+    performance_df["matching_ptm_patterns_min_err"] = matching_ptm_patterns_min_err_avg
+    performance_df["matching_ptm_patterns_min_ptm"] = matching_ptm_patterns_min_ptm_avg
+    performance_df["matching_ptm_patterns_min_both"] = matching_ptm_patterns_min_both_avg
+    performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
+    
+    return performance_df
+###################################################################################################################
+###################################################################################################################
+
+
+###################################################################################################################
+################################## TEST PERFORMANCE ON OVERLAPPING DISTRIBUTION ###################################
+###################################################################################################################
+def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_error, basal_noise,
+                                    modform_distribution, repeat_simulation, gaussian_method="one"):    
+    
+    p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
+    chi_sqaure_score = p_values.copy(); mass_shift_deviation = p_values.copy(); ptm_patterns = p_values.copy()
+
+    objective_func = "min_ptm"
+
+    for repeat in range(repeat_simulation):
         data_simulation.add_noise(vertical_error_par=vertical_error, horizontal_error_par=horizontal_error,
                                   basal_noise_par=basal_noise)
         masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
-        
+            
         theoretical_spectrum_file_name = "../output/spectrum_"+modform_file_name+".csv"
         data_simulation.save_mass_spectrum(masses, intensities, theoretical_spectrum_file_name)
-        
+            
         # determine mass shifts and ptm patterns
         mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
-            
+                
         data = MassSpecData(theoretical_spectrum_file_name)
         data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
         
@@ -150,66 +261,72 @@ for comb in all_combinations:
     
         gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
         gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-        gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+    
+        if gaussian_method == "one":
+            gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+        elif gaussian_method == "two":
+            gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
+        
         gaussian_model.refit_results(trimmed_peaks_in_search_window_above_noise, noise_level, refit_mean=True)
         gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
     
-        mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") # data.rescaling_factor
-
-        if mass_shifts.identified_masses_df.empty:
-            all_detected_mass_shifts += [0]
-            matching_mass_shifts += [0]
-            matching_ptm_patterns += [0]
-            r_score_mass += [np.nan]
-            r_score_abundance += [np.nan]
-                
-        else:
+        mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") 
+    
+        if not mass_shifts.identified_masses_df.empty:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(config.unmodified_species_mass)
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp, msg_progress=False)    
+            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, objective_func, config.laps_run_lp, msg_progress=False)
             mass_shifts.add_ptm_patterns_to_table()
-            
-            # determine performance of prediction
+            ## find matching mass shhifts and store their scores, pvalues and ptm pattern
             mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
                                                                                     modform_distribution)
-            
+           
             mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
-            ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
-            abundance_true = modform_distribution.loc[mass_shift_true_ix, "rel. intensity"].values
             mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
-            ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
-            abundance_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "rel. abundances simulated"].values
-        
-            mass_shift_deviation += [np.mean(abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance)]
-            all_detected_mass_shifts += [mass_shifts.identified_masses_df.shape[0]]
-            matching_mass_shifts += [len(mass_shift_pred)]
-            matching_ptm_patterns += [len(set(ptm_pattern_true) & set(ptm_pattern_pred))]
-            #indices_matches += [mass_shift_true_ix]
-            if len(mass_shift_true)>1:
-                r_score_abundance += [r2_score(abundance_true, abundance_pred)]
-            else:
-                r_score_abundance += [np.nan]
+            p_values[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "pvalue simulated"].values
+            chi_sqaure_score[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "chi_score simulated"].values
+            mass_shift_deviation[repeat, mass_shift_true_ix] = abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance
+            for ix in range(len(mass_shift_true_ix)):                
+                if modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
+                    ptm_patterns[repeat, mass_shift_true_ix[ix]] = 1
+                else: 
+                    ptm_patterns[repeat, mass_shift_true_ix[ix]] = 0
     
-    mass_shift_deviation_avg += [np.mean(np.array(mass_shift_deviation))]
-    all_detected_mass_shifts_avg += [np.mean(np.array(all_detected_mass_shifts))]
-    matching_mass_shifts_avg += [np.mean(np.array(matching_mass_shifts))]
-    matching_ptm_patterns_avg += [np.mean(np.array(matching_ptm_patterns))]
-    r_score_abundance_avg += [np.nanmean(np.array(r_score_abundance))]
-    
-    print(progress, "out of", len(all_combinations))
-    progress += 1
-
-performance_df["all_detected_mass_shifts"] = all_detected_mass_shifts_avg
-performance_df["mass_shift_deviation"] = mass_shift_deviation_avg
-performance_df["matching_mass_shifts"] = matching_mass_shifts_avg
-performance_df["r_score_abundance"] = r_score_abundance_avg
-performance_df["matching_ptm_patterns"] = matching_ptm_patterns_avg
-performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
+    return p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns 
 ###################################################################################################################
 ###################################################################################################################
 
+if __name__ == "__main__":
+    mod = Modifications(config.modfication_file_name, aa_sequence_str)
+    repeat_simulation = 30
+    peak_width_mode = 0.25
+    data_simulation = SimulateData(aa_sequence_str, modifications_table)
+    data_simulation.set_peak_width_mode(peak_width_mode)
+#    performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, 
+#                                                      vertical_error_par, horizontal_error_par, basal_noise_par,
+#                                                      repeat_simulation, gaussian_method="one")
+    p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns = test_overlapping_mass_detection(
+                                                                        data_simulation, vertical_error_par, 
+                                                                        horizontal_error_par, basal_noise_par,
+                                                                        modform_distribution, repeat_simulation,
+                                                                        gaussian_method="one")
 
 
+
+"""
+import matplotlib.pyplot as plt
+
+col = np.where(ptm_patterns.flatten()==1,'r','b')
+
+plt.scatter(np.log(p_values.flatten()), chi_sqaure_score.flatten(), marker='o', c=col)
+plt.show()
+
+plt.plot(mass_shift_deviation.flatten(), chi_sqaure_score.flatten(), marker='o', c=col)
+plt.show()
+
+plt.scatter(modform_distribution.mass.tolist()*repeat_simulation, chi_sqaure_score.flatten(), marker='o', c=col)
+plt.show()
+"""
 
 
 
@@ -251,8 +368,8 @@ trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trim
 
 gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
 gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
-#gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
+#gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
 
 gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
