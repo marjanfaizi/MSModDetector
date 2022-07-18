@@ -25,7 +25,7 @@ import config_sim as config
 ###################################################################################################################
 ################################################### INPUT DATA ####################################################
 ###################################################################################################################
-modform_file_name = "overlap"
+modform_file_name = "complex"
 protein_entries = utils.read_fasta(config.fasta_file_name)
 aa_sequence_str = list(protein_entries.values())[0]
 modifications_table = pd.read_csv(config.modfication_file_name, sep=";")
@@ -103,7 +103,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
     r_score_abundance_avg = []
     
     progress = 1
-    
+
     for comb in error_noise_combinations:
         mass_shift_deviation = []
         all_detected_mass_shifts = []
@@ -188,7 +188,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
                     r_score_abundance += [r2_score(abundance_true, abundance_pred)]
                 else:
                     r_score_abundance += [np.nan]
-                
+
                 for func in objective_func:
                     mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, func, config.laps_run_lp,  msg_progress=False)
                     mass_shifts.add_ptm_patterns_to_table()
@@ -232,6 +232,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
 def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_error, basal_noise,
                                     modform_distribution, repeat_simulation, gaussian_method="one"):    
     
+    mass_shift = np.full([repeat_simulation, modform_distribution.shape[0]], 0)
     p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
     chi_sqaure_score = p_values.copy(); mass_shift_deviation = p_values.copy(); ptm_patterns = p_values.copy()
 
@@ -269,9 +270,9 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
         
         gaussian_model.refit_results(trimmed_peaks_in_search_window_above_noise, noise_level, refit_mean=True)
         gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
-    
+
         mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, "simulated") 
-    
+        
         if not mass_shifts.identified_masses_df.empty:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(config.unmodified_species_mass)
@@ -283,6 +284,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
            
             mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
             mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
+            mass_shift[repeat, mass_shift_true_ix] = 1
             p_values[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "pvalue simulated"].values
             chi_sqaure_score[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "chi_score simulated"].values
             mass_shift_deviation[repeat, mass_shift_true_ix] = abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance
@@ -292,41 +294,29 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
                 else: 
                     ptm_patterns[repeat, mass_shift_true_ix[ix]] = 0
     
-    return p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns 
+    return mass_shift, p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns 
 ###################################################################################################################
 ###################################################################################################################
 
 if __name__ == "__main__":
     mod = Modifications(config.modfication_file_name, aa_sequence_str)
-    repeat_simulation = 30
+    repeat_simulation = 1
     peak_width_mode = 0.25
     data_simulation = SimulateData(aa_sequence_str, modifications_table)
     data_simulation.set_peak_width_mode(peak_width_mode)
-#    performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, 
-#                                                      vertical_error_par, horizontal_error_par, basal_noise_par,
-#                                                      repeat_simulation, gaussian_method="one")
-    p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns = test_overlapping_mass_detection(
+    performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
+                                                      vertical_error_par, horizontal_error_par, basal_noise_par,
+                                                      gaussian_method="one")
+    """
+    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns = test_overlapping_mass_detection(
                                                                         data_simulation, vertical_error_par, 
                                                                         horizontal_error_par, basal_noise_par,
                                                                         modform_distribution, repeat_simulation,
-                                                                        gaussian_method="one")
+                                                                        gaussian_method="two")
 
+    np.savez("../output/arrays_test_overlap", mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns)
+    """
 
-
-"""
-import matplotlib.pyplot as plt
-
-col = np.where(ptm_patterns.flatten()==1,'r','b')
-
-plt.scatter(np.log(p_values.flatten()), chi_sqaure_score.flatten(), marker='o', c=col)
-plt.show()
-
-plt.plot(mass_shift_deviation.flatten(), chi_sqaure_score.flatten(), marker='o', c=col)
-plt.show()
-
-plt.scatter(modform_distribution.mass.tolist()*repeat_simulation, chi_sqaure_score.flatten(), marker='o', c=col)
-plt.show()
-"""
 
 
 

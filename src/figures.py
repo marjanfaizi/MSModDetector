@@ -508,7 +508,7 @@ ptm_patterns_df.groupby("mass shift").size()
 ###################################################################################################################
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
-modform_file_name = "overlap"
+modform_file_name = "complex"
 performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_two_gaussian.csv")
 
 vertical_error = [0, 1]
@@ -518,7 +518,7 @@ basal_noise = [1, 0]
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
-metric = "r_score_abundance" 
+metric = "matching_mass_shifts" 
 
 fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.6, 2.5))
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
@@ -537,6 +537,25 @@ for i, ax in enumerate(axn.flat):
     ax.invert_yaxis() 
 
 fig.tight_layout()
+###################################################################################################################
+###################################################################################################################
+
+
+###################################################################################################################
+#################################################### FIGURE 4 #####################################################
+###################################################################################################################
+# "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
+npzfile = np.load("../output/arrays_test_overlap")
+
+col = np.where(npzfile["arr_4"].flatten()==1,'r','b')
+
+fig = plt.figure(figsize=(4, 3))
+plt.scatter(npzfile["arr_3"].flatten(), 100*npzfile["arr_2"].flatten(), marker='o', c=col)
+plt.ylabel("$\Chi^{2}$ score")
+plt.xlabel("mass shift deviation [%]")
+sns.despine()
+fig.tight_layout()
+plt.show()
 ###################################################################################################################
 ###################################################################################################################
 
