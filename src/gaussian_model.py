@@ -11,7 +11,7 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
 import utils
-
+from scipy.stats import wasserstein_distance
 
 class GaussianModel(object): 
     """
@@ -28,7 +28,8 @@ class GaussianModel(object):
     """
 
     def __init__(self, sample_name, stddev_isotope_distribution):
-        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "chi_score", "pvalue", "window_size", "relative_abundance"]) 
+        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "chi_score", 
+                                                     "pvalue", "window_size", "relative_abundance"]) 
         self.sample_name = sample_name
         self.stddev = stddev_isotope_distribution
         self.maxfev = 100000
@@ -66,7 +67,8 @@ class GaussianModel(object):
                         if pvalue > best_window_size_fit["pvalue"]:
                             best_window_size_fit = {"fitted_mean": np.array([fitted_mean1, fitted_mean2]), 
                                                     "fitted_amplitude": [fitted_amp1, fitted_amp2], 
-                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+                                                    "pvalue": pvalue, "chi_score": chi_score, 
+                                                    "window_size": window_size}
 
             min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])
             if np.abs(best_window_size_fit["fitted_mean"].mean()-best_fit["fitted_mean"].mean()) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
@@ -106,7 +108,7 @@ class GaussianModel(object):
         while window_range_end <= masses[-1]:
                             
             best_window_size_fit = {"fitted_mean": 0, "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0, 
-                                    "window_size": 0}
+                                     "window_size": 0}
             for window_size in self.variable_window_sizes:
                 peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+window_size)]
                 non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
@@ -119,9 +121,11 @@ class GaussianModel(object):
                     if len(peaks_around_fitted_mean[peaks_around_fitted_mean[:,1]>noise_level]) >= self.sample_size_threshold:
                         chi_square_result = self.chi_square_test(peaks_around_fitted_mean, fitted_amplitude, fitted_mean)
                         pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
+                        
                         if pvalue > best_window_size_fit["pvalue"]:
                             best_window_size_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
-                                                    "pvalue": pvalue, "chi_score": chi_score, "window_size": window_size}
+                                                    "pvalue": pvalue, "chi_score": chi_score,
+                                                    "window_size": window_size}
 
             min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*allowed_overlap_fitting_window
             if np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:

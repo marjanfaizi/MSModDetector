@@ -235,6 +235,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
     mass_shift = np.full([repeat_simulation, modform_distribution.shape[0]], 0)
     p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
     chi_sqaure_score = p_values.copy(); mass_shift_deviation = p_values.copy(); ptm_patterns = p_values.copy()
+    ptm_patterns_top3 = p_values.copy(); ptm_patterns_top5 = p_values.copy(); ptm_patterns_top10 = p_values.copy()
 
     objective_func = "min_ptm"
 
@@ -287,35 +288,60 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
             mass_shift[repeat, mass_shift_true_ix] = 1
             p_values[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "pvalue simulated"].values
             chi_sqaure_score[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "chi_score simulated"].values
-            mass_shift_deviation[repeat, mass_shift_true_ix] = abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance
-            for ix in range(len(mass_shift_true_ix)):                
+            mass_shift_deviation[repeat, mass_shift_true_ix] = abs(mass_shift_true-mass_shift_pred)/config.mass_tolerance                     
+
+            for ix in range(len(mass_shift_true_ix)):      
+                
+                true_ptm_pattern = modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] 
+                pred_ptm_list = mass_shifts.ptm_patterns_df[mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "mass shift"]==mass_shifts.ptm_patterns_df["mass shift"]]["PTM pattern"].values
+
                 if modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
                     ptm_patterns[repeat, mass_shift_true_ix[ix]] = 1
                 else: 
                     ptm_patterns[repeat, mass_shift_true_ix[ix]] = 0
+                # is ptm prediction in the top 3
+                if true_ptm_pattern in pred_ptm_list[:3] or modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
+                    ptm_patterns_top3[repeat, mass_shift_true_ix[ix]] = 1
+                else:
+                    ptm_patterns_top3[repeat, mass_shift_true_ix[ix]] = 0
+                # is ptm prediction in the top 5
+                if true_ptm_pattern in pred_ptm_list[:5] or modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
+                    ptm_patterns_top5[repeat, mass_shift_true_ix[ix]] = 1
+                else:
+                    ptm_patterns_top5[repeat, mass_shift_true_ix[ix]] = 0
+                # is ptm prediction in the top 10
+                if true_ptm_pattern in pred_ptm_list[:5] or modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
+                    ptm_patterns_top10[repeat, mass_shift_true_ix[ix]] = 1
+                else:
+                    ptm_patterns_top10[repeat, mass_shift_true_ix[ix]] = 0                
     
-    return mass_shift, p_values, chi_sqaure_score, mass_shift_deviation, ptm_patterns 
+    return  mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10
 ###################################################################################################################
 ###################################################################################################################
 
 if __name__ == "__main__":
     mod = Modifications(config.modfication_file_name, aa_sequence_str)
-    repeat_simulation = 1
+    repeat_simulation = 10
     peak_width_mode = 0.25
     data_simulation = SimulateData(aa_sequence_str, modifications_table)
     data_simulation.set_peak_width_mode(peak_width_mode)
+    """
     performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
                                                       vertical_error_par, horizontal_error_par, basal_noise_par,
                                                       gaussian_method="one")
     """
-    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns = test_overlapping_mass_detection(
-                                                                        data_simulation, vertical_error_par, 
-                                                                        horizontal_error_par, basal_noise_par,
-                                                                        modform_distribution, repeat_simulation,
-                                                                        gaussian_method="two")
+    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
+                                                                                    data_simulation, 
+                                                                                    vertical_error_par, 
+                                                                                    horizontal_error_par, 
+                                                                                    basal_noise_par, 
+                                                                                    modform_distribution, 
+                                                                                    repeat_simulation,
+                                                                                    gaussian_method="two")
 
-    np.savez("../output/arrays_test_overlap", mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns)
-    """
+    np.savez("../output/arrays_test_overlap", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+             ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
+
 
 
 

@@ -544,14 +544,45 @@ fig.tight_layout()
 ###################################################################################################################
 #################################################### FIGURE 4 #####################################################
 ###################################################################################################################
+from matplotlib.ticker import MaxNLocator
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
-npzfile = np.load("../output/arrays_test_overlap")
+# "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
+npzfile = np.load("../output/arrays_test_overlap.npz")
+modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
+                                   sep=",")
 
-col = np.where(npzfile["arr_4"].flatten()==1,'r','b')
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_3"].flatten(), "mass_shift": modform_distribution.mass.tolist()*10})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_6"].flatten(), "mass_shift": modform_distribution.mass.tolist()*10})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped_top5 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+
+fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7, 4))
+ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0])
+ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[1])
+ax[1].set_xticklabels(modform_distribution.mass.astype(int).tolist(), rotation=30, ha='right', size=9)
+ax[0].yaxis.set_major_locator(MaxNLocator(integer=True))
+ax[1].yaxis.set_major_locator(MaxNLocator(integer=True))
+ax[1].set_xlabel("mass shift [Da]")
+ax[0].set_ylabel("# simulations")
+ax[1].set_ylabel("# simulations")
+sns.despine()
+fig.tight_layout()
+plt.show()
+
+
+col = np.where(npzfile["arr_3"].flatten()==1,'r','b')
 
 fig = plt.figure(figsize=(4, 3))
-plt.scatter(npzfile["arr_3"].flatten(), 100*npzfile["arr_2"].flatten(), marker='o', c=col)
-plt.ylabel("$\Chi^{2}$ score")
+plt.scatter(100*npzfile["arr_2"].flatten(), npzfile["arr_1"].flatten(), marker='o', c=col)
+plt.ylabel("$\chi^{2}$ score")
 plt.xlabel("mass shift deviation [%]")
 sns.despine()
 fig.tight_layout()
