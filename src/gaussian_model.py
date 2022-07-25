@@ -127,7 +127,7 @@ class GaussianModel(object):
                                                     "pvalue": pvalue, "chi_score": chi_score,
                                                     "window_size": window_size}
 
-            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])*allowed_overlap_fitting_window
+            min_distance = (0.5*best_fit["window_size"] + 0.5*best_window_size_fit["window_size"])#*allowed_overlap_fitting_window
             if np.abs(best_window_size_fit["fitted_mean"]-best_fit["fitted_mean"]) <= min_distance and best_window_size_fit["pvalue"] > best_fit["pvalue"]:
                 best_fit = best_window_size_fit.copy()
     

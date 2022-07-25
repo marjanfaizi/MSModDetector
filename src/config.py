@@ -39,7 +39,6 @@ mass_end_range = 44520.0
 # The threshold of the noise level can be decreased with this parameter
 noise_level_fraction = 0.3
 
-
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
 pvalue_threshold = 0.1
@@ -64,7 +63,7 @@ max_bin_size = mass_tolerance
 distance_threshold_adjacent_peaks = 0.6
 
 # Solve optimization k times and report the best k optimal solutions
-laps_run_lp = 10
+laps_run_lp = 5
 
 # Choose between two objective functions: 
 # 1) min_ptm: minimize total amount of PTMs on a single protein

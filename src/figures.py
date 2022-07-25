@@ -467,7 +467,7 @@ for cond in config.conditions:
         #axes[order_in_plot].yaxis.grid(visible=True, which='major', color='0.3', linestyle='-')
 
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
-plt.xlim((config.mass_start_range, 49000.0))#config.mass_end_range))
+plt.xlim((config.mass_start_range, config.mass_end_range))
 #plt.ylim((-ylim_max*1.1, ylim_max*1.1))
 plt.ylim((-(ylim_max/total_protein_abundance)*1.5, (ylim_max/total_protein_abundance)*1.5))
 
@@ -548,6 +548,7 @@ from matplotlib.ticker import MaxNLocator
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
 npzfile = np.load("../output/arrays_test_overlap.npz")
+modform_file_name = "complex"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 
@@ -584,6 +585,7 @@ fig = plt.figure(figsize=(4, 3))
 plt.scatter(100*npzfile["arr_2"].flatten(), npzfile["arr_1"].flatten(), marker='o', c=col)
 plt.ylabel("$\chi^{2}$ score")
 plt.xlabel("mass shift deviation [%]")
+plt.legend(["True PTM prediction", "False PTM prediction"])
 sns.despine()
 fig.tight_layout()
 plt.show()

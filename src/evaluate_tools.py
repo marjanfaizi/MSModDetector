@@ -354,6 +354,11 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from simulate_data import SimulateData
 import config_sim as config 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+mod = Modifications(config.modfication_file_name, aa_sequence_str)
+peak_width_mode = 0.25
 
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(peak_width_mode)
@@ -399,14 +404,15 @@ mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_
   
 mass_shifts.add_ptm_patterns_to_table()
 
-plt.figure(figsize=(6, 3))
-plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
-plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"]/data.rescaling_factor, '.', color="b")
-plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
-plt.axhline(y=noise_level, color='r', linestyle='-')
-plt.xlabel("mass (Da)", fontsize=10)
-plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.tight_layout()
+fig = plt.figure(figsize=(7, 2.5))
+plt.plot(data.masses, data.intensities, '-', color="0.3")
+plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], '.', markersize=3, color="r")
+#plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
+plt.xlabel("mass (Da)")
+plt.ylabel("intensity (a.u.)")
+plt.xlim((43625, 44400))
+sns.despine()
+fig.tight_layout()
 plt.show()
 
 mass_shifts.identified_masses_df
@@ -442,7 +448,7 @@ y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results
 #                                   "../output/ptm_pattern_"+modform_file_name+"_with_error_noise.csv")
 
 
-import matplotlib.pyplot as plt
+
 
 plt.figure(figsize=(6, 3))
 plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
