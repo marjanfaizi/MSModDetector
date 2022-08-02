@@ -600,6 +600,44 @@ plt.show()
 ###################################################################################################################
 
 
+###################################################################################################################
+#################################################### FIGURE 5 #####################################################
+###################################################################################################################
+sns.set_style("ticks")
+
+
+mass_shifts_df = pd.read_csv("../output/mass_shifts.csv", sep=",")
+
+
+col_name_nutlin = [col for col in mass_shifts_df if col.startswith('rel. abundances nutlin')]
+nutlin_df = pd.melt(mass_shifts_df, id_vars="mass shift", value_vars=col_name_nutlin, 
+                    value_name="rel. abundance").rename(columns={"variable": "condition"})
+nutlin_df["condition"] = "Nutlin-3a"
+
+col_name_uv = [col for col in mass_shifts_df if col.startswith('rel. abundances uv')]
+uv_df = pd.melt(mass_shifts_df, id_vars="mass shift", value_vars=col_name_uv, 
+                    value_name="rel. abundance").rename(columns={"variable": "condition"})
+uv_df["condition"] = "UV"
+
+all_condition_df = pd.concat([nutlin_df, uv_df])
+all_condition_df["mass shift"] = all_condition_df["mass shift"].astype(int)
+all_condition_df.rename(columns={"mass shift": "mass shift (Da)"}, inplace=True)
+
+fig = plt.figure(figsize=(7, 2))
+sns.barplot(x="mass shift (Da)", y="rel. abundance", hue="condition", data=all_condition_df,
+            palette=["skyblue","mediumpurple"], errwidth=1)
+plt.xticks(rotation=60)
+sns.despine()
+fig.tight_layout()
+plt.gca().legend().set_title("")
+plt.legend(loc="upper right")
+plt.show()
+
+###################################################################################################################
+###################################################################################################################
+
+
+
 
 ###################################################################################################################
 ############################################## SUPPLEMENTAL FIGURE 6 ##############################################

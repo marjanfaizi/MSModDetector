@@ -1,5 +1,6 @@
 unimod_id;ptm_id;ptm_name;ptm_mass;composition;upper_bound;site
 21;Ph;Phosphorylation;79.9799;H(1)O(3)P(1);10;S,T,Y
+;Ph-OH;Phosphate;97.9952,H(3)O(4)P(1);10;S,T,Y
 1;Ac;Acetylation;42.0367;H(2)C(2)O(1);10;K
 34;Me1;Methylation;14.0266;H(2)C(1);10;K,R
 36;Me2;di-Methylation;28.0532;H(4)C(2);10;K,R
