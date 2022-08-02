@@ -25,7 +25,7 @@ import utils
 
 sns.set()
 sns.set_style("white")
-sns.set_context("paper")
+sns.set_context("paper", font_scale=1)
 
 ###################################################################################################################
 ############################################## INPUT AND TOY EXAMPLE ##############################################
@@ -340,6 +340,7 @@ plt.show()
 ###################################################################################################################
 ########################################### SUPPLEMENTAL FIGURE 4 AND 5 ###########################################
 ###################################################################################################################
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 basal_noise = error_estimate_table["basal noise (a.u.)"].values
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal error (Da)"]<0.28) &
                                         (error_estimate_table["horizontal error (Da)"]>-0.28) &
@@ -350,7 +351,7 @@ vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)]))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-modform_file_name = "overlap" # "complex" "phospho"
+modform_file_name = "complex" # "complex" "phospho"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
 data_simulation = SimulateData(aa_sequence_str, modifications_table)
 data_simulation.set_peak_width_mode(0.25)
@@ -366,7 +367,7 @@ masses_error, intensities_error = data_simulation.create_mass_spectrum(modform_d
 # phospho
 title = ["Theoretical phosphorylation patterns", "Horizontal and vertical error + basal noise"]
 
-fig = plt.figure(figsize=(7, 3))
+fig = plt.figure(figsize=(7, 2.2))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 axes[0].plot(masses, intensities, color="k") 
@@ -382,12 +383,15 @@ sns.despine()
 plt.show()
 
 # overlap
-fig = plt.figure(figsize=(7, 1.7))
+fig = plt.figure(figsize=(7, 1.8))
 plt.plot(masses_error, intensities_error, color="k") 
+plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
 plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.xlim([43625, 44230])
-plt.ylim([-50, 1255])
+#plt.xlim([43625, 44230])
+plt.xlim([43750, 44390])
+plt.ylim([-50, 2055])
+#plt.ylim([-50, 1255])
 fig.tight_layout()
 sns.despine()
 plt.show()
@@ -509,7 +513,7 @@ ptm_patterns_df.groupby("mass shift").size()
 #################################################### FIGURE 3 #####################################################
 ###################################################################################################################
 modform_file_name = "complex"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_two_gaussian.csv")
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
@@ -518,19 +522,19 @@ basal_noise = [1, 0]
 vertical_horizontal_comb = [p for p in itertools.product(*[vertical_error[::-1], horizontal_error])]
 
 # matching_mass_shifts, r_score_abundance, matching_ptm_patterns # mass_shift_deviation
-metric = "matching_mass_shifts" 
+metric = "r_score_abundance" 
 
-fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.6, 2.5))
+fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.4, 2.2))
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 for i, ax in enumerate(axn.flat):
     pivot_df = performance_df[performance_df["basal_noise"]==basal_noise[i]].pivot("vertical_error", "horizontal_error", metric)      
                                                                          
-    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, #fmt=".3",
-                vmin=0, vmax=18, annot_kws={"size": 10}, cbar_ax=None)
+    sns.heatmap(pivot_df, ax=ax, annot=True, cmap=cmap,cbar=None, fmt=".2",
+                vmin=0, vmax=1, annot_kws={"size": 9}, cbar_ax=None)
 
-    if i==0 or i==1: ax.set_ylabel("vertical error")
+    if i==0 or i==1: ax.set_ylabel("vertical error", fontsize=9)
 
-    if i==1: ax.set_xlabel("horizontal error")
+    if i==1: ax.set_xlabel("horizontal error", fontsize=9)
     else: ax.set_xlabel("")
     ax.set_xticklabels(["no","yes"], rotation=45)
     ax.set_yticklabels(["no","yes"], rotation=90)
@@ -547,30 +551,33 @@ fig.tight_layout()
 from matplotlib.ticker import MaxNLocator
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../output/arrays_test_overlap.npz")
+npzfile = np.load("../output/arrays_no_overlap_allowance.npz")
 modform_file_name = "complex"
 modform_distribution = pd.read_csv("../data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
                                    sep=",")
 
-metric = pd.DataFrame({"PTM pattern": npzfile["arr_3"].flatten(), "mass_shift": modform_distribution.mass.tolist()*10})
+repeats = 5
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_3"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
 metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
 metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
 metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
 ptm_pattern_grouped = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
-metric = pd.DataFrame({"PTM pattern": npzfile["arr_6"].flatten(), "mass_shift": modform_distribution.mass.tolist()*10})
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_6"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
 metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
 metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
 metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
 ptm_pattern_grouped_top5 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
 
-fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7, 4))
+fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7, 2.8))
 ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0])
 ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[1])
-ax[1].set_xticklabels(modform_distribution.mass.astype(int).tolist(), rotation=30, ha='right', size=9)
-ax[0].yaxis.set_major_locator(MaxNLocator(integer=True))
-ax[1].yaxis.set_major_locator(MaxNLocator(integer=True))
+ax[1].set_xticklabels(modform_distribution.mass.round(2).tolist(), rotation=30, ha='right', size=9)
+#ax[1].set_xticklabels(modform_distribution.mass.astype(int).tolist(), rotation=30, ha='right', size=9)
+#ax[0].yaxis.set_major_locator(MaxNLocator(integer=True))
+#ax[1].yaxis.set_major_locator(MaxNLocator(integer=True))
 ax[1].set_xlabel("mass shift [Da]")
 ax[0].set_ylabel("# simulations")
 ax[1].set_ylabel("# simulations")

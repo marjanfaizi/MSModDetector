@@ -219,7 +219,6 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
     performance_df["matching_ptm_patterns_min_err"] = matching_ptm_patterns_min_err_avg
     performance_df["matching_ptm_patterns_min_ptm"] = matching_ptm_patterns_min_ptm_avg
     performance_df["matching_ptm_patterns_min_both"] = matching_ptm_patterns_min_both_avg
-    performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
     
     return performance_df
 ###################################################################################################################
@@ -321,7 +320,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 
 if __name__ == "__main__":
     mod = Modifications(config.modfication_file_name, aa_sequence_str)
-    repeat_simulation = 10
+    repeat_simulation = 5
     peak_width_mode = 0.25
     data_simulation = SimulateData(aa_sequence_str, modifications_table)
     data_simulation.set_peak_width_mode(peak_width_mode)
@@ -329,6 +328,9 @@ if __name__ == "__main__":
     performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
                                                       vertical_error_par, horizontal_error_par, basal_noise_par,
                                                       gaussian_method="one")
+    
+    performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
+    
     """
     mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
                                                                                     data_simulation, 
@@ -337,12 +339,12 @@ if __name__ == "__main__":
                                                                                     basal_noise_par, 
                                                                                     modform_distribution, 
                                                                                     repeat_simulation,
-                                                                                    gaussian_method="two")
+                                                                                    gaussian_method="one")
 
-    np.savez("../output/arrays_test_overlap", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../output/arrays_no_overlap_allowance", mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
-
-
+    
+    
 
 
 
@@ -389,8 +391,8 @@ trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trim
 
 gaussian_model = GaussianModel("simulated", config.stddev_isotope_distribution)
 gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-#gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
-gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
+gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
+#gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
 
 gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
@@ -407,7 +409,7 @@ mass_shifts.add_ptm_patterns_to_table()
 fig = plt.figure(figsize=(7, 2.5))
 plt.plot(data.masses, data.intensities, '-', color="0.3")
 plt.plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], '.', markersize=3, color="r")
-#plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"], '.', color="r")
+plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, '.', color="b")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43625, 44400))

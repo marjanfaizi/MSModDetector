@@ -1,4 +1,4 @@
-PTM pattern,intensity1,intensity,intensity3,mass
+PTM pattern,intensity,intensity2,intensity3,mass
 1[Cys]2[Ph]1[Ox],400,400,100,295.1015
 3[Ph]2[Ox]1[Na],400,200,400,293.92030
 1[Me1],400,400,100,14.0266

@@ -11,7 +11,7 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
 import utils
-from scipy.stats import wasserstein_distance
+
 
 class GaussianModel(object): 
     """
@@ -212,7 +212,7 @@ class GaussianModel(object):
 
 
     def refit_results(self, peaks, noise_level, refit_mean=False):
-        repeat_fitting = 2
+        repeat_fitting = 5
         while repeat_fitting > 0:
             if not self.fitting_results.empty:
                 masses = peaks[:,0]; intensities = peaks[:,1]
@@ -227,7 +227,7 @@ class GaussianModel(object):
 
                 if refit_mean:
                     error_func_mean = lambda mean, x, y: utils.multi_gaussian(x, self.fitting_results["amplitude"].values, mean, self.stddev) - y
-                    delta = 3
+                    delta = 2
                     lb = self.fitting_results["mean"].values-delta
                     ub = self.fitting_results["mean"].values+delta
                     refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub), loss="soft_l1",
