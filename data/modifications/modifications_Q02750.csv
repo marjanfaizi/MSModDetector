@@ -1,8 +1,0 @@
-PTM id;PTM name;PTM mass;upper bound
-Ph;Phosphorylation;79.9799;10
-Ph-H2O;Phosphorylation;97.9952;10
-Ox;Oxidation;15.9994;10
-Cys;Cysteinylation;119.1423;6
-Cys-Cys;Disulfide bridge;-2.0159;3
-Na;Sodium adduct;21.9818;5
-Met-loss;Removal of initiator methionine;-131.1961;1
