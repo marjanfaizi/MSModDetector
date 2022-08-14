@@ -12,6 +12,9 @@ import pandas as pd
 import re
 import sys
 import random
+
+sys.path.append("../src/")
+
 import utils 
 
 

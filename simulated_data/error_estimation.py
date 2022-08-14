@@ -12,11 +12,13 @@ import numpy as np
 from scipy import optimize
 import random
 import pandas as pd
+import sys
+
+sys.path.append("../src/")
 
 import utils 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
-#import config_sim as config
 import config
 
 #*************************************************************************************************************#

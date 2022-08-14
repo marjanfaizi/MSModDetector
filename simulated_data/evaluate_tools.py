@@ -6,12 +6,14 @@ Created on Apr 5 2022
 @author: Marjan Faizi
 """
 
+import sys
 import pandas as pd
 from sklearn.metrics import r2_score
 import numpy as np
 import itertools
 from scipy import stats
-#from scipy.optimize import minimize
+
+sys.path.append("../src/")
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -416,86 +418,6 @@ plt.xlim((43625, 44400))
 sns.despine()
 fig.tight_layout()
 plt.show()
-
-mass_shifts.identified_masses_df
-
-fig = plt.figure(figsize=(14,3.5))
-gs = fig.add_gridspec(2, hspace=0)
-axes = gs.subplots(sharex=True, sharey=True)
-axes[0].plot(masses, intensities, color="0.3") 
-axes[1].plot(masses_noise, intensities_noise, color="0.3") 
-axes[0].plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], 'o', color="b")
-axes[1].plot(modform_distribution["mass"]+config.unmodified_species_mass, modform_distribution["intensity"], 'o', color="b")
-axes[0].plot(mean, amplitude, 'o', color="r")
-axes[1].plot(mean_noise, amplitude_noise, 'o', color="r")
-axes[1].set_xlabel("mass (Da)")#, fontsize=10)
-axes[1].set_ylabel("intensity (a.u.)")#, fontsize=10)
-[axes[i].set_xlim([43615, 44180]) for i in range(2)] # phospho
-[axes[i].set_ylim([0, 1410]) for i in range(2)] # phospho
-fig.tight_layout()
-sns.despine()
-plt.show()
-
-
-
-x_gauss_func = np.arange(config.mass_start_range, config.mass_end_range)
-y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"],  
-                                    gaussian_model.fitting_results["mean"], config.stddev_isotope_distribution)
-
-
-
-#proton_mass = 1.007
-#masses += proton_mass
-#data_simulation.save_mass_spectrum(masses, intensities, 
-#                                   "../output/ptm_pattern_"+modform_file_name+"_with_error_noise.csv")
-
-
-
-
-plt.figure(figsize=(6, 3))
-plt.plot(data.masses, data.intensities/data.rescaling_factor, '-', color="0.3")
-plt.plot(x_gauss_func, utils.gaussian(x_gauss_func, gaussian_model.fitting_results.loc[0,"amplitude"], 
-                                      gaussian_model.fitting_results.loc[0,"mean"], config.stddev_isotope_distribution), 
-        '-', color="red")
-plt.axhline(y=noise_level, color='r', linestyle='-')
-plt.xlabel("mass (Da)", fontsize=10)
-plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.tight_layout()
-plt.show()
-
-
-
-
-
-
-import numpy as np
-from cvxopt import matrix, glpk
-from modifications import Modifications
-
-import utils
-import config_sim as config 
-
-protein_entries = utils.read_fasta(config.fasta_file_name)
-aa_sequence_str = list(protein_entries.values())[0]
-mod = Modifications(config.modfication_file_name, aa_sequence_str)
-
-observed_mass_shift = 1
-max_mass_error = config.mass_tolerance
-min_number_ptms = 0
-
-
-
-number_variables = len(mod.ptm_masses)
-ones = np.ones(number_variables)
-inequality_lhs = np.vstack([np.array(mod.ptm_masses), -np.array(mod.ptm_masses), -np.identity(number_variables), np.identity(number_variables), -ones])
-A = matrix(inequality_lhs)
-lower_bounds = np.zeros(number_variables)
-inequality_rhs = np.vstack([observed_mass_shift+max_mass_error, -observed_mass_shift+max_mass_error, lower_bounds.reshape(-1,1), 
-                            np.array(mod.upper_bounds).reshape(-1,1), -min_number_ptms])
-b = matrix(inequality_rhs)
-c = matrix(ones)
-status, solution = glpk.ilp(c, A, b, I=set(range(number_variables)))
-
 
 ###################################################################################################################
 ###################################################################################################################
