@@ -1,0 +1,12 @@
+cvxopt
+glob
+itertools
+numpy
+re
+scipy
+sys
+pandas
+pyopenms
+
+
+

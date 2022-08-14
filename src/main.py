@@ -17,8 +17,11 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-#import config_sim as config
+
+sys.path.append("..")
 import config
+
+
 
 file_names = [file for file in glob.glob(config.file_names)] 
 
@@ -31,11 +34,9 @@ if __name__ == "__main__":
         print("\nFiles do not exist.\n")
         sys.exit()
     
-    protein_entries = utils.read_fasta(config.fasta_file_name)
-    protein_sequence = list(protein_entries.values())[0]
-    mod = Modifications(config.modfication_file_name, protein_sequence)
+    mod = Modifications(config.modfication_file_name, config.protein_sequence)
 
-    mass_shifts = MassShifts(config.mass_start_range, config.mass_end_range)
+    mass_shifts = MassShifts(config.mass_range_start, config.mass_range_end)
     
     print("\nDetecting mass shifts...")
     
@@ -64,34 +65,29 @@ if __name__ == "__main__":
                 sample_name = sample_name[0]
 
             data = MassSpecData(sample_name)
-            data.set_search_window_mass_range(config.mass_start_range, config.mass_end_range)        
-
+            data.set_mass_range_of_interest(config.mass_range_start, config.mass_range_end)  
             all_peaks = data.picking_peaks()
-            trimmed_peaks = data.remove_adjacent_peaks(all_peaks, config.distance_threshold_adjacent_peaks)   
-            trimmed_peaks_in_search_window = data.determine_search_window(trimmed_peaks)
-            trimmed_peaks_in_search_window[:,1] = data.normalize_intensities(trimmed_peaks_in_search_window[:,1])
+            peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
 
-
-            if trimmed_peaks_in_search_window.size:
-                noise_level = config.noise_level_fraction*trimmed_peaks_in_search_window[:,1].std()
-                trimmed_peaks_in_search_window_above_noise = trimmed_peaks_in_search_window[trimmed_peaks_in_search_window[:,1]>noise_level]
+            if peaks_normalized.size:
+                noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
+                peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
                 parameter.loc["noise_level", cond+"_"+rep] = noise_level
                 parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
 
-                if len(trimmed_peaks_in_search_window_above_noise):  
+                if len(peaks_normalized_above_noise):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
                     gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-                    gaussian_model.fit_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.allowed_overlap_fitting_window, config.pvalue_threshold, noise_level)      
-#                    gaussian_model.fit_two_gaussian_within_window(trimmed_peaks_in_search_window_above_noise, config.pvalue_threshold, noise_level)      
+                    gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
 
-                    gaussian_model.refit_results(trimmed_peaks_in_search_window, noise_level, refit_mean=True)
-                    gaussian_model.calculate_relative_abundaces(data.search_window_start_mass, data.search_window_end_mass)
+                    gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
+                    gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
                     parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  
          
-                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep) #, data.rescaling_factor)
+                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep)
  
                 else:
                     stdout_text.append("No peaks above the SN threshold could be detected within the search window for the following condition: " + cond + "_" + rep)
@@ -107,9 +103,6 @@ if __name__ == "__main__":
     if mass_shifts.identified_masses_df.empty:
         print("\nNo masses detected.")
     else:
-#        calibration_number_dict = mass_shifts.align_spetra()
-#        parameter = parameter.append(calibration_number_dict, ignore_index=True)
-#        parameter.rename(index={0:"noise_level", 1:"calibration_number"}, inplace=True)
         mass_shifts.calculate_avg_mass()
         if config.bin_peaks == True:
             mass_shifts.bin_peaks(config.max_bin_size)

@@ -16,19 +16,17 @@ from scipy.signal import find_peaks
 class MassSpecData(object):
     """
     This class reads mass spectra in the following formats: .txt, .csv, and .mzMl 
-    Pekas are picked from the raw mass spectrum. All subsequent analyses is performed using peaks.
+    Peaks are picked from the raw mass spectrum. All subsequent analyses is performed using peaks.
     'Shoulder' peaks are removed to improve analyses.    
     """
     
     def __init__(self, data_file_name):
         self.data_file_seperator = ","
         self.raw_spectrum  = self.__read_data(data_file_name)
-        self.masses = self.raw_spectrum[:,0]
-        self.intensities = self.raw_spectrum[:,1]
         
         self.mass_error = 10.0 # ppm
-        self.search_window_start_mass = self.raw_spectrum[0,0]
-        self.search_window_end_mass = self.raw_spectrum[-1,0]
+        self.search_window_start = self.raw_spectrum[0,0]
+        self.search_window_end = self.raw_spectrum[-1,0]
 
 
     def __read_data(self, data_file_name):
@@ -52,14 +50,21 @@ class MassSpecData(object):
                 sys.exit()
 
 
-    def set_search_window_mass_range(self, start_mass, end_mass):
-        self.search_window_start_mass = start_mass
-        self.search_window_end_mass = end_mass
+    def set_mass_range_of_interest(self, start_mass, end_mass):
+        self.search_window_start = start_mass
+        self.search_window_end = end_mass
+
+
+    def preprocess_peaks(self, peaks, distance_threshold_adjacent_peaks):
+        trimmed_peaks = self.remove_adjacent_peaks(peaks, distance_threshold_adjacent_peaks)   
+        trimmed_peaks_in_search_window = self.determine_search_window(trimmed_peaks)
+        trimmed_peaks_in_search_window[:,1] = self.normalize_intensities(trimmed_peaks_in_search_window[:,1])
+        return trimmed_peaks_in_search_window
 
 
     def determine_search_window(self, peaks):
-        start_index = self.find_nearest_mass_idx(peaks, self.search_window_start_mass)
-        end_index =  self.find_nearest_mass_idx(peaks, self.search_window_end_mass)
+        start_index = self.find_nearest_mass_idx(peaks, self.search_window_start)
+        end_index =  self.find_nearest_mass_idx(peaks, self.search_window_end)
         search_window_indices = np.arange(start_index, end_index+1)
         peaks_in_search_window = peaks[search_window_indices]
         return peaks_in_search_window
@@ -79,10 +84,10 @@ class MassSpecData(object):
 
 
     def picking_peaks(self, min_peak_height=None):
-        peaks_index, _ = find_peaks(self.intensities, height=min_peak_height)
-        peaks_intensity = self.intensities[peaks_index]
-        peaks_mass = self.masses[peaks_index]
-        peaks = np.transpose(np.vstack((peaks_mass, peaks_intensity)))
+        masses = self.raw_spectrum[:,0]
+        intensities = self.raw_spectrum[:,1]
+        peaks_index, _ = find_peaks(intensities, height=min_peak_height)
+        peaks = np.transpose(np.vstack((masses[peaks_index], intensities[peaks_index])))
         return peaks
 
 
@@ -98,6 +103,5 @@ class MassSpecData(object):
             return self.remove_adjacent_peaks(removed_adjacent_peaks, distance_threshold)
         else:
             return removed_adjacent_peaks    
-
 
 

@@ -32,8 +32,8 @@ protein_sequence = list(protein_entries.values())[0]
 unmodified_species_mass, stddev_isotope_distribution, amplitude_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
 
 # Set mass range to search for shifts 
-mass_start_range = 43750.0
-mass_end_range = 44520.0
+mass_range_start = 43750.0
+mass_range_end = 44520.0
 
 # The standard deviation of the data points within the search window determine the noise level
 # The threshold of the noise level can be decreased with this parameter
@@ -47,7 +47,6 @@ pvalue_threshold = 0.1
 # lb and ub set the percentage of peaks within the distribution that should be considered for the fit
 window_size_lb = 0.2
 window_size_ub = 0.33
-allowed_overlap_fitting_window = 0.5
 
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 35
