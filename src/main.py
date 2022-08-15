@@ -17,10 +17,7 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
-
-sys.path.append("..")
 import config
-
 
 
 file_names = [file for file in glob.glob(config.file_names)] 
@@ -64,7 +61,8 @@ if __name__ == "__main__":
             else:
                 sample_name = sample_name[0]
 
-            data = MassSpecData(sample_name)
+            data = MassSpecData()
+            data.add_raw_spectrum(sample_name)
             data.set_mass_range_of_interest(config.mass_range_start, config.mass_range_end)  
             all_peaks = data.picking_peaks()
             peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)

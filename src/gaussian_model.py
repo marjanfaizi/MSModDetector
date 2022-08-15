@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy import optimize
 from scipy.stats import chisquare
+
 import utils
 
 

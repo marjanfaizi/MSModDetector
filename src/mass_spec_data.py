@@ -20,21 +20,17 @@ class MassSpecData(object):
     'Shoulder' peaks are removed to improve analyses.    
     """
     
-    def __init__(self, data_file_name):
+    def __init__(self, raw_spectrum=None):
+        self.raw_spectrum = raw_spectrum
         self.data_file_seperator = ","
-        self.raw_spectrum  = self.__read_data(data_file_name)
-        
         self.mass_error = 10.0 # ppm
-        self.search_window_start = self.raw_spectrum[0,0]
-        self.search_window_end = self.raw_spectrum[-1,0]
 
 
-    def __read_data(self, data_file_name):
+    def add_raw_spectrum(self, data_file_name):
         if ".txt" in data_file_name or ".csv" in data_file_name:
             try:
-                spectrum = pd.read_csv(data_file_name, sep=self.data_file_seperator, header=None)
-                spectrum_asarray = np.asarray(spectrum)
-                return spectrum_asarray
+                raw_spectrum = pd.read_csv(data_file_name, sep=self.data_file_seperator, header=None)
+                self.raw_spectrum = np.asarray(raw_spectrum)
             except FileNotFoundError:
                 print('File does not exist.')
                 sys.exit()
@@ -42,9 +38,8 @@ class MassSpecData(object):
             try:
                 openms_object = pyopenms.MSExperiment()
                 pyopenms.MzMLFile().load(data_file_name, openms_object)
-                spectrum = openms_object.getSpectrum(0).get_peaks()  
-                spectrum_asarray = np.transpose(np.asarray(spectrum))
-                return spectrum_asarray
+                raw_spectrum = openms_object.getSpectrum(0).get_peaks()  
+                self.raw_spectrum = np.transpose(np.asarray(raw_spectrum))
             except FileNotFoundError:
                 print('File does not exist.')
                 sys.exit()

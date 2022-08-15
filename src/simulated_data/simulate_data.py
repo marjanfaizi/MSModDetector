@@ -10,13 +10,9 @@ import pyopenms
 import numpy as np
 import pandas as pd
 import re
-import sys
 import random
 
-sys.path.append("../src/")
-
-import utils 
-
+from src import utils 
 
 
 class SimulateData(object):
@@ -24,7 +20,6 @@ class SimulateData(object):
     This class creates a mass spectrum from a theoretical modform distribution.
     Different error types and basal noise can be added to the theoretical mass spectrum.
     """
-
     
     def __init__(self, unmodified_sequence_str, modifications_table):
         self.unmodified_sequence_str = unmodified_sequence_str
@@ -32,24 +27,18 @@ class SimulateData(object):
         self.isotopic_distribution_unmodified_species = self.seq_str_to_isotopic_dist(self.unmodified_sequence_str)
         self.modifications_table = modifications_table
         self.mass_grid_step = 0.02
-        self.spacing_between_peaks = 1.0#03355
+        self.spacing_between_peaks = 1.0
+        self.peak_width = 0.25
         self.margin_mass_range = 20
         self.vertical_error_par = None
         self.horizontal_error_par = None
         self.basal_noise_par = None
-        self.peak_width_mode = None
-        self.peak_width_par = None
-        
-        
-    def set_peak_width_mode(self, peak_width_mode):
-        self.peak_width_mode = peak_width_mode
 
 
     def reset_noise_error(self):
         self.vertical_error_par = None
         self.horizontal_error_par = None
         self.basal_noise_par = None
-        self.peak_width_par = None
 
 
     def create_mass_spectrum(self, modform_distribution):       
@@ -78,29 +67,22 @@ class SimulateData(object):
             vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
             spectrum[:,1] += spectrum[:,1]*vertical_error
 
+        print(spectrum[:,1].max())
         if self.basal_noise_par != None:
             basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
             spectrum[:,1] += basal_noise*spectrum[:,1].max()
 
+        print(spectrum[:,1].max())
         intensities = np.zeros(mass_grid.shape)
         for peak in spectrum:
-            if self.peak_width_mode == None:
-                sys.exit("Set value for peak_width_mode.")
-            if self.peak_width_par != None:
-                peak_width = (self.peak_width_par[3]*np.random.beta(*self.peak_width_par[:2]))+self.peak_width_par[2]
-                
-            else:
-                peak_width = self.peak_width_mode
-            # If peak width variation is estimated from simulated data it tends to be higher than the variation of the experimental data (but why??)
-            correct_for_peak_width = 1.0#75
             # Add gaussian peak shape centered around each theoretical peak
-            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / peak_width*correct_for_peak_width)**2)
+            intensities += peak[1] * np.exp(-0.5*((mass_grid - peak[0]) / self.peak_width)**2)
 
         return mass_grid, intensities
 
 
-    def add_noise(self, vertical_error_par=None, horizontal_error_par=None, basal_noise_par=None, peak_width_par=None):
-        # set the error/noise std/beta to the respective given value 
+    def add_noise(self, vertical_error_par=None, horizontal_error_par=None, basal_noise_par=None):
+        # set the error/noise
         # if no value is given, reset (important!) the value to None
         if vertical_error_par != None:
             self.vertical_error_par = vertical_error_par
@@ -116,11 +98,6 @@ class SimulateData(object):
             self.basal_noise_par = basal_noise_par
         else:
             self.basal_noise_par = None
-
-        if peak_width_par != None:
-            self.peak_width_par = peak_width_par
-        else:
-            self.sigma_noise_par = None
             
 
     def save_mass_spectrum(self, masses, intensities, file_name):
