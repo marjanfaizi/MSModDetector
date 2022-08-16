@@ -17,21 +17,29 @@ from gaussian_model import GaussianModel
 from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
+
+sys.path.append("..")
 import config
 
 
-file_names = [file for file in glob.glob(config.file_names)] 
 
 if __name__ == "__main__":
     
     print("\n"+"-"*63)     
     print("\nLoad files...")
+
+    protein_entries = utils.read_fasta("../"+config.fasta_file_name)
+    file_names = [file for file in glob.glob("../"+config.file_names)] 
+
+    protein_sequence = list(protein_entries.values())[0]
+    unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
+    mass_tolerance = config.mass_error_ppm*1e-6*unmodified_species_mass
     
     if not file_names:
         print("\nFiles do not exist.\n")
         sys.exit()
-    
-    mod = Modifications(config.modfication_file_name, config.protein_sequence)
+        
+    mod = Modifications("../"+config.modfication_file_name, protein_sequence)
 
     mass_shifts = MassShifts(config.mass_range_start, config.mass_range_end)
     
@@ -77,8 +85,8 @@ if __name__ == "__main__":
                 if len(peaks_normalized_above_noise):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-                    gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
-                    gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+                    gaussian_model = GaussianModel(cond, stddev_isotope_distribution)
+                    gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
                     gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
 
                     gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
@@ -103,15 +111,15 @@ if __name__ == "__main__":
     else:
         mass_shifts.calculate_avg_mass()
         if config.bin_peaks == True:
-            mass_shifts.bin_peaks(config.max_bin_size)
+            mass_shifts.bin_peaks(mass_tolerance)
 
         if config.calculate_mass_shifts == True:
-            mass_shifts.add_mass_shifts(config.unmodified_species_mass)
+            mass_shifts.add_mass_shifts(unmodified_species_mass)
 
         if config.determine_ptm_patterns == True:
             print("\nSearching for PTM combinations:")
 
-            mass_shifts.determine_ptm_patterns(mod, config.mass_tolerance, config.objective_fun, config.laps_run_lp)        
+            mass_shifts.determine_ptm_patterns(mod, mass_tolerance, config.objective_fun, config.laps_run_lp)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           

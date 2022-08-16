@@ -6,17 +6,20 @@ Created on Apr 5 2022
 @author: Marjan Faizi
 """
 
+import sys
 import pandas as pd
 from sklearn.metrics import r2_score
 import numpy as np
 import itertools
 from scipy import stats
 
-from src.mass_spec_data import MassSpecData
-from src.gaussian_model import GaussianModel
-from src.mass_shifts import MassShifts
-from src.modifications import Modifications
-from src import utils
+sys.path.append("..")
+
+from mass_spec_data import MassSpecData
+from gaussian_model import GaussianModel
+from mass_shifts import MassShifts
+from modifications import Modifications
+import utils
 from simulate_data import SimulateData
 import config_sim as config 
 

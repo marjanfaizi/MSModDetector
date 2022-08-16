@@ -53,13 +53,13 @@ def isotope_distribution_fit_par(protein_sequence, isotope_pattern_resolution):
     if not np.isnan(masses).all() and not  np.isnan(intensities).all(): 
         optimized_param, _ = optimize.curve_fit(gaussian, masses, intensities, maxfev=10000000,
                                                 p0=[initial_amplitude, initial_mean, intial_stddev])
-        amplitude = optimized_param[0]
+
         mean = optimized_param[1]
         stddev = optimized_param[2]
-        return mean, stddev, amplitude
+        return mean, stddev
     
     else:
-        return 0, 0, 0
+        return 0, 0
 
 
 def read_fasta(fasta_file_name):

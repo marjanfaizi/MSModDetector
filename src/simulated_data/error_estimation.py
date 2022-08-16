@@ -5,6 +5,7 @@ Created on Mar 30 2022
 @author: Marjan Faizi
 """
 
+import sys
 import glob
 import re
 from itertools import product
@@ -12,9 +13,11 @@ import numpy as np
 import random
 import pandas as pd
 
-from src.mass_spec_data import MassSpecData
-from src.gaussian_model import GaussianModel
-from src import utils 
+sys.path.append("..")
+
+from mass_spec_data import MassSpecData
+from gaussian_model import GaussianModel
+import utils 
 
 #*************************************************************************************************************#
 #*************************************************************************************************************#

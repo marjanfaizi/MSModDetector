@@ -1,8 +1,8 @@
 # config.py:
-import utils
 
+    
 # This regular expression specifies the ending of the file names that should be read all at once
-file_names = "../raw_data/*.mzml"
+file_names = "raw_data/*.mzml"
 
 # list of all replicate names as they are in the file names
 replicates = ["rep5", "rep6"] # rep1, rep5, rep6, rep9
@@ -20,15 +20,10 @@ color_order = [["skyblue", 0], ["mediumpurple", 1]]
 color_palette = dict(zip(conditions, color_order))
 
 # Name and location of the modification file 
-modfication_file_name = "../modifications/modifications_P04637.csv"
+modfication_file_name = "modifications/modifications_P04637.csv"
 
 # Fasta file for protein of interest
-fasta_file_name = "../fasta_files/P04637.fasta"
-
-# Theoretical average mass of the unmodified species (in Da)
-protein_entries = utils.read_fasta(fasta_file_name)
-protein_sequence = list(protein_entries.values())[0]
-unmodified_species_mass, stddev_isotope_distribution, amplitude_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
+fasta_file_name = "fasta_files/P04637.fasta"
 
 # Set mass range to search for shifts 
 mass_range_start = 43750.0
@@ -50,12 +45,8 @@ window_size_ub = 0.33
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 35
 
-# This mass tolerance in Da is used as default for the linear programming problem 
-mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
-
 # Average masses within this distance should be binned together and the maximal bin size should be kept
 bin_peaks = True
-max_bin_size = mass_tolerance 
 
 # If two peaks are within this distance (given in Da) then the lower peak is removed  
 distance_threshold_adjacent_peaks = 0.6

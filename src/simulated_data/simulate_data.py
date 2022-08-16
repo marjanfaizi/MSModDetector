@@ -6,13 +6,15 @@ Created on Tue Dec 14 2021
 @author: Marjan Faizi
 """
 
+import sys
 import pyopenms
 import numpy as np
 import pandas as pd
 import re
 import random
 
-from src import utils 
+sys.path.append("..")
+import utils 
 
 
 class SimulateData(object):

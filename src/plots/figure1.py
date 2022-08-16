@@ -5,15 +5,18 @@ Created on Thu May 5 2022
 
 @author: Marjan Faizi
 """
-
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.mass_spec_data import MassSpecData
-from src.gaussian_model import GaussianModel
-from src import config
-from src import utils
+sys.path.append("..")
+sys.path.append("../../")
+
+from mass_spec_data import MassSpecData
+from gaussian_model import GaussianModel
+import config
+import utils
 
 ### set figure style
 sns.set()
@@ -27,6 +30,10 @@ cond = "nutlin_only"
 mass_range_start = 43755
 mass_range_end = 43800
 mass_range = np.arange(mass_range_start,mass_range_end)
+protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+protein_sequence = list(protein_entries.values())[0]
+unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
+
 
 ### process data
 data = MassSpecData()
@@ -37,8 +44,8 @@ peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_ad
 noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
 peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
-gaussian_model = GaussianModel(cond, config.stddev_isotope_distribution)
-gaussian_model.determine_variable_window_sizes(config.unmodified_species_mass, config.window_size_lb, config.window_size_ub)
+gaussian_model = GaussianModel(cond, stddev_isotope_distribution)
+gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
 gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
 
 mean = gaussian_model.fitting_results["mean"]
