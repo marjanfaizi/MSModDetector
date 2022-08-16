@@ -69,12 +69,10 @@ class SimulateData(object):
             vertical_error = (self.vertical_error_par[3]*np.random.beta(*self.vertical_error_par[:2], size=spectrum.shape[0]))+self.vertical_error_par[2]
             spectrum[:,1] += spectrum[:,1]*vertical_error
 
-        print(spectrum[:,1].max())
         if self.basal_noise_par != None:
             basal_noise = (self.basal_noise_par[3]*np.random.beta(*self.basal_noise_par[:2], size=spectrum.shape[0]))+self.basal_noise_par[2]
             spectrum[:,1] += basal_noise*spectrum[:,1].max()
 
-        print(spectrum[:,1].max())
         intensities = np.zeros(mass_grid.shape)
         for peak in spectrum:
             # Add gaussian peak shape centered around each theoretical peak
