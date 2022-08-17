@@ -61,7 +61,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
     performance_df = pd.DataFrame(columns=["vertical_error", "horizontal_error", "basal_noise", 
                                            "all_detected_mass_shifts", "simulated_mass_shifts", 
                                            "matching_mass_shifts", "mass_shift_deviation", "r_score_abundance", 
-                                           "matching_ptm_patterns_min_ptm", "matching_ptm_patterns_min_error",
+                                           "matching_ptm_patterns_min_ptm", "matching_ptm_patterns_min_err",
                                            "matching_ptm_patterns_min_both"])
     
     performance_df["vertical_error"] = [a_tuple[0] for a_tuple in error_noise_combinations]
