@@ -276,7 +276,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 
 if __name__ == "__main__":
     
-    modform_file_name = "phospho"
+    modform_file_name = "complex"
     repeat_simulation = 2
     
     ### PTM database
@@ -306,7 +306,7 @@ if __name__ == "__main__":
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
 
-    
+    """
     performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
     
@@ -321,9 +321,9 @@ if __name__ == "__main__":
                                                                                     modform_distribution, 
                                                                                     repeat_simulation)
 
-    np.savez("../../output/arrays_no_overlap_allowance", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_overlap_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
-    """    
+    
     
 
 
