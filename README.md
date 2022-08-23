@@ -26,6 +26,4 @@ $ python main.py
 ```
 
 ## Configuration file
-The file config.py has to be adjusted in order to refer to the correct input files. The configuration file requires the path name of the raw spectrum data, fasts file of the protein of interest, and the file name of the table of modifications considered for the PTM pattern analysis. Furthermore, names of the different replicates and conditions need to be listed.
-
-
+The file config.py has to be adjusted in order to refer to the correct input files. The configuration file requires the path name of the raw spectrum data, fasts file of the protein of interest, and the file name of the table of modifications considered for the PTM pattern analysis. Furthermore, names of the different replicates and conditions need to be listed. Additionally, meta parameters can be adusted as well in config.py that will impact the performance of mass shift detection and PTM patterm inference. Please see config.py for more detailed information about the meta parameters.
