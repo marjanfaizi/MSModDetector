@@ -33,9 +33,8 @@ replicates = ["rep5", "rep6"]
 conditions = ["nutlin_only", "uv_7hr"]
 distance_threshold_adjacent_peaks = 0.6
 noise_level_fraction = 0.25
-pvalue_threshold = 0.1
-window_size_lb = 0.2
-window_size_ub = 0.33
+pvalue_threshold = 0.99
+window_size = 10
 unmodified_species_mass = 43652.55 # mass of p53
 stddev_isotope_distribution = 5.59568 # standard deviation for the isotopic distributio of unmodified p53
 
@@ -68,13 +67,11 @@ for rep in replicates:
             all_peaks = data.picking_peaks()
             peaks_normalized = data.preprocess_peaks(all_peaks, distance_threshold_adjacent_peaks)
             noise_level = noise_level_fraction*peaks_normalized[:,1].std()
-            peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
             
-            gaussian_model = GaussianModel(cond, stddev_isotope_distribution)
-            gaussian_model.determine_variable_window_sizes(unmodified_species_mass, window_size_lb, window_size_ub)
-            gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, pvalue_threshold)      
+            gaussian_model = GaussianModel(cond, stddev_isotope_distribution, window_size)
+            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, pvalue_threshold)      
             gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
-           
+            
             x_gauss_func = peaks_normalized[:,0]
             y_gauss_func = utils.multi_gaussian(x_gauss_func, gaussian_model.fitting_results["amplitude"], gaussian_model.fitting_results["mean"], gaussian_model.stddev)
             vertical_error += (y_gauss_func - peaks_normalized[:,1]).tolist()

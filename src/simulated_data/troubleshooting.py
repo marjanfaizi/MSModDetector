@@ -25,7 +25,7 @@ from simulate_data import SimulateData
 import config 
 
 
-modform_file_name = "complex"
+modform_file_name = "overlap"
 
 
 ### PTM database
@@ -71,29 +71,28 @@ data.set_mass_range_of_interest(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
 all_peaks = data.picking_peaks()
 peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
 noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
-peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
-gaussian_model = GaussianModel("simulated", stddev_isotope_distribution)
-gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
+gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
+gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
 gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
-
+"""
 mass_shifts = MassShifts(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
+
 mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results,  "simulated")
 
 mass_shifts.calculate_avg_mass()
 mass_shifts.add_mass_shifts(unmodified_species_mass)
 mass_shifts.determine_ptm_patterns(mod, mass_tolerance, config.objective_fun, config.laps_run_lp)     
 mass_shifts.add_ptm_patterns_to_table()
-
+"""
 fig = plt.figure(figsize=(7, 2.5))
 plt.plot(data.raw_spectrum[:, 0], data.raw_spectrum[:, 1], '-', color="0.3")
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], '.', markersize=3, color="r")
 plt.plot(gaussian_model.fitting_results["mean"], gaussian_model.fitting_results["amplitude"]*data.rescaling_factor, '.', color="b")
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim((43670, 44450))
+plt.xlim((data.raw_spectrum[0, 0], data.raw_spectrum[-1, 0]))
 sns.despine()
 fig.tight_layout()
 plt.show()

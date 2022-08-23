@@ -77,17 +77,15 @@ if __name__ == "__main__":
 
             if peaks_normalized.size:
                 noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
-                peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
                 parameter.loc["noise_level", cond+"_"+rep] = noise_level
                 parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
 
-                if len(peaks_normalized_above_noise):  
+                if len(peaks_normalized[peaks_normalized[:,1]>noise_level]):  
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
-                    gaussian_model = GaussianModel(cond, stddev_isotope_distribution)
-                    gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-                    gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
+                    gaussian_model = GaussianModel(cond, stddev_isotope_distribution, config.window_size)
+                    gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
 
                     gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)

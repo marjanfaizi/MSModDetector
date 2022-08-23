@@ -68,7 +68,7 @@ plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribut
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43740,44420))
-plt.ylim([-50, 2020])
+plt.ylim([-10, 990])
 plt.tight_layout()
 sns.despine()
 plt.show()
@@ -81,7 +81,7 @@ npzfile = np.load("../../output/evaluated_overlap_data.npz")
 modform_file_name = "complex"
 modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
 
-repeats = 2
+repeats = 5
 
 metric = pd.DataFrame({"PTM pattern": npzfile["arr_3"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
 metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)

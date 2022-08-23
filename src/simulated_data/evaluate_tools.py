@@ -111,11 +111,9 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
             all_peaks = data.picking_peaks()
             peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
             noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
-            peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
-            gaussian_model = GaussianModel("simulated", stddev_isotope_distribution)
-            gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-            gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
+            gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
+            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
             gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
             gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 
@@ -218,11 +216,9 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
         all_peaks = data.picking_peaks()
         peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
         noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
-        peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
-        gaussian_model = GaussianModel("simulated", stddev_isotope_distribution)
-        gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-        gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
+        gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
+        gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
         gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
         gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 
@@ -277,15 +273,14 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 if __name__ == "__main__":
     
     modform_file_name = "complex"
-    repeat_simulation = 2
+    repeat_simulation = 5
     
     ### PTM database
     modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
     modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
     
     ### simulated PTM patterns
-    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", 
-                                       sep=",")
+    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
     modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
     
     ### estimated error and noise 
