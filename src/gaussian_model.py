@@ -35,7 +35,7 @@ class GaussianModel(object):
         self.sample_name = sample_name
         self.stddev = stddev_isotope_distribution
         self.window_size = window_size
-        self.maxfev = 100000
+        self.maxfev = 1000000
         self.degree_of_freedom = 3 # for chi-squared test
         self.sample_size_threshold = 7 # for chi-squared test
         self.intensity_threshold = 1e-10
@@ -43,7 +43,7 @@ class GaussianModel(object):
         self.repeat_refitting = 2
 
 
-    def fit_gaussian_within_window(self, peaks, noise_level, pvalue_threshold):
+    def fit_gaussian_within_window(self, peaks, noise_level, pvalue_threshold, allowed_overlap):
         masses = peaks[:, 0]
         best_fit = {"fitted_mean": masses[0], "fitted_amplitude": 0, "pvalue": 0, "chi_score": 0}
         window_range_start = masses[0]
@@ -58,7 +58,7 @@ class GaussianModel(object):
                 chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
                 pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
 
-                min_distance = self.window_size*0.9
+                min_distance = self.window_size*(1-allowed_overlap)
                 if np.abs(best_fit["fitted_mean"]-fitted_mean) <= min_distance and pvalue > best_fit["pvalue"]:
                     best_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
                                 "pvalue": pvalue, "chi_score": chi_score}
@@ -123,7 +123,7 @@ class GaussianModel(object):
             if not self.fitting_results.empty:
                 masses = peaks[:,0]; intensities = peaks[:,1]
                 error_func_amp = lambda amplitude, x, y: utils.multi_gaussian(x, amplitude, self.fitting_results["mean"].values, self.stddev) - y    
-                ub = self.fitting_results["amplitude"].values*1.25
+                ub = self.fitting_results["amplitude"].values*1.2
                 refitted_amplitudes = optimize.least_squares(error_func_amp, bounds=(0, ub), loss="soft_l1", 
                                                              x0=self.fitting_results["amplitude"].values, 
                                                              args=(masses, intensities))

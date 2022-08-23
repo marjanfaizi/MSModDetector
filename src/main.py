@@ -85,7 +85,7 @@ if __name__ == "__main__":
                     # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
                     # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
                     gaussian_model = GaussianModel(cond, stddev_isotope_distribution, config.window_size)
-                    gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
+                    gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
 
                     gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
                     gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)

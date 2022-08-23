@@ -35,10 +35,14 @@ noise_level_fraction = 0.5
 
 # The fit of the gaussian distribution to the observed isotope distribution is evaluated by the chi-squared test
 # A high p-value indicates a better fit; both distributions are less likely to differ from each other
-pvalue_threshold = 0.99
+pvalue_threshold = 0.99999
 
 # set window size used to fit the gaussian distribution
+# window size is set as how many peaks are within the top 30% of the isotopic distribution 
 window_size = 9
+
+# set how much overlap should be allowed between two isotopic distributions in percentage
+allowed_overlap = 0.3  
 
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 30

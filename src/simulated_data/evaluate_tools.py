@@ -113,7 +113,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
             noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
 
             gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
-            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
+            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
             gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
             gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 
@@ -218,7 +218,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
         noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
 
         gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
-        gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold)      
+        gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
         gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
         gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 

@@ -33,6 +33,7 @@ replicates = ["rep5", "rep6"]
 conditions = ["nutlin_only", "uv_7hr"]
 distance_threshold_adjacent_peaks = 0.6
 noise_level_fraction = 0.25
+allowed_overlap = 0.3
 pvalue_threshold = 0.99
 window_size = 10
 unmodified_species_mass = 43652.55 # mass of p53
@@ -69,7 +70,7 @@ for rep in replicates:
             noise_level = noise_level_fraction*peaks_normalized[:,1].std()
             
             gaussian_model = GaussianModel(cond, stddev_isotope_distribution, window_size)
-            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, pvalue_threshold)      
+            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, pvalue_threshold, allowed_overlap)      
             gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
             
             x_gauss_func = peaks_normalized[:,0]
