@@ -22,6 +22,7 @@ This repository was tested with Python 3.8.5 on macOS 12.2 and ...
 ## How to run MSModDetector
 Make sure that the required Python packages are installed prior to the command line run
 ```bash
+$ cd src
 $ python main.py
 ```
 
