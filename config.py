@@ -41,7 +41,7 @@ pvalue_threshold = 0.99
 window_size = 9
 
 # mass error in ppm and converted in Dalton
-mass_error_ppm = 35
+mass_error_ppm = 30
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
 bin_peaks = True

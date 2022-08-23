@@ -98,7 +98,7 @@ class MassShifts(object):
 
         progress_bar_count = 0
         for mass_shift in self.mass_shifts:
-            if mass_shift-mass_tolerance >= np.array(modifications.ptm_masses).min():
+            if mass_shift-np.array(modifications.ptm_masses).min() > -mass_tolerance:
                 lp_model.set_observed_mass_shift(mass_shift)         
                 row_entries = []
                 count_laps = 0 
@@ -177,8 +177,8 @@ class MassShifts(object):
                                     multiplier += 1
                             else:        
                                 break
-                        else:
-                            break
+                    else:
+                        break
 
                 row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
                 if objective_fun == "min_ptm":
