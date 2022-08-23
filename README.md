@@ -6,6 +6,8 @@ The algorithm first detects and quantifies mass shifts for a protein of interest
 
 ## Requirements
 Required Python packages to run this code will be installed with the following command:
+```bash
 $ pip install -r requirements.txt
+```
 
 This module was tested with Python 3.8.5 on macOS 12.2 and ...
