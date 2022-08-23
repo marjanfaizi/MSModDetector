@@ -4,10 +4,23 @@ I2MS is a top-down mass spectrometry (MS) approach that generates true mass spec
 MSModDetector first detects and quantifies mass shifts for a protein of interest and subsequently infers potential PTM patterns using linear programming. 
 
 
-## Requirements
+## Installation and requirements
+MSModDetector can be installed with the following command:
+```bash
+$ git clone https://github.com/marjanfaizi/MSModDetector.git
+```
+
 Required Python packages to run this code will be installed with the following command:
 ```bash
+$ cd MSModDetector
 $ pip install -r requirements.txt
 ```
 
 This repository was tested with Python 3.8.5 on macOS 12.2 and ...
+
+
+## How to run MSModDetector
+Make sure that the required Python packages are installed prior to the command line run
+'''bash
+$ python main.py
+'''
