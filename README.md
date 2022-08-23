@@ -21,6 +21,11 @@ This repository was tested with Python 3.8.5 on macOS 12.2 and ...
 
 ## How to run MSModDetector
 Make sure that the required Python packages are installed prior to the command line run
-'''bash
+```bash
 $ python main.py
-'''
+```
+
+## Configuration file
+The file config.py has to be adjusted in order to refer to the correct input files. The configuration file requires the path name of the raw spectrum data, fasts file of the protein of interest, and the file name of the table of modifications considered for the PTM pattern analysis. Furthermore, names of the different replicates and conditions need to be listed.
+
+
