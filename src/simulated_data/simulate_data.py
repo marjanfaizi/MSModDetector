@@ -122,6 +122,7 @@ class SimulateData(object):
             pos = [ match.start() for aa in sites for match in re.finditer(aa, self.unmodified_sequence_str) ]
             unoccupied_pos = list(set(pos).difference(set(modified_pos)))
             selected_pos = random.sample(unoccupied_pos, k=int(mod_amount[ix]))
+            modified_pos += selected_pos
             unimod_id = self.modifications_table[self.modifications_table["ptm_id"] == m]["unimod_id"].values[0]
             mod_pos_dict.update(dict(zip(selected_pos, [unimod_id]*int(mod_amount[ix]))))
 

@@ -58,7 +58,7 @@ class GaussianModel(object):
                 chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)
                 pvalue = chi_square_result.pvalue; chi_score = chi_square_result.statistic       
 
-                min_distance = self.window_size*0.8
+                min_distance = self.window_size*0.9
                 if np.abs(best_fit["fitted_mean"]-fitted_mean) <= min_distance and pvalue > best_fit["pvalue"]:
                     best_fit = {"fitted_mean": fitted_mean, "fitted_amplitude": fitted_amplitude, 
                                 "pvalue": pvalue, "chi_score": chi_score}
@@ -133,7 +133,7 @@ class GaussianModel(object):
 
                 if refit_mean:
                     error_func_mean = lambda mean, x, y: utils.multi_gaussian(x, self.fitting_results["amplitude"].values, mean, self.stddev) - y
-                    delta = 2
+                    delta = 3
                     lb = self.fitting_results["mean"].values-delta
                     ub = self.fitting_results["mean"].values+delta
                     refitted_means = optimize.least_squares(error_func_mean, bounds=(lb, ub), loss="soft_l1",

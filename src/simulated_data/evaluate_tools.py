@@ -261,7 +261,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
                 else:
                     ptm_patterns_top5[repeat, mass_shift_true_ix[ix]] = 0
                 # is ptm prediction in the top 10
-                if true_ptm_pattern in pred_ptm_list[:5] or modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
+                if true_ptm_pattern in pred_ptm_list[:10] or modform_distribution.loc[mass_shift_true_ix[ix], "PTM pattern"] == mass_shifts.identified_masses_df.loc[mass_shift_pred_ix[ix], "PTM pattern"]:
                     ptm_patterns_top10[repeat, mass_shift_true_ix[ix]] = 1
                 else:
                     ptm_patterns_top10[repeat, mass_shift_true_ix[ix]] = 0                
@@ -272,8 +272,8 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 
 if __name__ == "__main__":
     
-    modform_file_name = "complex"
-    repeat_simulation = 5
+    modform_file_name = "phospho"
+    repeat_simulation = 3
     
     ### PTM database
     modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
 
-    """
+
     performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
     
@@ -320,3 +320,4 @@ if __name__ == "__main__":
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
     
+    """

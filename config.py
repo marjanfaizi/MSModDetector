@@ -38,7 +38,7 @@ noise_level_fraction = 0.5
 pvalue_threshold = 0.99
 
 # set window size used to fit the gaussian distribution
-window_size = 10
+window_size = 9
 
 # mass error in ppm and converted in Dalton
 mass_error_ppm = 35
@@ -50,7 +50,7 @@ bin_peaks = True
 distance_threshold_adjacent_peaks = 0.6
 
 # Solve optimization k times and report the best k optimal solutions
-laps_run_lp = 5
+laps_run_lp = 10
 
 # Choose between two objective functions: 
 # 1) min_ptm: minimize total amount of PTMs on a single protein
