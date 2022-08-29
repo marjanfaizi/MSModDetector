@@ -271,7 +271,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 if __name__ == "__main__":
     
     ### specify how many simulation should be run
-    repeat_simulation = 2
+    repeat_simulation = 50
     
     ### estimated error and noise 
     error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
     
-    
+    """
     ### simulated overlapping isotopic ditributions
     modform_file_name = "overlap"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -319,7 +319,7 @@ if __name__ == "__main__":
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
     modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
     
-    ### evaluate algorithm on overlapping isotopic ditribution data, how much overlap can be tolerated?
+    ### evaluate algorithm on complex PTM patterns, how many correct PTM pattern predictions are made?
     # min_ptm
     mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
                                                                                     data_simulation, 
@@ -343,9 +343,10 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_both")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"min_both_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_"+modform_file_name+"_min_both_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
 
+    """
     ### simulated phospho patterns
     modform_file_name = "phospho"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
