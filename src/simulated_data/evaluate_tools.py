@@ -191,7 +191,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
 ################################## TEST PERFORMANCE ON OVERLAPPING DISTRIBUTION ###################################
 ###################################################################################################################
 def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_error, basal_noise,
-                                    modform_distribution, repeat_simulation):    
+                                    modform_distribution, repeat_simulation, objective_func):    
     
     protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
     protein_sequence = list(protein_entries.values())[0]
@@ -202,8 +202,6 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
     p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
     chi_sqaure_score = p_values.copy(); mass_shift_deviation = p_values.copy(); ptm_patterns = p_values.copy()
     ptm_patterns_top3 = p_values.copy(); ptm_patterns_top5 = p_values.copy(); ptm_patterns_top10 = p_values.copy()
-
-    objective_func = "min_ptm"
 
     for repeat in range(repeat_simulation):
         data_simulation.add_noise(vertical_error_par=vertical_error, horizontal_error_par=horizontal_error,
@@ -272,16 +270,8 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 
 if __name__ == "__main__":
     
-    modform_file_name = "phospho"
-    repeat_simulation = 3
-    
-    ### PTM database
-    modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
-    modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
-    
-    ### simulated PTM patterns
-    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
-    modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
+    ### specify how many simulation should be run
+    repeat_simulation = 2
     
     ### estimated error and noise 
     error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
@@ -293,31 +283,79 @@ if __name__ == "__main__":
     vertical_error_par = list(stats.beta.fit(vertical_error))
     horizontal_error_par = list(stats.beta.fit(horizontal_error)) 
     basal_noise_par = list(stats.beta.fit(basal_noise))    
-
-
+    
+    ### PTM database
+    modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
+    modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
+    
+    ### create instance of the SimulateData class
     protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
     protein_sequence = list(protein_entries.values())[0]
-
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
-
-
-    performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
-                                                      vertical_error_par, horizontal_error_par, basal_noise_par)
     
-    performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
     
-    """
+    ### simulated overlapping isotopic ditributions
+    modform_file_name = "overlap"
+    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
+    modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
+    
+    ### evaluate algorithm on overlapping isotopic ditribution data, how much overlap can be tolerated?
     mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
                                                                                     data_simulation, 
                                                                                     vertical_error_par, 
                                                                                     horizontal_error_par, 
                                                                                     basal_noise_par, 
                                                                                     modform_distribution, 
-                                                                                    repeat_simulation)
+                                                                                    repeat_simulation,
+                                                                                    "min_ptm")
 
-    np.savez("../../output/evaluated_overlap_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
     
-    """
+    ### simulated complex PTM patterns
+    modform_file_name = "complex"
+    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
+    modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
+    
+    ### evaluate algorithm on overlapping isotopic ditribution data, how much overlap can be tolerated?
+    # min_ptm
+    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
+                                                                                    data_simulation, 
+                                                                                    vertical_error_par, 
+                                                                                    horizontal_error_par, 
+                                                                                    basal_noise_par, 
+                                                                                    modform_distribution, 
+                                                                                    repeat_simulation,
+                                                                                    "min_ptm")
+
+    np.savez("../../output/evaluated_"+modform_file_name+"_min_ptm_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+             ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
+    
+    # min_both
+    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
+                                                                                    data_simulation, 
+                                                                                    vertical_error_par, 
+                                                                                    horizontal_error_par, 
+                                                                                    basal_noise_par, 
+                                                                                    modform_distribution, 
+                                                                                    repeat_simulation,
+                                                                                    "min_both")
+
+    np.savez("../../output/evaluated_"+modform_file_name+"min_both_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+             ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
+
+    ### simulated phospho patterns
+    modform_file_name = "phospho"
+    modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
+    modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
+    
+    ### evaluate algorithm on phospho patterns, which objective function is best?
+    performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
+                                                      vertical_error_par, horizontal_error_par, basal_noise_par)
+   
+    performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
+
+
+

@@ -9,6 +9,7 @@ Created on Thu May 5 2022
 import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 import pandas as pd
 import itertools
 from scipy import stats
@@ -144,4 +145,27 @@ plt.ylim([-50, 1250])
 fig.tight_layout()
 sns.despine()
 plt.show()
+
+
+# overlaps of 1 Da and 2 Da will not be seperated, to close within specified mass tolerance
+# overlap to modform in table mapping
+overlaps = {"4 Da": [4,5], "6 Da": [6,7], "8 Da": [8,9], "10 Da": [10,11], "12 Da": [12,13], 
+            "14 Da": [14,15], "16 Da": [16,17]}
+
+# "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
+# "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
+npzfile = np.load("../../output/evaluated_overlap_data.npz")
+
+amount_simulations = npzfile["arr_0"].shape[0]
+
+for key in overlaps:
+    first_modform_ix = overlaps[key][0]
+    second_modform_ix = overlaps[key][1]
+    detected_mass_shift_in_overlap = npzfile["arr_0"][:,first_modform_ix]+npzfile["arr_0"][:,second_modform_ix]
+    seperated = sum(1 for i in detected_mass_shift_in_overlap if i == 2)
+    print(key+": ", 100*seperated/amount_simulations, "% seperated")
+
+
+
+
 

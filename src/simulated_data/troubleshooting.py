@@ -25,7 +25,7 @@ from simulate_data import SimulateData
 import config 
 
 
-modform_file_name = "overlap"
+modform_file_name = "complex"
 
 
 ### PTM database
@@ -76,7 +76,7 @@ gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.
 gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
 gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
 gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
-"""
+
 mass_shifts = MassShifts(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
 
 mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results,  "simulated")
@@ -85,7 +85,7 @@ mass_shifts.calculate_avg_mass()
 mass_shifts.add_mass_shifts(unmodified_species_mass)
 mass_shifts.determine_ptm_patterns(mod, mass_tolerance, config.objective_fun, config.laps_run_lp)     
 mass_shifts.add_ptm_patterns_to_table()
-"""
+
 fig = plt.figure(figsize=(7, 2.5))
 plt.plot(data.raw_spectrum[:, 0], data.raw_spectrum[:, 1], '-', color="0.3")
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], '.', markersize=3, color="r")
