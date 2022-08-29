@@ -135,7 +135,7 @@ data_simulation.add_noise(horizontal_error_par=horizontal_error_par, basal_noise
                           vertical_error_par=vertical_error_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
-fig = plt.figure(figsize=(7, 1.8)=
+fig = plt.figure(figsize=(7, 1.8))
 plt.plot(masses, intensities, color="0.3") 
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
 plt.xlabel("mass (Da)")
