@@ -37,10 +37,10 @@ class GaussianModel(object):
         self.window_size = window_size
         self.maxfev = 1000000
         self.degree_of_freedom = 3 # for chi-squared test
-        self.sample_size_threshold = 7 # for chi-squared test
+        self.sample_size_threshold = 5 # for chi-squared test
         self.intensity_threshold = 1e-10
         self.step_size = 1
-        self.repeat_refitting = 2
+        self.repeat_refitting = 5
 
 
     def fit_gaussian_within_window(self, peaks, noise_level, pvalue_threshold, allowed_overlap):

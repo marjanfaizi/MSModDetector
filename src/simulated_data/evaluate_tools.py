@@ -198,7 +198,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
     unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
     mass_tolerance = config.mass_error_ppm*1e-6*unmodified_species_mass
     
-    mass_shift = np.full([repeat_simulation, modform_distribution.shape[0]], 0)
+    true_mass_shift = np.full([repeat_simulation, modform_distribution.shape[0]], 0)
     p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
     chi_sqaure_score = p_values.copy(); mass_shift_deviation = p_values.copy(); ptm_patterns = p_values.copy()
     ptm_patterns_top3 = p_values.copy(); ptm_patterns_top5 = p_values.copy(); ptm_patterns_top10 = p_values.copy()
@@ -234,7 +234,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
            
             mass_shift_true = modform_distribution.loc[mass_shift_true_ix, "mass"].values
             mass_shift_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "mass shift"].values
-            mass_shift[repeat, mass_shift_true_ix] = 1
+            true_mass_shift[repeat, mass_shift_true_ix] = 1
             p_values[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "pvalue simulated"].values
             chi_sqaure_score[repeat, mass_shift_true_ix] = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "chi_score simulated"].values
             mass_shift_deviation[repeat, mass_shift_true_ix] = abs(mass_shift_true-mass_shift_pred)/mass_tolerance                     
@@ -264,7 +264,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
                 else:
                     ptm_patterns_top10[repeat, mass_shift_true_ix[ix]] = 0                
     
-    return  mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10
+    return  true_mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10
 ###################################################################################################################
 ###################################################################################################################
 
@@ -299,9 +299,9 @@ if __name__ == "__main__":
     modform_file_name = "overlap"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
     modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
-    
+
     ### evaluate algorithm on overlapping isotopic ditribution data, how much overlap can be tolerated?
-    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
+    true_mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
                                                                                     data_simulation, 
                                                                                     vertical_error_par, 
                                                                                     horizontal_error_par, 
@@ -310,10 +310,10 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_ptm")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-    
+    """
     ### simulated complex PTM patterns
     modform_file_name = "complex"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     
     ### evaluate algorithm on complex PTM patterns, how many correct PTM pattern predictions are made?
     # min_ptm
-    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
+    true_mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
                                                                                     data_simulation, 
                                                                                     vertical_error_par, 
                                                                                     horizontal_error_par, 
@@ -330,20 +330,7 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_ptm")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"_min_ptm_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
-             ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
-    
-    # min_both
-    mass_shift, chi_sqaure_score, mass_shift_deviation, ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10 = test_overlapping_mass_detection(
-                                                                                    data_simulation, 
-                                                                                    vertical_error_par, 
-                                                                                    horizontal_error_par, 
-                                                                                    basal_noise_par, 
-                                                                                    modform_distribution, 
-                                                                                    repeat_simulation,
-                                                                                    "min_both")
-
-    np.savez("../../output/evaluated_"+modform_file_name+"_min_both_data.npz", mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
 
     """
@@ -357,6 +344,6 @@ if __name__ == "__main__":
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
    
     performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
-
+    """
 
 

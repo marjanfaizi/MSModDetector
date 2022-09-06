@@ -85,7 +85,7 @@ plt.show()
 
 ### figure B: performance evaluation on phophospho patterns
 modform_file_name = "phospho"
-performance_df = pd.read_csv("../../output/performance_"+modform_file_name+".csv")
+performance_df = pd.read_csv("../../output/performance_"+modform_file_name+"_50_simulations.csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
@@ -152,9 +152,9 @@ plt.show()
 overlaps = {"4 Da": [4,5], "6 Da": [6,7], "8 Da": [8,9], "10 Da": [10,11], "12 Da": [12,13], 
             "14 Da": [14,15], "16 Da": [16,17]}
 
-# "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
-# "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_overlap_data.npz")
+# "arr_0": true_mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, 
+# "arr_3": ptm_patterns, "arr_4": ptm_patterns_top3, "arr_5": ptm_patterns_top5, "arr_6": ptm_patterns_top10
+npzfile = np.load("../../output/evaluated_overlap_data_50_simulations.npz")
 
 amount_simulations = npzfile["arr_0"].shape[0]
 

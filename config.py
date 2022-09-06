@@ -39,7 +39,7 @@ pvalue_threshold = 0.99999
 
 # set window size used to fit the gaussian distribution
 # window size is set as how many peaks are within the top 30% of the isotopic distribution 
-window_size = 9
+window_size = 10
 
 # set how much overlap should be allowed between two isotopic distributions in percentage
 allowed_overlap = 0.3  
