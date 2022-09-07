@@ -109,7 +109,8 @@ if __name__ == "__main__":
     else:
         mass_shifts.calculate_avg_mass()
         if config.bin_peaks == True:
-            mass_shifts.bin_peaks(mass_tolerance)
+            bin_size = 2*mass_tolerance
+            mass_shifts.bin_peaks(bin_size)
 
         if config.calculate_mass_shifts == True:
             mass_shifts.add_mass_shifts(unmodified_species_mass)

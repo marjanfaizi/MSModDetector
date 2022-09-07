@@ -45,7 +45,7 @@ window_size = 10
 allowed_overlap = 0.3  
 
 # mass error in ppm and converted in Dalton
-mass_error_ppm = 30
+mass_error_ppm = 36
 
 # Average masses within this distance should be binned together and the maximal bin size should be kept
 bin_peaks = True

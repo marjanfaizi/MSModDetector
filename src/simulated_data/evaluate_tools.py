@@ -294,7 +294,7 @@ if __name__ == "__main__":
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
     
-    """
+
     ### simulated overlapping isotopic ditributions
     modform_file_name = "overlap"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
 
-    """
+
     ### simulated phospho patterns
     modform_file_name = "phospho"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")

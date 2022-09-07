@@ -138,7 +138,9 @@ class MassShifts(object):
                             min_number_ptms = number_ptms+1
                         else:
                             break
-    
+
+                #print(mass_shift, np.array(row_entries).shape[0])
+                
                 if objective_fun == "min_err": 
                     while count_laps < laps_run_lp and min_error <= mass_tolerance:
                         status, solution_min_error = lp_model.solve_lp_min_error(min_error)
