@@ -67,7 +67,7 @@ plt.plot(masses, intensities, color="0.3")
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim((43740,44420))
+plt.xlim((43740,44365))
 plt.ylim([-10, 990])
 plt.tight_layout()
 sns.despine()
@@ -77,7 +77,7 @@ plt.show()
 ### figure B: best PTM pattern solution and 5 best PTM pattern solutions
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_complex_data.npz")
+npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 

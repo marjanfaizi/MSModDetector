@@ -151,3 +151,59 @@ plt.show()
 ###################################################################################################################
 
 
+
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 4 ##############################################
+###################################################################################################################
+modform_file_name = "complex"
+modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
+
+# "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
+# "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
+npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
+
+repeats = npzfile["arr_0"].shape[0]
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_3"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_4"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped_top3 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_5"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped_top5 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+metric = pd.DataFrame({"PTM pattern": npzfile["arr_6"].flatten(), "mass_shift": modform_distribution.mass.tolist()*repeats})
+metric["PTM pattern"].mask(metric["PTM pattern"] == 1.0, "true positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inplace=True)
+metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
+ptm_pattern_grouped_top10 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
+
+
+fig, ax = plt.subplots(4, 1, sharex=True, figsize=(7, 5))
+ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0], legend=None)
+ptm_pattern_grouped_top3.plot.bar(stacked=True, ax=ax[1], legend=None)
+ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[2], legend=None)
+ptm_pattern_grouped_top10.plot.bar(stacked=True, ax=ax[3], legend=None)
+ax[3].set_xticklabels(np.arange(1,len(modform_distribution)+1), rotation=45)
+ax[3].set_xlabel("mass shift [Da]")
+[ax[i].set_ylabel("# simulations") for i in range(4)]
+sns.despine()
+fig.tight_layout()
+plt.show()
+
+###################################################################################################################
+###################################################################################################################
+
+
+
+

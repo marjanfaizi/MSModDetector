@@ -107,3 +107,9 @@ plt.legend(loc="upper right")
 plt.show()
 
 
+### supplement table information
+# max bin size for each mass shift
+mass_shifts_df.filter(regex="masses ").max(axis=1)-mass_shifts_df.filter(regex="masses ").min(axis=1)
+
+# mass error for each mass shift 
+ptm_patterns_df.groupby("mass shift").first()["mass error (Da)"]
