@@ -108,8 +108,6 @@ class MassShifts(object):
                 min_error_and_ptms = 0
                 multiplier = 1
 
-                laps_run_lp = 10000000
-
                 if objective_fun == "min_ptm":    
                     while count_laps < laps_run_lp:
                         status, solution_min_ptm = lp_model.solve_lp_ptms(min_number_ptms, optimization_type="min")
@@ -140,8 +138,6 @@ class MassShifts(object):
                             min_number_ptms = number_ptms+1
                         else:
                             break
-
-                print(mass_shift, np.array(row_entries).shape[0])
                 
                 if objective_fun == "min_err": 
                     while count_laps < laps_run_lp and min_error <= mass_tolerance:
