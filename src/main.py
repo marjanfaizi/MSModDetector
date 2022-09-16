@@ -19,7 +19,9 @@ from modifications import Modifications
 import utils
 
 sys.path.append("..")
-import config
+sys.path.append("simulated_data/")
+#import config
+import config_sim as config
 
 
 

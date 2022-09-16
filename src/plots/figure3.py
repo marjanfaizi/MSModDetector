@@ -55,7 +55,6 @@ for cond in config.conditions:
         
         noise_level = parameter.loc["noise_level", cond+"_"+rep]
         rescaling_factor = parameter.loc["rescaling_factor", cond+"_"+rep]
-        total_protein_abundance = parameter.loc["total_protein_abundance", cond+"_"+rep]
 
         sample_name = [file for file in file_names_same_replicate if re.search(cond, file)][0]
         data = MassSpecData()
@@ -67,16 +66,16 @@ for cond in config.conditions:
         x_gauss_func = np.arange(config.mass_range_start, config.mass_range_end)
         y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, stddev_isotope_distribution)
         
-        axes[order_in_plot].plot(data.raw_spectrum[:,0], flip_spectrum[ix]*data.raw_spectrum[:,1]/(rescaling_factor*total_protein_abundance), label=cond_mapping[cond], color=color_of_sample)
-        axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities/total_protein_abundance, '.', color='0.3')
-        axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func/total_protein_abundance, color='0.3')
-        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level/total_protein_abundance, c='r', lw=0.3)
+        axes[order_in_plot].plot(data.raw_spectrum[:,0], flip_spectrum[ix]*data.raw_spectrum[:,1]/rescaling_factor, label=cond_mapping[cond], color=color_of_sample)
+        axes[order_in_plot].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
+        axes[order_in_plot].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func, color='0.3')
+        axes[order_in_plot].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.2)
         if flip_spectrum[ix] > 0: axes[order_in_plot].legend(loc='upper right')
 
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
 plt.xlim((config.mass_range_start, config.mass_range_end))
-plt.ylim((-(ylim_max/total_protein_abundance)*1.4, (ylim_max/total_protein_abundance)*1.4))
-plt.xlabel("mass (Da)"); plt.ylabel("rel. abundance") 
+plt.ylim((-ylim_max*1.18, ylim_max*1.18))
+plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity") 
 output_fig.tight_layout()
 plt.show()
 
@@ -96,7 +95,7 @@ all_condition_df = pd.concat([nutlin_df, uv_df])
 all_condition_df["mass shift"] = all_condition_df["mass shift"].astype(int)
 all_condition_df.rename(columns={"mass shift": "mass shift (Da)"}, inplace=True)
 
-fig = plt.figure(figsize=(7, 2))
+fig = plt.figure(figsize=(7, 1.8))
 sns.barplot(x="mass shift (Da)", y="rel. abundance", hue="condition", data=all_condition_df,
             palette=["skyblue","mediumpurple"], errwidth=1)
 plt.xticks(rotation=60)

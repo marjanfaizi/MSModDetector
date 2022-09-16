@@ -39,7 +39,7 @@ distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(
 mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
 
 
-plt.figure(figsize=(5.5,2.5))
+plt.figure(figsize=(5.2,2.))
 plt.plot(mass_grid, intensities, '-', color="0.3", label="isotopic distribution of p53")
 plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), mean_p53, stddev_p53), 'r-', 
          label="Gaussian fit") 
@@ -68,7 +68,7 @@ plt.figure(figsize=(7, 3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=0.8)
 plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.xlim((2500, 80000))
+plt.xlim((2500,50000))
 plt.ylim((-30, 2200))
 plt.tight_layout()
 sns.despine()
@@ -161,6 +161,7 @@ modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
 npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
+#npzfile = np.load("../../output/evaluated_complex_data_min_both.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 
@@ -189,7 +190,7 @@ metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace
 ptm_pattern_grouped_top10 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
 
-fig, ax = plt.subplots(4, 1, sharex=True, figsize=(7, 5))
+fig, ax = plt.subplots(4, 1, sharex=True, figsize=(7, 4.5))
 ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0], legend=None)
 ptm_pattern_grouped_top3.plot.bar(stacked=True, ax=ax[1], legend=None)
 ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[2], legend=None)

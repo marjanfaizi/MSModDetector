@@ -52,7 +52,7 @@ class GaussianModel(object):
             peaks_in_window = peaks[(masses >= window_range_start) & (masses <= window_range_start+self.window_size)]
             non_zero_intensity_ix = np.where(peaks_in_window[:, 1] > self.intensity_threshold)[0]
             peaks_in_window = peaks_in_window[non_zero_intensity_ix]
-            if len(peaks_in_window[peaks_in_window[:,1]>noise_level]) >= self.sample_size_threshold:
+            if len(peaks_in_window[peaks_in_window[:,1]>noise_level]) > self.sample_size_threshold:
                 optimized_param = self.fit_gaussian(peaks_in_window)
                 fitted_amplitude, fitted_mean = optimized_param
                 chi_square_result = self.chi_square_test(peaks_in_window, fitted_amplitude, fitted_mean)

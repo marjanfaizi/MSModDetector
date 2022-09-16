@@ -75,7 +75,7 @@ plt.plot(masses, intensities/modform_distribution["intensity"].sum(), color="0.3
 plt.xticks([])
 plt.yticks([])
 plt.xlabel("mass (Da)")
-plt.ylabel("rel. intensity")
+plt.ylabel("intensity (a.u.)")
 plt.xlim([43670, 43850])
 plt.ylim([-0.01, 0.6])
 fig.tight_layout()
