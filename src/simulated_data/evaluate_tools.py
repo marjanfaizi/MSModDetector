@@ -268,7 +268,7 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
 ###################################################################################################################
 ###################################################################################################################
 
-"""
+
 if __name__ == "__main__":
     
     ### specify how many simulation should be run
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
     
-
+    """
     ### simulated overlapping isotopic ditributions
     modform_file_name = "overlap"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-
+    """
     ### simulated complex PTM patterns
     modform_file_name = "complex"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -329,12 +329,12 @@ if __name__ == "__main__":
                                                                                     basal_noise_par, 
                                                                                     modform_distribution, 
                                                                                     repeat_simulation,
-                                                                                    "min_both")
+                                                                                    "min_ptm")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"_data_min_both.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-
+    """
     ### simulated phospho patterns
     modform_file_name = "phospho"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -345,7 +345,7 @@ if __name__ == "__main__":
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
    
     performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
-
+    """
 
 
 """
@@ -405,7 +405,7 @@ mass_shifts.add_ptm_patterns_to_table()
 
 ###############################################################################################################
 ###############################################################################################################
-
+"""
 # calculate how many correct PTM predictions there are in the top 3, top 5 and top 10 compared to only the best
     
 

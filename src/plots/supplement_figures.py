@@ -160,8 +160,7 @@ modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_
 
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
-#npzfile = np.load("../../output/evaluated_complex_data_min_both.npz")
+npzfile = np.load("../../output/evaluated_complex_data.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 

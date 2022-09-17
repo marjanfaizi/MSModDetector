@@ -54,7 +54,7 @@ bin_peaks = True
 distance_threshold_adjacent_peaks = 0.6
 
 # Solve optimization k times and report the best k optimal solutions
-laps_run_lp = 10
+laps_run_lp = 5
 
 # Choose between two objective functions: 
 # 1) min_ptm: minimize total amount of PTMs on a single protein

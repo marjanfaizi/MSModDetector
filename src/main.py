@@ -20,8 +20,7 @@ import utils
 
 sys.path.append("..")
 sys.path.append("simulated_data/")
-#import config
-import config_sim as config
+import config
 
 
 

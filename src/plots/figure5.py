@@ -67,7 +67,7 @@ plt.plot(masses, intensities, color="0.3")
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim((43740,44365))
+plt.xlim((43740,44325))
 plt.ylim([-10, 990])
 plt.tight_layout()
 sns.despine()
@@ -77,7 +77,7 @@ plt.show()
 ### figure B: best PTM pattern solution and 5 best PTM pattern solutions
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
+npzfile = np.load("../../output/evaluated_complex_data.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 
@@ -94,8 +94,8 @@ metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace
 ptm_pattern_grouped_top5 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
 fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7, 2.8))
-ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0])
-ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[1])
+ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0], legend=None)
+ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[1], legend=None)
 ax[1].set_xticklabels(np.arange(1,len(modform_distribution)+1), rotation=45)
 ax[1].set_xlabel("mass shift [Da]")
 ax[0].set_ylabel("# simulations")
