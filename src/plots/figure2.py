@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append("../../")
-sys.path.append("../simulated_data/")
+sys.path.append("../simulated_data")
 
 from simulate_data import SimulateData
 import config

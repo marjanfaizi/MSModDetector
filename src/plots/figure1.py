@@ -45,9 +45,8 @@ peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_ad
 noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
 peaks_normalized_above_noise = peaks_normalized[peaks_normalized[:,1]>noise_level]
 
-gaussian_model = GaussianModel(cond, stddev_isotope_distribution)
-gaussian_model.determine_variable_window_sizes(unmodified_species_mass, config.window_size_lb, config.window_size_ub)
-gaussian_model.fit_gaussian_within_window(peaks_normalized_above_noise, config.pvalue_threshold)      
+gaussian_model = GaussianModel(cond, stddev_isotope_distribution, config.window_size)
+gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
 
 mean = gaussian_model.fitting_results["mean"]
 amplitude = gaussian_model.fitting_results["amplitude"]

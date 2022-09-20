@@ -15,7 +15,7 @@ from scipy import stats
 
 sys.path.append("..")
 sys.path.append("../../")
-sys.path.append("../simulated_data/")
+sys.path.append("../simulated_data")
 
 from simulate_data import SimulateData
 from modifications import Modifications
@@ -77,7 +77,7 @@ plt.show()
 ### figure B: best PTM pattern solution and 5 best PTM pattern solutions
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_complex_data.npz")
+npzfile = np.load("../../output/evaluated_complex_data_50_simulations.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 
@@ -103,5 +103,20 @@ ax[1].set_ylabel("# simulations")
 sns.despine()
 fig.tight_layout()
 plt.show()
+
+
+# additional information 
+amount_mass_shifts = ptm_pattern_grouped.shape[0]
+print(ptm_pattern_grouped[0.5<1-(ptm_pattern_grouped["not detected"]/50)].shape[0], 
+      "mass shifts detected out of", amount_mass_shifts)
+
+print("Results only for the best solution:")
+print(ptm_pattern_grouped[0.5<(ptm_pattern_grouped["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
+
+print("Results only for the top 5 solution:")
+print(ptm_pattern_grouped_top5[0.5<(ptm_pattern_grouped_top5["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
+
 
 

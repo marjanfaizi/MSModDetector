@@ -31,9 +31,9 @@ sns.set_style("ticks")
 
 ### required input 
 file_names = [file for file in glob.glob("../../"+config.file_names)] 
-mass_shifts_df = pd.read_csv("../../output/mass_shifts.csv", sep=",")
-ptm_patterns_df = pd.read_csv("../../output/ptm_patterns_table.csv", sep=",")
-parameter = pd.read_csv("../../output/parameter.csv", sep=",", index_col=[0])
+mass_shifts_df = pd.read_csv("../../output/mass_shifts_endogenous_p53.csv", sep=",")
+ptm_patterns_df = pd.read_csv("../../output/ptm_patterns_table_endogenous_p53.csv", sep=",")
+parameter = pd.read_csv("../../output/parameter_endogenous_p53.csv", sep=",", index_col=[0])
 cond_mapping = {"nutlin_only": "Nutlin-3a", "uv_7hr": "UV"}
 protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
 protein_sequence = list(protein_entries.values())[0]

@@ -201,6 +201,26 @@ sns.despine()
 fig.tight_layout()
 plt.show()
 
+
+# additional information 
+amount_mass_shifts = ptm_pattern_grouped.shape[0]
+print(ptm_pattern_grouped[0.5<1-(ptm_pattern_grouped["not detected"]/50)].shape[0], 
+      "mass shifts detected out of", amount_mass_shifts)
+
+print("Results only for the best solution:")
+print(ptm_pattern_grouped[0.5<(ptm_pattern_grouped["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
+
+print("Results only for the top 53solution:")
+print(ptm_pattern_grouped_top3[0.5<(ptm_pattern_grouped_top3["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
+
+print("Results only for the top 5 solution:")
+print(ptm_pattern_grouped_top5[0.5<(ptm_pattern_grouped_top5["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
+print("Results only for the top 10 solution:")
+print(ptm_pattern_grouped_top10[0.5<(ptm_pattern_grouped_top10["true positive"]/50)].shape[0], 
+      "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 ###################################################################################################################
 ###################################################################################################################
 
