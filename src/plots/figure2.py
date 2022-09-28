@@ -36,8 +36,8 @@ horizontal_error = error_estimate_table[(error_estimate_table["horizontal_error"
                                         (error_estimate_table["horizontal_error"]>-0.3) &
                                         (error_estimate_table["is_signal"]==True)]["horizontal_error"].values
 vertical_error = error_estimate_table[(error_estimate_table["vertical_error"]<0.25) &
-                                        (error_estimate_table["vertical_error"]>-0.25) &
-                                        (error_estimate_table["is_signal"]==True)]["vertical_error"].values
+                                      (error_estimate_table["vertical_error"]>-0.25) &
+                                      (error_estimate_table["is_signal"]==True)]["vertical_error"].values
 vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)]))
 basal_noise_par = list(stats.beta.fit(basal_noise))
@@ -68,16 +68,17 @@ y = [ utils.gaussian(xrange[i], modform_distribution["rel. intensity"].values[i]
       for i in range(len(modform_distribution)) ]
 
 
-fig = plt.figure(figsize=(2, 1.7))
+fig = plt.figure(figsize=(2.4, 2.2))
 plt.plot(masses, intensities/modform_distribution["intensity"].sum(), color="0.3") 
 #plt.plot(np.transpose(xrange), np.transpose(np.array(y)), "-r", linewidth=.6) 
+plt.vlines(x=modform_distribution["mass"]+unmodified_species_mass, ymin=0, ymax=0.7, color="0.1", ls="--", lw=0.5)
 #plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["rel. intensity"], ".r", markersize=4) 
 plt.xticks([])
 plt.yticks([])
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim([43670, 43850])
-plt.ylim([-0.01, 0.6])
+plt.xlim([43630, 43850])
+plt.ylim([-0.01, 0.7])
 fig.tight_layout()
 sns.despine()
 plt.show()

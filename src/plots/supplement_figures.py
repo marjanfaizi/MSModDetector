@@ -38,12 +38,14 @@ mean_p53, stddev_p53 = utils.isotope_distribution_fit_par(protein_sequence, 100)
 distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(protein_sequence), 100)
 mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
 
+threshold = intensities.max()*(2/3)
 
 plt.figure(figsize=(5.2,2.))
 plt.plot(mass_grid, intensities, '-', color="0.3", label="isotopic distribution of p53")
 plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), mean_p53, stddev_p53), 'r-', 
          label="Gaussian fit") 
 plt.plot(mean_p53, intensities.max(), "r.")
+plt.axhline(y=threshold, ls="--", color="0.3", lw=0.5)
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43630, 43680))
@@ -51,8 +53,34 @@ plt.legend(frameon=False)
 plt.tight_layout()
 sns.despine()
 plt.show()
+
+### small protein example: >sp|Q9BZX4-2|ROP1B_HUMAN Isoform 2 of Ropporin-1B OS=Homo sapiens OX=9606 GN=ROPN1B
+small_protein_sequence = "MWKVVNLPTDLFNSVMNVGRFTEEIEWLKFLALACSALGVTITKTLKIVCEVLSCDHNGGLPRIPFSTFQFLYTYIAEVDGEICASHVSRMLNYIEQEVIGPDGLITVNDFTQNPRVWLE"
+mean_small_protein, stddev_small_protein = utils.isotope_distribution_fit_par(small_protein_sequence, 100)
+distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(small_protein_sequence), 100)
+mass_grid, intensities = utils.fine_grain_isotope_distribution(distribution, 0.2, 0.02)
+
+threshold = intensities.max()*(2/3)
+
+plt.figure(figsize=(5.2,2.))
+plt.plot(mass_grid, intensities, '-', color="0.3", label="isotopic distribution of small protein")
+plt.plot(mass_grid, utils.gaussian(mass_grid, intensities.max(), mean_small_protein, stddev_small_protein), 'r-', 
+         label="Gaussian fit") 
+plt.plot(mean_small_protein, intensities.max(), "r.")
+plt.axhline(y=threshold, ls="--", color="0.3", lw=0.5)
+plt.xlabel("mass (Da)")
+plt.ylabel("intensity (a.u.)")
+plt.xlim((13577, 13610))
+plt.legend(frameon=False)
+plt.tight_layout()
+sns.despine()
+plt.show()
+
 ###################################################################################################################
 ###################################################################################################################
+
+
+
 
 
 
@@ -68,7 +96,7 @@ plt.figure(figsize=(7, 3))
 plt.plot(data.raw_spectrum[:,0], data.raw_spectrum[:,1], '-', color="0.3", linewidth=0.8)
 plt.xlabel("mass (Da)", fontsize=10)
 plt.ylabel("intensity (a.u.)", fontsize=10)
-plt.xlim((2500,50000))
+#plt.xlim((2500,50000))
 plt.ylim((-30, 2200))
 plt.tight_layout()
 sns.despine()
