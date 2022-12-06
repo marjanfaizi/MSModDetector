@@ -1,4 +1,4 @@
-mass shift,mass error (Da),PTM pattern,amount of PTMs
+mass shift,mass error (Da),PTM pattern,#PTMs
 120.6949292058489,1.5526292058488878,1[Cys],1
 120.6949292058489,0.7179292058488898,1[Ph-OH]1[Na],2
 120.6949292058489,1.3216707941511174,1[Ph]1[Ac],2
