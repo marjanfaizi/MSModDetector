@@ -314,7 +314,7 @@ if __name__ == "__main__":
     np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-
+    """
     ### simulated complex PTM patterns
     modform_file_name = "complex"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -345,7 +345,7 @@ if __name__ == "__main__":
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
    
     performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
-
+    """
 
 
 """
@@ -373,7 +373,7 @@ mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
 data_simulation = SimulateData(protein_sequence, modifications_table)
 
 modform_file_name = "complex"
-modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
+modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=";")
 modform_distribution["rel. intensity"] = modform_distribution["intensity"]/ modform_distribution["intensity"].sum()
 
 unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
@@ -403,10 +403,8 @@ mass_shifts.add_mass_shifts(unmodified_species_mass)
 mass_shifts.determine_ptm_patterns(mod, mass_tolerance, config.objective_fun, config.laps_run_lp, msg_progress=False)
 mass_shifts.add_ptm_patterns_to_table()
 
+mass_shifts.ptm_patterns_df[80:]
 ###############################################################################################################
 ###############################################################################################################
 """
-# calculate how many correct PTM predictions there are in the top 3, top 5 and top 10 compared to only the best
-    
-
 
