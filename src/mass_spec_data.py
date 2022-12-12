@@ -24,6 +24,7 @@ class MassSpecData(object):
         self.raw_spectrum = raw_spectrum
         self.data_file_seperator = ","
         self.mass_error = 10.0 # ppm
+        self.distance_threshold = 0.6
 
 
     def add_raw_spectrum(self, data_file_name):
@@ -50,8 +51,8 @@ class MassSpecData(object):
         self.search_window_end = end_mass
 
 
-    def preprocess_peaks(self, peaks, distance_threshold_adjacent_peaks):
-        trimmed_peaks = self.remove_adjacent_peaks(peaks, distance_threshold_adjacent_peaks)   
+    def preprocess_peaks(self, peaks):
+        trimmed_peaks = self.remove_adjacent_peaks(peaks)   
         trimmed_peaks_in_search_window = self.determine_search_window(trimmed_peaks)
         trimmed_peaks_in_search_window[:,1] = self.normalize_intensities(trimmed_peaks_in_search_window[:,1])
         return trimmed_peaks_in_search_window
@@ -86,16 +87,16 @@ class MassSpecData(object):
         return peaks
 
 
-    def remove_adjacent_peaks(self, peaks, distance_threshold):
+    def remove_adjacent_peaks(self, peaks):
         peaks_shifted = np.vstack((peaks[1:], peaks[0]))
         distances = np.abs(peaks_shifted[:,0] - peaks[:,0])
-        adjacent_peaks_ix = np.where(distances < distance_threshold)[0]
+        adjacent_peaks_ix = np.where(distances < self.distance_threshold)[0]
         adjacent_intensities = np.vstack((peaks[adjacent_peaks_ix,1], 
                                           peaks[adjacent_peaks_ix+1,1]))
         remove_intensities_ix = np.argmin(adjacent_intensities, axis=0)
         removed_adjacent_peaks = np.delete(peaks, adjacent_peaks_ix+remove_intensities_ix, axis=0)
         if len(removed_adjacent_peaks) < len(peaks):
-            return self.remove_adjacent_peaks(removed_adjacent_peaks, distance_threshold)
+            return self.remove_adjacent_peaks(removed_adjacent_peaks, self.distance_threshold)
         else:
             return removed_adjacent_peaks    
 
