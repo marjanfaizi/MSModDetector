@@ -15,12 +15,10 @@ from pyopenms import AASequence
 from scipy import stats
 
 
-sys.path.append("..")
-sys.path.append("../../")
-
+sys.path.append("../../src/")
 from mass_spec_data import MassSpecData
 import utils
-import config
+
 
 ### set figure style
 sns.set()
@@ -29,10 +27,11 @@ sns.set_context("paper")
 
 
 ###################################################################################################################
-############################################## SUPPLEMENTAL FIGURE 1 ##############################################
+############################################## SUPPLEMENTAL FIGURE 2 ##############################################
 ###################################################################################################################
 ### isotopic distribution of unmodified p53
-protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+fasta_file_name = "P04637.fasta"
+protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
 protein_sequence = list(protein_entries.values())[0]
 mean_p53, stddev_p53 = utils.isotope_distribution_fit_par(protein_sequence, 100)
 distribution = utils.get_theoretical_isotope_distribution(AASequence.fromString(protein_sequence), 100)
@@ -85,7 +84,7 @@ plt.show()
 
 
 ###################################################################################################################
-############################################## SUPPLEMENTAL FIGURE 2 ##############################################
+############################################## SUPPLEMENTAL FIGURE 3 ##############################################
 ###################################################################################################################
 ### mass spectrum example from p53 from contol condition with Nutlin only
 sample_name = "../../raw_data/nutlin_only_rep5.mzml"
@@ -131,10 +130,10 @@ plt.show()
 
 
 ###################################################################################################################
-############################################## SUPPLEMENTAL FIGURE 3 ##############################################
+############################################## SUPPLEMENTAL FIGURE 4 ##############################################
 ###################################################################################################################
 ### noise and error distribution
-error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 
 lw = 1.3
 binsize = 25
@@ -181,14 +180,14 @@ plt.show()
 
 
 ###################################################################################################################
-############################################## SUPPLEMENTAL FIGURE 4 ##############################################
+############################################## SUPPLEMENTAL FIGURE 5 ##############################################
 ###################################################################################################################
 modform_file_name = "complex"
 modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
 
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_complex_data.npz")
+npzfile = np.load("../output/evaluated_complex_data.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 

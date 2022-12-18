@@ -18,7 +18,6 @@ sys.path.append("..")
 sys.path.append("../../")
 
 from mass_spec_data import MassSpecData
-import config
 import utils
 
 

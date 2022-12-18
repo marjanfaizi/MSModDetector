@@ -18,7 +18,6 @@ sys.path.append("../../")
 sys.path.append("../simulated_data/")
 
 from simulate_data import SimulateData
-import config
 import utils
 
 
