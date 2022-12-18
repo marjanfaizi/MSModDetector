@@ -96,7 +96,7 @@ class MassSpecData(object):
         remove_intensities_ix = np.argmin(adjacent_intensities, axis=0)
         removed_adjacent_peaks = np.delete(peaks, adjacent_peaks_ix+remove_intensities_ix, axis=0)
         if len(removed_adjacent_peaks) < len(peaks):
-            return self.remove_adjacent_peaks(removed_adjacent_peaks, self.distance_threshold)
+            return self.remove_adjacent_peaks(removed_adjacent_peaks)
         else:
             return removed_adjacent_peaks    
 

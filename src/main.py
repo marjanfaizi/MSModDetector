@@ -6,11 +6,8 @@ Created on Mar 10 2021
 @author: Marjan Faizi
 """
 
-import glob
 import sys
 import argparse
-import re
-from itertools import product
 import pandas as pd
 
 from mass_spec_data import MassSpecData
@@ -28,7 +25,8 @@ parser = argparse.ArgumentParser(prog='PROG',
                                                 interest and subsequently infers potential PTM patterns using 
                                                 linear programming.""")
 
-parser.add_argument("-data", type=str, help="Path to the raw I2MS data.")
+parser.add_argument("-data", type=str, help="""Path to the metadata that contains information about the file names of 
+                                               the raw I2MS data, the conditionof the samples and which replicate.""")
 parser.add_argument("-mod", type=str, help="Path to the table with all modification types.")
 parser.add_argument("-fasta", type=str, help="Path to fasta file for protein of interest.")
 parser.add_argument("-start", type=float, help="Set start of mass range to search for shifts.")
@@ -65,6 +63,9 @@ args = parser.parse_args()
 #########################################################################################################################
 
 
+
+
+
 #########################################################################################################################
 ################################################### RUN MSMODDETECTOR ###################################################
 #########################################################################################################################
@@ -73,81 +74,66 @@ if __name__ == "__main__":
     print("\n"+"-"*63)     
     print("\nLoad files...")
 
-    protein_entries = utils.read_fasta("../"+args.fasta)
-    file_names = [file for file in glob.glob("../"+args.data)] 
+    metadata = pd.read_csv(args.data+"metadata.csv")
+    file_names = ["../raw_data/"+f for f in metadata.filename.tolist()]
 
-    protein_sequence = list(protein_entries.values())[0]
-    unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
-    mass_tolerance = args.err*1e-6*unmodified_species_mass
-    
     if not file_names:
         print("\nFiles do not exist.\n")
         sys.exit()
         
-    mod = Modifications("../"+args.mod, protein_sequence)
+    protein_entries = utils.read_fasta("../fasta_files/"+args.fasta)
+    protein_sequence = list(protein_entries.values())[0]
+    unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
+    mass_tolerance = args.err*1e-6*unmodified_species_mass
+
+    mod = Modifications("../modifications/"+args.mod, protein_sequence)
+    
+    parameter = pd.DataFrame(index=["noise_level", "rescaling_factor", "total_protein_abundance"])
+    
+    print("\nDetecting mass shifts...")    
+    stdout_text = []
+    progress_bar_count = 0
 
     mass_shifts = MassShifts(args.start, args.end)
-    
-    print("\nDetecting mass shifts...")
-    
-    stdout_text = []
+        
+    for sample_name in file_names:
+      
+        cond = metadata[metadata.filename == sample_name.split("/")[-1]].condition.values[0]
+        rep = str(metadata[metadata.filename == sample_name.split("/")[-1]].replicate.values[0])
 
-    progress_bar_count = 0
+        data = MassSpecData()
+        data.add_raw_spectrum(sample_name)
+        data.set_mass_range_of_interest(args.start, args.end)  
+        all_peaks = data.picking_peaks()
+        peaks_normalized = data.preprocess_peaks(all_peaks)
     
-    sample_names= [cond+"_"+rep for cond, rep in product(config.conditions, config.replicates)]
-    parameter = pd.DataFrame(index=["noise_level", "rescaling_factor", "total_protein_abundance"], columns=sample_names)
+        if peaks_normalized.size:
+            noise_level = args.nfrac*peaks_normalized[:,1].std()
     
-    for rep in config.replicates:
-        
-        file_names_same_replicate = [file for file in file_names if re.search(rep, file)]
-        
-        if not file_names_same_replicate:
-                print("\nReplicate or condition not available. Adjust config.py file.\n")
-                sys.exit()
-        for cond in config.conditions:
-        
-            sample_name = [file for file in file_names_same_replicate if re.search(cond, file)]    
-           
-            if not sample_name:
-                print("\nCondition not available. Adjust config.py file.\n")
-                sys.exit()
+            parameter.loc["noise_level", cond+"_"+rep] = noise_level
+            parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
+    
+            if len(peaks_normalized[peaks_normalized[:,1]>noise_level]):  
+                # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
+                # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the protein mass. 
+                gaussian_model = GaussianModel(cond, stddev_isotope_distribution, args.wsize)
+                gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, args.pval, args.ol)      
+    
+                gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
+                gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
+                parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  
+     
+                mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep)
+     
             else:
-                sample_name = sample_name[0]
-
-            data = MassSpecData()
-            data.add_raw_spectrum(sample_name)
-            data.set_mass_range_of_interest(args.start, args.end)  
-            all_peaks = data.picking_peaks()
-            peaks_normalized = data.preprocess_peaks(all_peaks)
-
-            if peaks_normalized.size:
-                noise_level = args.nfrac*peaks_normalized[:,1].std()
-
-                parameter.loc["noise_level", cond+"_"+rep] = noise_level
-                parameter.loc["rescaling_factor", cond+"_"+rep] = data.rescaling_factor
-
-                if len(peaks_normalized[peaks_normalized[:,1]>noise_level]):  
-                    # 1. ASSUMPTION: The isotopic distribution follows a normal distribution.
-                    # 2. ASSUMPTION: The standard deviation does not change when modifications are included to the 
-                    #                protein mass. 
-                    gaussian_model = GaussianModel(cond, stddev_isotope_distribution, args.wsize)
-                    gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, args.pval, args.ol)      
-
-                    gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
-                    gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
-                    parameter.loc["total_protein_abundance", cond+"_"+rep] = gaussian_model.total_protein_abundance  
-         
-                    mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results, cond+"_"+rep)
- 
-                else:
-                    stdout_text.append("""No peaks above the SN threshold could be detected within the search window for
-                                          the following condition: """ + cond + "_" + rep)
-            else:
-                stdout_text.append("No peaks could be detected within the search window for the following condition: " 
-                                   + cond + "_" + rep)
-
-            progress_bar_count += 1        
-            utils.progress(progress_bar_count, len(config.replicates)*len(config.conditions))
+                stdout_text.append("""No peaks above the SN threshold could be detected within the search window for
+                                      the following condition: """ + cond + "_" + rep)
+        else:
+            stdout_text.append("No peaks could be detected within the search window for the following condition: " 
+                               + cond + "_" + rep)
+    
+        progress_bar_count += 1        
+        utils.progress(progress_bar_count, len(file_names))
 
     seperator_stdout_text = "\n"
     print(seperator_stdout_text.join(stdout_text))

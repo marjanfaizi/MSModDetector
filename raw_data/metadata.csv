@@ -1,0 +1,5 @@
+filename,condition,replicate
+nutlin_only_rep5.mzml,nutlin,5
+nutlin_only_rep6.mzml,nutlin,6
+uv_7hr_rep5.mzml,uv,5
+uv_7hr_rep6.mzml,uv,6
