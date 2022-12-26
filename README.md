@@ -16,7 +16,13 @@ $ cd MSModDetector
 $ pip install -r requirements.txt
 ```
 
-This repository was tested with Python 3.8.5 on macOS 12.2 and ...
+This repository was tested with Python 3.8.5 on macOS 12.2.
+
+## Required files
+In order to run MSModDetector on your raw I2MS data to identify mass shifts for a protein of interest and infer potential PTM patterns, the following files are rquired:
+- fasta file of the protein of interest stored in the fasta_files directory
+- a csv table with all the PTMs that should be considered for inferring PTM patterns
+- a csv table, called metadata.csv, containing information about the experimetnal set up stored in the raw_data directory
 
 
 ## How to run MSModDetector
@@ -26,5 +32,3 @@ $ cd src
 $ python main.py
 ```
 
-## Configuration file
-The file config.py has to be adjusted in order to refer to the correct input files. The configuration file requires the path name of the raw spectrum data, fasts file of the protein of interest, and the file name of the table of modifications considered for the PTM pattern analysis. Furthermore, names of the different replicates and conditions need to be listed. Additionally, meta parameters can be adusted as well in config.py that will impact the performance of mass shift detection and PTM patterm inference. Please see config.py for more detailed information about the meta parameters.
