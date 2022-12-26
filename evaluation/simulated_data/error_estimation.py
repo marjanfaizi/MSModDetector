@@ -13,7 +13,7 @@ import numpy as np
 import random
 import pandas as pd
 
-sys.path.append("..")
+sys.path.append("../../src/")
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -31,7 +31,6 @@ import utils
 file_names = "../../raw_data/*.mzml"
 replicates = ["rep5", "rep6"]
 conditions = ["nutlin_only", "uv_7hr"]
-distance_threshold_adjacent_peaks = 0.6
 noise_level_fraction = 0.25
 allowed_overlap = 0.3
 pvalue_threshold = 0.99
@@ -66,7 +65,7 @@ for rep in replicates:
             data.add_raw_spectrum(sample_name)
             data.set_mass_range_of_interest(mass_range_start, mass_range_end) 
             all_peaks = data.picking_peaks()
-            peaks_normalized = data.preprocess_peaks(all_peaks, distance_threshold_adjacent_peaks)
+            peaks_normalized = data.preprocess_peaks(all_peaks)
             noise_level = noise_level_fraction*peaks_normalized[:,1].std()
             
             gaussian_model = GaussianModel(cond, stddev_isotope_distribution, window_size)

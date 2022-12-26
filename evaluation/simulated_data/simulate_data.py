@@ -13,7 +13,7 @@ import pandas as pd
 import re
 import random
 
-sys.path.append("..")
+sys.path.append("../../src/")
 import utils 
 
 

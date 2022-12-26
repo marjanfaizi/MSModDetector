@@ -13,8 +13,7 @@ import numpy as np
 import itertools
 from scipy import stats
 
-sys.path.append("..")
-sys.path.append("../../")
+sys.path.append("../../src")
 
 from mass_spec_data import MassSpecData
 from gaussian_model import GaussianModel
@@ -22,7 +21,23 @@ from mass_shifts import MassShifts
 from modifications import Modifications
 import utils
 from simulate_data import SimulateData
-import config 
+
+
+
+###################################################################################################################
+################################################# REQUIRED INPUT ##################################################
+###################################################################################################################
+fasta_file_name = "P04637.fasta"
+modfication_file_name = "modifications_P04637.csv"
+mass_error_ppm = 25
+noise_level_fraction = 0.5
+window_size = 10
+pvalue_threshold = 0.99999
+allowed_overlap = 0.3
+laps_run_lp = 5
+###################################################################################################################
+###################################################################################################################
+
 
 
 ###################################################################################################################
@@ -50,10 +65,10 @@ def determine_matching_mass_shifts(detected_mass_shifts, modform_distribution_si
 def variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation, 
                                      vertical_error_par, horizontal_error_par, basal_noise_par):
 
-    protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+    protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
     protein_sequence = list(protein_entries.values())[0]
     unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
-    mass_tolerance = config.mass_error_ppm*1e-6*unmodified_species_mass
+    mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
     
     
     error_noise_combinations = list(itertools.product([0, 1], repeat=3))
@@ -109,15 +124,15 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
             data = MassSpecData(spectrum)
             data.set_mass_range_of_interest(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
             all_peaks = data.picking_peaks()
-            peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
-            noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
+            peaks_normalized = data.preprocess_peaks(all_peaks)
+            noise_level = noise_level_fraction*peaks_normalized[:,1].std()
 
-            gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
-            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
+            gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, window_size)
+            gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, pvalue_threshold, allowed_overlap)      
             gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
             gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 
-            mass_shifts = MassShifts(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
+            mass_shifts = MassShifts(unmodified_species_mass, data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
             mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results,  "simulated")
  
             if mass_shifts.identified_masses_df.empty:
@@ -152,7 +167,7 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
                     r_score_abundance += [np.nan]
 
                 for func in objective_func:
-                    mass_shifts.determine_ptm_patterns(mod, mass_tolerance, func, config.laps_run_lp,  msg_progress=False)
+                    mass_shifts.determine_ptm_patterns(mod, mass_tolerance, func, laps_run_lp,  msg_progress=False)
                     mass_shifts.add_ptm_patterns_to_table()
                     ptm_pattern_true = modform_distribution.loc[mass_shift_true_ix, "PTM pattern"].values
                     ptm_pattern_pred = mass_shifts.identified_masses_df.loc[mass_shift_pred_ix, "PTM pattern"].values
@@ -193,10 +208,10 @@ def variable_error_noise_performance(data_simulation, mod, modform_distribution,
 def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_error, basal_noise,
                                     modform_distribution, repeat_simulation, objective_func):    
     
-    protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+    protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
     protein_sequence = list(protein_entries.values())[0]
     unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
-    mass_tolerance = config.mass_error_ppm*1e-6*unmodified_species_mass
+    mass_tolerance = mass_error_ppm*1e-6*unmodified_species_mass
     
     true_mass_shift = np.full([repeat_simulation, modform_distribution.shape[0]], 0)
     p_values = np.full([repeat_simulation, modform_distribution.shape[0]], np.nan)
@@ -212,21 +227,21 @@ def test_overlapping_mass_detection(data_simulation, vertical_error, horizontal_
         data = MassSpecData(spectrum)
         data.set_mass_range_of_interest(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
         all_peaks = data.picking_peaks()
-        peaks_normalized = data.preprocess_peaks(all_peaks, config.distance_threshold_adjacent_peaks)
-        noise_level = config.noise_level_fraction*peaks_normalized[:,1].std()
+        peaks_normalized = data.preprocess_peaks(all_peaks)
+        noise_level = noise_level_fraction*peaks_normalized[:,1].std()
 
-        gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, config.window_size)
-        gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, config.pvalue_threshold, config.allowed_overlap)      
+        gaussian_model = GaussianModel("simulated", stddev_isotope_distribution, window_size)
+        gaussian_model.fit_gaussian_within_window(peaks_normalized, noise_level, pvalue_threshold, allowed_overlap)      
         gaussian_model.refit_results(peaks_normalized, noise_level, refit_mean=True)
         gaussian_model.calculate_relative_abundaces(data.search_window_start, data.search_window_end)
 
-        mass_shifts = MassShifts(data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
+        mass_shifts = MassShifts(unmodified_species_mass, data.raw_spectrum[0,0], data.raw_spectrum[-1,0])
         mass_shifts.add_identified_masses_to_df(gaussian_model.fitting_results,  "simulated") 
         
         if not mass_shifts.identified_masses_df.empty:
             mass_shifts.calculate_avg_mass()
             mass_shifts.add_mass_shifts(unmodified_species_mass)
-            mass_shifts.determine_ptm_patterns(mod, mass_tolerance, objective_func, config.laps_run_lp, msg_progress=False)
+            mass_shifts.determine_ptm_patterns(mod, mass_tolerance, objective_func, laps_run_lp, msg_progress=False)
             mass_shifts.add_ptm_patterns_to_table()
             ## find matching mass shhifts and store their scores, pvalues and ptm pattern
             mass_shift_pred_ix, mass_shift_true_ix = determine_matching_mass_shifts(mass_shifts.identified_masses_df, 
@@ -275,7 +290,7 @@ if __name__ == "__main__":
     repeat_simulation = 50
     
     ### estimated error and noise 
-    error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
+    error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
     basal_noise = error_estimate_table["basal_noise"].values
     horizontal_error = error_estimate_table[(error_estimate_table["horizontal_error"]<0.3) &
                                             (error_estimate_table["horizontal_error"]>-0.3) &
@@ -286,13 +301,13 @@ if __name__ == "__main__":
     basal_noise_par = list(stats.beta.fit(basal_noise))    
     
     ### PTM database
-    modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
+    modifications_table = pd.read_csv("../../modifications/"+modfication_file_name, sep=";")
     modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
     
     ### create instance of the SimulateData class
-    protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+    protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
     protein_sequence = list(protein_entries.values())[0]
-    mod = Modifications("../../"+config.modfication_file_name, protein_sequence)
+    mod = Modifications("../../modifications/"+modfication_file_name, protein_sequence)
     data_simulation = SimulateData(protein_sequence, modifications_table)
     
     """
@@ -311,10 +326,10 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_ptm")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-    """
+
     ### simulated complex PTM patterns
     modform_file_name = "complex"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -331,7 +346,7 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_ptm")
 
-    np.savez("../../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
     """
@@ -344,8 +359,8 @@ if __name__ == "__main__":
     performance_df = variable_error_noise_performance(data_simulation, mod, modform_distribution, repeat_simulation,
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
    
-    performance_df.to_csv("../../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
-    """
+    performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
+
 
 
 """

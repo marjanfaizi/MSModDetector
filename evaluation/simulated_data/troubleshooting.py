@@ -24,13 +24,13 @@ from simulate_data import SimulateData
 
 
 modform_file_name = "complex"
-mass_error_ppm = 30
+mass_error_ppm = 25
 noise_level_fraction = 0.5
 pvalue_threshold = 0.99999
 window_size = 12
 allowed_overlap = 0.3
-objective_fun = "min_ptm"
-laps_run_lp = 1
+objective_fun = "min_both"
+laps_run_lp = 5
 
 fasta_file_name = "P04637.fasta"
 modfication_file_name = "modifications_P04637.csv"

@@ -14,7 +14,7 @@ import pandas as pd
 import itertools
 from scipy import stats
 
-sys.path.append("../../")
+sys.path.append("../../src/")
 sys.path.append("../simulated_data/")
 
 from simulate_data import SimulateData
@@ -28,7 +28,10 @@ sns.set_context("paper")
 
 
 ### required input
-error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
+fasta_file_name = "P04637.fasta"
+modfication_file_name = "modifications_P04637.csv"
+
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 basal_noise = error_estimate_table["basal_noise"].values
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal_error"]<0.3) &
                                         (error_estimate_table["horizontal_error"]>-0.3) &
@@ -40,10 +43,10 @@ vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)]))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
+modifications_table = pd.read_csv("../../modifications/"+modfication_file_name, sep=";")
 modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
 
-protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
 protein_sequence = list(protein_entries.values())[0]    
 
 unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
@@ -82,8 +85,8 @@ plt.show()
 
 ### figure B: performance evaluation on phophospho patterns
 modform_file_name = "phospho"
-#performance_df = pd.read_csv("../../output/performance_"+modform_file_name+"_50_simulations.csv")
-performance_df = pd.read_csv("../../output/performance_"+modform_file_name+".csv")
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_50_simulations.csv")
+#performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
@@ -152,7 +155,7 @@ overlaps = {"4 Da": [4,5], "6 Da": [6,7], "8 Da": [8,9], "10 Da": [10,11], "12 D
 
 # "arr_0": true_mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, 
 # "arr_3": ptm_patterns, "arr_4": ptm_patterns_top3, "arr_5": ptm_patterns_top5, "arr_6": ptm_patterns_top10
-npzfile = np.load("../../output/evaluated_overlap_data_50_simulations.npz")
+npzfile = np.load("../output/evaluated_overlap_data_50_simulations.npz")
 
 amount_simulations = npzfile["arr_0"].shape[0]
 

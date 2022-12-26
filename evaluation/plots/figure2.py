@@ -13,7 +13,7 @@ from scipy import stats
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append("../../")
+sys.path.append("../../src/")
 sys.path.append("../simulated_data")
 
 from simulate_data import SimulateData
@@ -29,7 +29,9 @@ sns.set_context("paper")
 
 
 ### required input
-error_estimate_table = pd.read_csv("../../output/error_noise_distribution_table.csv")
+fasta_file_name = "P04637.fasta"
+modfication_file_name = "modifications_P04637.csv"
+error_estimate_table = pd.read_csv("../output/error_noise_distribution_table.csv")
 basal_noise = error_estimate_table["basal_noise"].values
 horizontal_error = error_estimate_table[(error_estimate_table["horizontal_error"]<0.3) &
                                         (error_estimate_table["horizontal_error"]>-0.3) &
@@ -41,10 +43,10 @@ vertical_error_par = list(stats.beta.fit(vertical_error))
 horizontal_error_par = list(stats.beta.fit(horizontal_error[(horizontal_error>-0.2) & (horizontal_error<0.2)]))
 basal_noise_par = list(stats.beta.fit(basal_noise))
 
-modifications_table = pd.read_csv("../../"+config.modfication_file_name, sep=";")
+modifications_table = pd.read_csv("../../modifications/"+modfication_file_name, sep=";")
 modifications_table["unimod_id"] = modifications_table["unimod_id"].astype("Int64")
 
-protein_entries = utils.read_fasta("../../"+config.fasta_file_name)
+protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
 protein_sequence = list(protein_entries.values())[0]    
 
 unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)

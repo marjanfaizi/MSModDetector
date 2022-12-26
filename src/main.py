@@ -26,9 +26,9 @@ parser = argparse.ArgumentParser(prog='PROG',
                                                 linear programming.""")
 
 parser.add_argument("-data", type=str, help="""Path to the metadata that contains information about the file names of 
-                                               the raw I2MS data, the conditionof the samples and which replicate.""")
-parser.add_argument("-mod", type=str, help="Path to the table with all modification types.")
-parser.add_argument("-fasta", type=str, help="Path to fasta file for protein of interest.")
+                                               the raw I2MS data, the condition of the samples and which replicate.""")
+parser.add_argument("-mod", type=str, help="Name of the table with all modification types.")
+parser.add_argument("-fasta", type=str, help="Name of the fasta file for protein of interest.")
 parser.add_argument("-start", type=float, help="Set start of mass range to search for shifts.")
 parser.add_argument("-end", type=float, help="Set end of mass range to search for shifts.")
 parser.add_argument("-wsize", type=float,
@@ -84,7 +84,8 @@ if __name__ == "__main__":
     protein_entries = utils.read_fasta("../fasta_files/"+args.fasta)
     protein_sequence = list(protein_entries.values())[0]
     unmodified_species_mass, stddev_isotope_distribution = utils.isotope_distribution_fit_par(protein_sequence, 100)
-    mass_tolerance = args.err*1e-6*unmodified_species_mass
+
+    mass_tolerance_ppm = args.err
 
     mod = Modifications("../modifications/"+args.mod, protein_sequence)
     
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     stdout_text = []
     progress_bar_count = 0
 
-    mass_shifts = MassShifts(args.start, args.end)
+    mass_shifts = MassShifts(unmodified_species_mass, args.start, args.end)
         
     for sample_name in file_names:
       
@@ -143,7 +144,8 @@ if __name__ == "__main__":
     else:
         mass_shifts.calculate_avg_mass()
         if args.bin == True:
-            bin_size = 2*mass_tolerance
+            mass_tolerance_Da = args.err*1e-6*unmodified_species_mass
+            bin_size = 2*mass_tolerance_Da
             mass_shifts.bin_peaks(bin_size)
 
         if args.ms == True:
@@ -152,7 +154,7 @@ if __name__ == "__main__":
         if args.ptm == True:
             print("\nSearching for PTM combinations:")
 
-            mass_shifts.determine_ptm_patterns(mod, mass_tolerance, args.obj, args.laps)        
+            mass_shifts.determine_ptm_patterns(mod, mass_tolerance_ppm, args.obj, args.laps)        
             mass_shifts.add_ptm_patterns_to_table()
             mass_shifts.ptm_patterns_df.to_csv( "../output/ptm_patterns_table.csv", sep=',', index=False)
           
