@@ -24,10 +24,10 @@ In order to run MSModDetector on your raw I2MS data to identify mass shifts for 
 - a csv table with all the PTMs that should be considered for inferring PTM patterns stored in the directory "modifications"
 - a csv table, called metadata.csv, containing information about the experimetnal set up stored in the directory "raw_data"
 
-# Fasta file
+### Fasta file
 The fasta file containing the sequnce of the protein of interest can be downloaded from https://www.uniprot.org or any other protein sequence database.
 
-# Modification table
+### Modification table
 The modification table should contain the following columns:
 - unimod_id: The Unimod identifier of the PTM	
 - ptm_id:	Abbreviation of the PTM, which is used to display the PTM patterns
@@ -40,7 +40,7 @@ The modification table should contain the following columns:
 
 An modification table example is given in the directory "modifications". 
 
-# Metadata
+### Metadata
 The metadata file should contain informtation about the file names of the raw data, their condition and the repkicate number. See in the "raw_data" directory for an example table.
 
 ## How to run MSModDetector
