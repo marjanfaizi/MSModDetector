@@ -49,7 +49,7 @@ Make sure that the required Python packages are installed and all required files
 
 ```bash
 $ cd src
-$  python main.py -data "../raw_data/" -mod "modifications_P04637.csv" -fasta "P04637.fasta" -start 43750.0 -end 44520.0 -wsize 10
+$ python main.py -data "../raw_data/" -mod "modifications_P04637.csv" -fasta "P04637.fasta" -start 43750.0 -end 44520.0 -wsize 10
 ```
 
 Other meta parameters can be changed if the default values are not suited. A description of all meta parameters can be find using the help function:
