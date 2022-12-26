@@ -45,10 +45,16 @@ The modification table should contain the following columns:
 An modification table example is given in the directory "modifications". 
 
 ## How to run MSModDetector
-Make sure that the required Python packages are installed and all required files are stored in the correct directories. To run MSModDetector you need to spcfiy the directory where the raw data and metadata table are stored (-data), the name of the modifications table (-mod) and fasta file (-fasta), determine the start mass (-start) and end mass (-end) of the range where the algorithm shouls search for mass shifts, and the size of the sliding window (-wsize) that iterates throughh the mass spectrum and searches for mass shifts. Here is an example how to run MSModDetector for experimetnal data of endogenous p53.
+Make sure that the required Python packages are installed and all required files are stored in the correct directories. To run MSModDetector you need to spcfiy the directory where the raw data and metadata table are stored, the name of the modifications table (-mod) and fasta file, determine the start mass and end mass of the range where the algorithm shouls search for mass shifts, and the size of the sliding window (-wsize) that iterates throughh the mass spectrum and searches for mass shifts. Here is an example how to run MSModDetector for experimetnal data of endogenous p53.
 
 ```bash
 $ cd src
 $  python main.py -data "../raw_data/" -mod "modifications_P04637.csv" -fasta "P04637.fasta" -start 43750.0 -end 44520.0 -wsize 10
 ```
+
+Other meta parameters can be changed if the default values are not suited. A description can be find using the help function:
+```bash
+python main.py --help
+```
+MSModDetector outputs a table with the identified mass shifts, the corresponding potential PTM patterns and relative abundances for every mass shift. If you choose to obtain more than one possible PTM pattern solution for every mass shift, then another table with k optimal solutions will be generated as well. All results will be stored in "output". 
 
