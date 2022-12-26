@@ -20,16 +20,20 @@ This repository was tested with Python 3.8.5 on macOS 12.2.
 
 ## Required files
 In order to run MSModDetector on your raw I2MS data to identify mass shifts for a protein of interest and infer potential PTM patterns, the following files are rquired:
+- raw I2MS data should be stored in the directory "raw_aata"
+- a csv table, called metadata.csv, containing information about the experimetnal set up stored in the directory "raw_data"
 - fasta file of the protein of interest stored in the directory "fasta_files"
 - a csv table with all the PTMs that should be considered for inferring PTM patterns stored in the directory "modifications"
-- a csv table, called metadata.csv, containing information about the experimetnal set up stored in the directory "raw_data"
+
+### Raw data and metadata table
+The raw data and the metadata table should be stored in the "raw_data" directory. The metadata file should contain informtation about the file names of the raw data, their condition and the repkicate number. See in the "raw_data" directory for an example table.
 
 ### Fasta file
 The fasta file containing the sequnce of the protein of interest can be downloaded from https://www.uniprot.org or any other protein sequence database.
 
 ### Modification table
 The modification table should contain the following columns:
-- unimod_id: The Unimod identifier of the PTM	
+- unimod_id: The Unimod identifier of the PTM	form https://www.unimod.org
 - ptm_id:	Abbreviation of the PTM, which is used to display the PTM patterns
 - ptm_name: Full name of the PTM
 - ptm_mass: Average mass in Da of the PTM
@@ -40,13 +44,11 @@ The modification table should contain the following columns:
 
 An modification table example is given in the directory "modifications". 
 
-### Metadata
-The metadata file should contain informtation about the file names of the raw data, their condition and the repkicate number. See in the "raw_data" directory for an example table.
-
 ## How to run MSModDetector
-Make sure that the required Python packages are installed prior to the command line run
+Make sure that the required Python packages are installed and all required files are stored in the correct directories. To run MSModDetector you need to spcfiy the directory where the raw data and metadata table are stored (-data), the name of the modifications table (-mod) and fasta file (-fasta), determine the start mass (-start) and end mass (-end) of the range where the algorithm shouls search for mass shifts, and the size of the sliding window (-wsize) that iterates throughh the mass spectrum and searches for mass shifts. Here is an example how to run MSModDetector for experimetnal data of endogenous p53.
+
 ```bash
 $ cd src
-$ python main.py
+$  python main.py -data "../raw_data/" -mod "modifications_P04637.csv" -fasta "P04637.fasta" -start 43750.0 -end 44520.0 -wsize 10
 ```
 
