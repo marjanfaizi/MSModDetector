@@ -54,7 +54,7 @@ $ python main.py -data "../raw_data/" -mod "modifications_P04637.csv" -fasta "P0
 
 Other meta parameters can be changed if the default values are not suited. A description of all meta parameters can be find using the help function:
 ```bash
-python main.py --help
+$ python main.py --help
 ```
 
 MSModDetector outputs a table with the identified mass shifts, the corresponding potential PTM patterns, and relative abundances for every mass shift. If you choose to obtain more than one possible PTM pattern solution for every mass shift, then another table with k optimal solutions will be generated as well. All results will be stored in "output". 
