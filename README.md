@@ -20,13 +20,13 @@ This repository was tested with Python 3.8.5 on macOS 12.2.
 
 ## Required files
 In order to run MSModDetector on your raw I2MS data to identify mass shifts for a protein of interest and to infer potential PTM patterns, the following files are rquired:
-- raw I2MS data should be stored in the directory "raw_data"
+- profile raw I2MS data should be stored in the directory "raw_data"
 - a csv table, called metadata.csv, containing information about the experimental set up stored in the directory "raw_data"
 - fasta file of the protein of interest stored in the directory "fasta_files"
 - a csv table with all the PTMs that should be considered for inferring PTM patterns stored in the directory "modifications"
 
 ### Raw data and metadata table
-The raw data and the metadata table should be stored in the "raw_data" directory. The metadata file should contain informtation about the file names of the raw data, their condition and the replicate number. See in the "raw_data" directory for an example table.
+The profile raw I2MS data and the metadata table should be stored in the "raw_data" directory. The metadata file should contain informtation about the file names of the raw data, their condition and the replicate number. See in the "raw_data" directory for an example table.
 
 ### Fasta file
 The fasta file containing the sequence of the protein of interest can be downloaded from https://www.uniprot.org or any other protein sequence database.
