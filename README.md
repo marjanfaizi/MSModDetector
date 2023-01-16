@@ -1,8 +1,8 @@
 # MSModDetector
 A Python module to study post-translational modfication (PTM) patterns from individual ion mass spectrometry (I2MS) data.
 I2MS is a top-down mass spectrometry (MS) approach that generates true mass spectra without the need to infer charge states.
-MSModDetector first detects and quantifies mass shifts for a protein of interest and subsequently infers potential PTM patterns using linear programming. 
-
+MSModDetector first detects and quantifies mass shifts for a protein of interest in profile I2MS data and subsequently infers potential PTM patterns using linear programming. 
+Before running MSModDetector on your profile I2MS data, make sure you have a fasta file containing the protein sequnce of interest and a list of PTMs that should be considered for the analysis.
 
 ## Installation and requirements
 MSModDetector can be installed with the following command:
@@ -18,7 +18,7 @@ $ pip install -r requirements.txt
 
 This repository was tested with Python 3.8.5 on macOS 12.2.
 
-## Required files
+## Required files/input data
 In order to run MSModDetector on your raw I2MS data to identify mass shifts for a protein of interest and to infer potential PTM patterns, the following files are rquired:
 - profile raw I2MS data should be stored in the directory "raw_data"
 - a csv table, called metadata.csv, containing information about the experimental set up stored in the directory "raw_data"
@@ -29,7 +29,7 @@ In order to run MSModDetector on your raw I2MS data to identify mass shifts for 
 The profile raw I2MS data and the metadata table should be stored in the "raw_data" directory. The metadata file should contain informtation about the file names of the raw data, their condition and the replicate number. See in the "raw_data" directory for an example table.
 
 ### Fasta file
-The fasta file containing the sequence of the protein of interest can be downloaded from https://www.uniprot.org or any other protein sequence database.
+The fasta file containing the sequence of the protein of interest can be downloaded from https://www.uniprot.org (or any other protein sequence database).
 
 ### Modification table
 The modification table should contain the following columns:
