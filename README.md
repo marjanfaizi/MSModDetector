@@ -18,7 +18,7 @@ $ pip install -r requirements.txt
 
 This repository was tested with Python 3.8.5 on macOS 12.2.
 
-## Required files/input data
+## Required input data
 In order to run MSModDetector on your raw I2MS data to identify mass shifts for a protein of interest and to infer potential PTM patterns, the following files are rquired:
 - profile raw I2MS data should be stored in the directory "raw_data"
 - a csv table, called metadata.csv, containing information about the experimental set up stored in the directory "raw_data"
