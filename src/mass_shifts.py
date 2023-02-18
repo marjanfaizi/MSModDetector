@@ -186,7 +186,7 @@ class MassShifts(object):
                 row_entries_as_df = pd.DataFrame(row_entries, columns=self.ptm_patterns_df.columns)
                 if objective_fun == "min_ptm":
                     row_entries_as_df.sort_values(by=["amount of PTMs", "mass error (Da)"], inplace=True)
-                self.ptm_patterns_df = self.ptm_patterns_df.append(row_entries_as_df, ignore_index=True)
+                self.ptm_patterns_df = pd.concat([self.ptm_patterns_df, row_entries_as_df], ignore_index=True)
 
             if msg_progress:
                 progress_bar_count += 1

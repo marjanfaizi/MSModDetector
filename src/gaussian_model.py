@@ -30,8 +30,8 @@ class GaussianModel(object):
     """
 
     def __init__(self, sample_name, stddev_isotope_distribution, window_size):
-        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "chi_score", 
-                                                     "pvalue", "relative_abundance"]) 
+        self.fitting_results = pd.DataFrame(columns=["sample_name", "mean", "amplitude", "pvalue",
+                                                     "chi_score", "relative_abundance"]) 
         self.sample_name = sample_name
         self.stddev = stddev_isotope_distribution
         self.window_size = window_size
@@ -72,6 +72,7 @@ class GaussianModel(object):
             window_range_start += self.step_size
 
         if not best_fit["fitted_mean"] in self.fitting_results["mean"]:
+            
             self.__save_fitting_results(best_fit)
 
         self.fitting_results = self.fitting_results[self.fitting_results["pvalue"] >= pvalue_threshold]
@@ -79,11 +80,13 @@ class GaussianModel(object):
 
 
     def __save_fitting_results(self, fit_dict):
-        self.fitting_results = self.fitting_results.append({"sample_name": self.sample_name, 
-                                                            "mean": fit_dict["fitted_mean"], 
-                                                            "amplitude": fit_dict["fitted_amplitude"], 
-                                                            "pvalue": fit_dict["pvalue"],
-                                                            "chi_score": fit_dict["chi_score"]}, ignore_index=True)
+        new_row_as_df = pd.DataFrame([[self.sample_name, fit_dict["fitted_mean"],
+                                      fit_dict["fitted_amplitude"], fit_dict["pvalue"],
+                                      fit_dict["chi_score"]]],
+                                      columns=["sample_name", "mean", "amplitude", 
+                                               "pvalue", "chi_score"])
+                                     
+        self.fitting_results = pd.concat([self.fitting_results, new_row_as_df],  ignore_index=True)
 
 
     def fit_gaussian(self, peaks, mean=None, amplitude=None, two_gaussians=False):
