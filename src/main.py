@@ -38,7 +38,7 @@ parser.add_argument("-ol",  default=0.3, type=float,
 parser.add_argument("-nfrac",  default=0.5, type=float,
                     help="""The standard deviation of the data points within the search window determines the noise 
                             level. The threshold of the noise level can be decreased with this parameter.""")
-parser.add_argument("-err",  default=36.0, type=float,
+parser.add_argument("-err",  default=25.0, type=float,
                     help="Mass error in ppm.")
 parser.add_argument("-bin",  default=True, type=bool,
                     help="Mass shifts across samples will be binned together.")

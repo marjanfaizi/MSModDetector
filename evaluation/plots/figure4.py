@@ -67,7 +67,7 @@ masses_error_noise, intensities_error_noise = data_simulation.create_mass_spectr
 
 title = ["Theoretical phosphorylation patterns", "Horizontal and vertical error + basal noise"]
 
-fig = plt.figure(figsize=(7, 2.2))
+fig = plt.figure(figsize=(8, 2.2))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 axes[0].plot(masses, intensities, color="0.3") 
@@ -85,8 +85,7 @@ plt.show()
 
 ### figure B: performance evaluation on phophospho patterns
 modform_file_name = "phospho"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_50_simulations.csv")
-#performance_df = pd.read_csv("../output/performance_"+modform_file_name+".csv")
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_100_simulations_20ppm.csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]
@@ -136,12 +135,12 @@ data_simulation.add_noise(horizontal_error_par=horizontal_error_par, basal_noise
                           vertical_error_par=vertical_error_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
-fig = plt.figure(figsize=(7, 1.5))
+fig = plt.figure(figsize=(8, 1.5))
 plt.plot(masses, intensities, color="0.3") 
 plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
-plt.xlim([43640, 44180])
+plt.xlim([43640, 44090])
 plt.ylim([-50, 1100])
 fig.tight_layout()
 sns.despine()
@@ -150,12 +149,12 @@ plt.show()
 
 # overlaps of 1 Da and 2 Da will not be seperated, to close within specified mass tolerance
 # overlap to modform in table mapping
-overlaps = {"4 Da": [4,5], "6 Da": [6,7], "8 Da": [8,9], "10 Da": [10,11], "12 Da": [12,13], 
-            "14 Da": [14,15], "16 Da": [16,17]}
+overlaps = {"2 Da": [0,1], "4 Da": [2,3], "6 Da": [4,5], "8 Da": [6,7], 
+            "10 Da": [8,9], "12 Da": [10,11], "14 Da": [12,13], "16 Da": [14,15]}
 
 # "arr_0": true_mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, 
 # "arr_3": ptm_patterns, "arr_4": ptm_patterns_top3, "arr_5": ptm_patterns_top5, "arr_6": ptm_patterns_top10
-npzfile = np.load("../output/evaluated_overlap_data_50_simulations.npz")
+npzfile = np.load("../output/evaluated_overlap_data_100_simulations.npz")
 
 amount_simulations = npzfile["arr_0"].shape[0]
 

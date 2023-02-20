@@ -40,7 +40,7 @@ class GaussianModel(object):
         self.sample_size_threshold = 5 # for chi-squared test
         self.intensity_threshold = 1e-10
         self.step_size = 1
-        self.repeat_refitting = 3
+        self.repeat_refitting = 5
 
 
     def fit_gaussian_within_window(self, peaks, noise_level, pvalue_threshold, allowed_overlap):
