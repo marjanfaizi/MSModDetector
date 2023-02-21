@@ -45,7 +45,7 @@ The modification table should contain the following columns:
 A modification table example is given in the directory "modifications". 
 
 ## How to run MSModDetector
-Make sure that the required Python packages are installed and all required files are stored in the correct directories. To run MSModDetector you need to spcfiy the directory where the raw data and metadata table are stored, the name of the modification table and fasta file, the start mass and end mass of the range where the algorithm should search for mass shifts, and the size of the sliding window that iterates throughh the mass spectrum and searches for mass shifts. Here is an example how to run MSModDetector for experimetnal data of endogenous p53.
+Make sure that the required Python packages are installed and all required files are stored in the correct directories. To run MSModDetector you need to specify the directory where the raw data and metadata table are stored, the name of the modification table and fasta file, the start mass and end mass of the range where the algorithm should search for mass shifts, and the size of the sliding window that iterates throughh the mass spectrum and searches for mass shifts. Here is an example how to run MSModDetector for experimetnal data of endogenous p53.
 
 ```bash
 $ cd src
