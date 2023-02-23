@@ -187,7 +187,8 @@ modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_
 
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../output/evaluated_complex_data_min_ptm.npz")
+#npzfile = np.load("../output/evaluated_complex_data_min_ptm.npz")
+npzfile = np.load("../output/evaluated_complex_data_100_simulations_min_ptm_36ppm.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 
@@ -215,13 +216,14 @@ metric["PTM pattern"].mask(metric["PTM pattern"] == 0.0, "false positive", inpla
 metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace=True)
 ptm_pattern_grouped_top10 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
+xlabels = [int(item) for item in ptm_pattern_grouped.index.tolist()]
 
-fig, ax = plt.subplots(4, 1, sharex=True, figsize=(7, 4.5))
+fig, ax = plt.subplots(4, 1, sharex=True, figsize=(8, 4.5))
 ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0], legend=None)
 ptm_pattern_grouped_top3.plot.bar(stacked=True, ax=ax[1], legend=None)
 ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[2], legend=None)
 ptm_pattern_grouped_top10.plot.bar(stacked=True, ax=ax[3], legend=None)
-ax[3].set_xticklabels(np.arange(1,len(modform_distribution)+1), rotation=45)
+ax[3].set_xticklabels(xlabels, rotation=45)
 ax[3].set_xlabel("mass shift [Da]")
 [ax[i].set_ylabel("# simulations") for i in range(4)]
 sns.despine()
@@ -230,23 +232,25 @@ plt.show()
 
 
 # additional information 
+amount_simulations = 100
+
 amount_mass_shifts = ptm_pattern_grouped.shape[0]
-print(ptm_pattern_grouped[0.5<1-(ptm_pattern_grouped["not detected"]/50)].shape[0], 
+print(ptm_pattern_grouped[0.75<1-(ptm_pattern_grouped["not detected"]/amount_simulations)].shape[0], 
       "mass shifts detected out of", amount_mass_shifts)
 
 print("Results only for the best solution:")
-print(ptm_pattern_grouped[0.5<(ptm_pattern_grouped["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped[0.75<(ptm_pattern_grouped["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 
 print("Results only for the top 3solution:")
-print(ptm_pattern_grouped_top3[0.5<(ptm_pattern_grouped_top3["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped_top3[0.75<(ptm_pattern_grouped_top3["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 
 print("Results only for the top 5 solution:")
-print(ptm_pattern_grouped_top5[0.5<(ptm_pattern_grouped_top5["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped_top5[0.75<(ptm_pattern_grouped_top5["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 print("Results only for the top 10 solution:")
-print(ptm_pattern_grouped_top10[0.5<(ptm_pattern_grouped_top10["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped_top10[0.75<(ptm_pattern_grouped_top10["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 ###################################################################################################################
 ###################################################################################################################
@@ -261,7 +265,7 @@ modform_distribution = pd.read_csv("../simulated_data/ptm_patterns/ptm_patterns_
 
 # "arr_0": mass_shift, "arr_1": chi_sqaure_score, "arr_2": mass_shift_deviation, "arr_3": ptm_patterns
 # "arr_4": ptm_patterns_top3,  "arr_5": ptm_patterns_top5,  "arr_6": ptm_patterns_top10
-npzfile = np.load("../output/evaluated_complex_data_min_both.npz")
+npzfile =  np.load("../output/evaluated_complex_data_100_simulations_min_both_36ppm.npz")
 
 repeats = npzfile["arr_0"].shape[0]
 
@@ -290,12 +294,14 @@ metric["PTM pattern"].mask(metric["PTM pattern"].isna(), "not detected", inplace
 ptm_pattern_grouped_top10 = metric.groupby(["mass_shift", "PTM pattern"]).size().unstack(fill_value=0)
 
 
-fig, ax = plt.subplots(4, 1, sharex=True, figsize=(7, 4.5))
+xlabels = [int(item) for item in ptm_pattern_grouped.index.tolist()]
+
+fig, ax = plt.subplots(4, 1, sharex=True, figsize=(8, 4.5))
 ptm_pattern_grouped.plot.bar(stacked=True, ax=ax[0], legend=None)
 ptm_pattern_grouped_top3.plot.bar(stacked=True, ax=ax[1], legend=None)
 ptm_pattern_grouped_top5.plot.bar(stacked=True, ax=ax[2], legend=None)
 ptm_pattern_grouped_top10.plot.bar(stacked=True, ax=ax[3], legend=None)
-ax[3].set_xticklabels(np.arange(1,len(modform_distribution)+1), rotation=45)
+ax[3].set_xticklabels(xlabels, rotation=45)
 ax[3].set_xlabel("mass shift [Da]")
 [ax[i].set_ylabel("# simulations") for i in range(4)]
 sns.despine()
@@ -304,24 +310,83 @@ plt.show()
 
 
 # additional information 
+amount_simulations = 100
+
 amount_mass_shifts = ptm_pattern_grouped.shape[0]
-print(ptm_pattern_grouped[0.5<1-(ptm_pattern_grouped["not detected"]/50)].shape[0], 
+print(ptm_pattern_grouped[0.75<1-(ptm_pattern_grouped["not detected"]/amount_simulations)].shape[0], 
       "mass shifts detected out of", amount_mass_shifts)
 
 print("Results only for the best solution:")
-print(ptm_pattern_grouped[0.5<(ptm_pattern_grouped["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped[0.75<(ptm_pattern_grouped["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 
-print("Results only for the top 3solution:")
-print(ptm_pattern_grouped_top3[0.5<(ptm_pattern_grouped_top3["true positive"]/50)].shape[0], 
+print("Results only for the top 3 solution:")
+print(ptm_pattern_grouped_top3[0.75<(ptm_pattern_grouped_top3["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 
 print("Results only for the top 5 solution:")
-print(ptm_pattern_grouped_top5[0.5<(ptm_pattern_grouped_top5["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped_top5[0.75<(ptm_pattern_grouped_top5["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 print("Results only for the top 10 solution:")
-print(ptm_pattern_grouped_top10[0.5<(ptm_pattern_grouped_top10["true positive"]/50)].shape[0], 
+print(ptm_pattern_grouped_top10[0.75<(ptm_pattern_grouped_top10["true positive"]/amount_simulations)].shape[0], 
       "true positive PTM pattern predictions", amount_mass_shifts, "mass shifts")
 ###################################################################################################################
 ###################################################################################################################
+
+
+###################################################################################################################
+############################################## SUPPLEMENTAL FIGURE 7 ##############################################
+###################################################################################################################
+"""
+Mass shift (Da) & PTM pattern & Mass error (Da) & Bin size (Da) & ${\#}$Combinations\\
+120 & 1[Cys] & 1.553 & 1.109 & 47 \\ 
+136 & 1[Ox]1[Cys] & 1.063 & 0 & 35 \\ 
+180 & 1[Ph]2[Me3]1[Ox] & 0.141 & 0.191 & 84 \\ 
+200 & 1[Ph]1[Cys] & 1.569 & 2.234 & 262 \\ 
+216 & 1[Ph-OH]1[Cys] & 0.400 & 1.324 & 294 \\ 
+259 & 1[Ph-OH]1[Me3]1[Cys] & 0.095 & 0 & 685 \\ 
+297 & 1[Ph]1[Ph-OH]1[Cys] & 0.711 & 0.323 & 949 \\ 
+309 & 3[Ph-OH]1[Ox] & 0.043 & 0 & 1028 \\ 
+357 & 3[Cys] & 0.012 & 0.668 & 2251\\ 
+377 & 2[Ph]1[Ph-OH]1[Cys] & 0.179 & 1.351 & 2324 \\ 
+394 & 1[Ph]2[Ph-OH]1[Cys] & 0.561 & 2.026 & 2585 \\
+435 & 2[Ph-OH]2[Cys] & 1.413 & 0.351 & 4050 \\ 
+454 & 1[Ph-OH]3[Cys] & 1.062 & 3.326 & 3411 \\ 
+468 & 1[Ph-OH]1[Me1]3[Cys] & 0.824 & 0 & 4229 \\ 
+473 & 1[Ph]4[Ph-OH] & 1.104 & 1.521 & 4636 \\ 
+477 & 4[Cys] & 0.493 & 2.499 & 4853 \\ 
+493 & 1[Ph]3[Ph-OH]1[Cys] & 0.759 & 0.691 & 4899 \\ 
+516 & 2[Ph]3[Cys] & 0.650 & 0 & 5073 \\ 
+534 & 1[Ph]1[Ph-OH]3[Cys] & 0.550 & 1.555 & 5668 \\ 
+553 & 2[Ph-OH]3[Cys] & 0.259 & 3.011 & 5958 \\ 
+569 & 2[Ph-OH]1[Ox]3[Cys] & 0.106 & 0 & 6354 \\ 
+610 & 1[Me1]5[Cys] & 0.700 & 0 & 6842 \\ 
+613 & 1[Ph]3[Ph-OH]2[Cys] & 1.536 & 0.221 & 6846 \\ 
+633 & 1[Ph]2[Ph-OH]3[Cys] & 0.328 & 1.865 & 7622 \\ 
+652 & 3[Ph-OH]3[Cys] & 1.054 & 1.191 & 7714 \\ 
+692 & 1[Ph-OH]5[Cys] & 1.231 & 0.170 & 8226 \\ 
+723 & 1[Ph-OH]1[Me1]1[Ox]5[Cys] & 0.076 & 0 & 9008 \\
+731 & 1[Ph]3[Ph-OH]3[Cys] & 0.359 & 0 & 9309 \\ 
+792 & 2[Ph-OH]5[Cys] & 1.186 & 0 & 10166 \\ 
+812 & 3[Ph-OH]1[Ac]4[Cys] & 0.074 & 0 & 10499 \\ 
+"""
+
+mass_shifts_df = pd.read_csv("../../output/mass_shifts_min_ptm.csv", sep=",")
+
+x_values = mass_shifts_df["mass shift"].tolist()
+y_values = [47, 35, 84, 262, 294, 685, 949, 1028, 2251, 2324, 2585, 4050, 3411, 4229, 4636, 4853, 
+            4899, 5073, 5668, 5958, 6354, 6842, 6846, 7622, 7714, 8226, 9008, 9309, 10166, 10499]
+
+plt.figure(figsize=(5.2,2.))
+plt.plot(x_values, y_values, 'o', color="0.3")
+plt.xlabel("mass shift (Da)")
+plt.ylabel("${\#}$ combinations")
+plt.tight_layout()
+sns.despine()
+plt.show()
+###################################################################################################################
+###################################################################################################################
+
+
+
 

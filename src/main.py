@@ -38,13 +38,13 @@ parser.add_argument("-ol",  default=0.3, type=float,
 parser.add_argument("-nfrac",  default=0.5, type=float,
                     help="""The standard deviation of the data points within the search window determines the noise 
                             level. The threshold of the noise level can be decreased with this parameter.""")
-parser.add_argument("-err",  default=25.0, type=float,
+parser.add_argument("-err",  default=20.0, type=float,
                     help="Mass error in ppm.")
 parser.add_argument("-bin",  default=True, type=bool,
                     help="Mass shifts across samples will be binned together.")
 parser.add_argument("-laps",  default=5, type=int,
                     help="Solve optimization k times and report the best k optimal solutions.")
-parser.add_argument("-obj", default="min_ptm", 
+parser.add_argument("-obj", default="min_both", 
                     help="""Choose between three objective functions. 1) min_ptm: minimize total amount of PTMs on a 
                             single protein, 2) min_err: minimize error between observed and inferred mass shift, 
                             3) min_both: minimize error and total amount of PTMs.""")

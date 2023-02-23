@@ -85,7 +85,8 @@ plt.show()
 
 ### figure B: performance evaluation on phophospho patterns
 modform_file_name = "phospho"
-performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_100_simulations_20ppm.csv")
+#performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_100_simulations_20ppm.csv")
+performance_df = pd.read_csv("../output/performance_"+modform_file_name+"_100_simulations_36ppm.csv")
 
 vertical_error = [0, 1]
 horizontal_error = [0, 1]

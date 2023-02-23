@@ -29,12 +29,12 @@ from simulate_data import SimulateData
 ###################################################################################################################
 fasta_file_name = "P04637.fasta"
 modfication_file_name = "modifications_P04637.csv"
-mass_error_ppm = 36
+mass_error_ppm = 20
 noise_level_fraction = 0.5
 window_size = 10
 pvalue_threshold = 0.99999
 allowed_overlap = 0.3
-laps_run_lp = 5
+laps_run_lp = 10
 ###################################################################################################################
 ###################################################################################################################
 
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     np.savez("../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
-
+    """
     ### simulated complex PTM patterns
     modform_file_name = "complex"
     modform_distribution = pd.read_csv("ptm_patterns/ptm_patterns_"+modform_file_name+".csv", sep=",")
@@ -346,7 +346,7 @@ if __name__ == "__main__":
                                                                                     repeat_simulation,
                                                                                     "min_ptm")
 
-    np.savez("../output/evaluated_"+modform_file_name+"_data.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
+    np.savez("../output/evaluated_"+modform_file_name+"_data_100_simulations_min_ptm_20ppm.npz", true_mass_shift, chi_sqaure_score, mass_shift_deviation, 
              ptm_patterns, ptm_patterns_top3, ptm_patterns_top5, ptm_patterns_top10)
     
     """
@@ -360,5 +360,5 @@ if __name__ == "__main__":
                                                       vertical_error_par, horizontal_error_par, basal_noise_par)
    
     performance_df.to_csv("../output/performance_"+modform_file_name+".csv", sep=",", index=False) 
-
+    """
 
