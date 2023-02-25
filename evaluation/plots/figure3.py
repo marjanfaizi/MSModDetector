@@ -31,9 +31,9 @@ mass_range_end = 44520.0
 fasta_file_name = "P04637.fasta"
 metadata = pd.read_csv("../../raw_data/metadata.csv")
 file_names = ["../../raw_data/"+f for f in metadata.filename.tolist()]
-mass_shifts_df = pd.read_csv("../../output/mass_shifts.csv", sep=",")
-ptm_patterns_df = pd.read_csv("../../output/ptm_patterns_table.csv", sep=",")
-parameter = pd.read_csv("../../output/parameter.csv", sep=",", index_col=[0])
+mass_shifts_df = pd.read_csv("../../output/mass_shifts_min_both.csv", sep=",")
+ptm_patterns_df = pd.read_csv("../../output/ptm_patterns_table_min_both.csv", sep=",")
+parameter = pd.read_csv("../../output/parameter_min_both.csv", sep=",", index_col=[0])
 cond_mapping = {"nutlin": "Nutlin-3a", "uv": "UV", "xray_2hr": "X-ray (2hr)", 
                 "xray_7hr": "X-ray (7hr)"}
 protein_entries = utils.read_fasta("../../fasta_files/"+fasta_file_name)
@@ -78,6 +78,7 @@ plt.xlim((mass_range_start, mass_range_end))
 plt.ylim((-ylim_max*1.18, ylim_max*1.18))
 plt.xlabel("mass (Da)"); plt.ylabel("rel. intensity") 
 output_fig.tight_layout()
+sns.despine()
 plt.show()
 
 
