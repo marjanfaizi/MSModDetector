@@ -117,10 +117,10 @@ fig = plt.figure(figsize=(8, 3.2))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 
-ptm_pattern_grouped_min_ptm.plot.bar(stacked=True, ax=axes[0], legend=None, linewidth=0.2)
-(-1*ptm_pattern_grouped_min_ptm3).plot.bar(stacked=True, ax=axes[0], legend=None, linewidth=0.2)
-ptm_pattern_grouped_min_both.plot.bar(stacked=True, ax=axes[1], legend=None, linewidth=0.2)
-(-1*ptm_pattern_grouped_min_both3).plot.bar(stacked=True, ax=axes[1], legend=None, linewidth=0.2)
+ptm_pattern_grouped_min_ptm.plot.bar(stacked=True, ax=axes[0], legend=None, linewidth=0.1)
+(-1*ptm_pattern_grouped_min_ptm3).plot.bar(stacked=True, ax=axes[0], legend=None, linewidth=0.1)
+ptm_pattern_grouped_min_both.plot.bar(stacked=True, ax=axes[1], legend=None, linewidth=0.1)
+(-1*ptm_pattern_grouped_min_both3).plot.bar(stacked=True, ax=axes[1], legend=None, linewidth=0.1)
 
 plt.margins(x=0) 
 
