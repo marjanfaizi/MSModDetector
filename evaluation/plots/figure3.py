@@ -46,7 +46,7 @@ number_of_conditions = len(metadata.condition.unique().tolist())
 color_palette = {"nutlin": "skyblue", "uv": "mediumpurple"}
 flip_spectrum = [1, -1, 1, -1]
 order_in_plot = [0, 0, 1, 1]
-output_fig = plt.figure(figsize=(7, 2.8))
+output_fig = plt.figure(figsize=(8., 2.2))
 gs = output_fig.add_gridspec(number_of_conditions, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 
@@ -68,11 +68,13 @@ for ix, sample_name in enumerate(file_names):
     y_gauss_func = utils.multi_gaussian(x_gauss_func, intensities, masses, stddev_isotope_distribution)
         
     axes[order_in_plot[ix]].plot(data.raw_spectrum[:,0], flip_spectrum[ix]*data.raw_spectrum[:,1]/rescaling_factor, label=cond_mapping[cond], color=color_of_sample)
-    axes[order_in_plot[ix]].plot(masses, flip_spectrum[ix]*intensities, '.', color='0.3')
+
     axes[order_in_plot[ix]].plot(x_gauss_func,flip_spectrum[ix]*y_gauss_func, color='0.3')
+    axes[order_in_plot[ix]].plot(masses, flip_spectrum[ix]*intensities, '.', color='k', markersize=5)
+    axes[order_in_plot[ix]].vlines(x=mass_shifts_df["average mass"], ymin = -1.2, ymax = 1.2, colors="0.5", lw=0.1, linestyle="--")
     axes[order_in_plot[ix]].axhline(y=flip_spectrum[ix]*noise_level, c='r', lw=0.2)
     if flip_spectrum[ix] > 0: axes[order_in_plot[ix]].legend(loc='upper right')
-
+    
 ylim_max = mass_shifts_df.filter(regex="raw intensities.*").max().max()      
 plt.xlim((mass_range_start, mass_range_end))
 plt.ylim((-ylim_max*1.18, ylim_max*1.18))

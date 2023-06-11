@@ -63,13 +63,13 @@ data_simulation.add_noise(horizontal_error_par=horizontal_error_par, basal_noise
                           vertical_error_par=vertical_error_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
-plt.figure(figsize=(8, 1.5))
+plt.figure(figsize=(9, 1.3))
 plt.plot(masses, intensities, color="0.3") 
-plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
+plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".", color="limegreen", markersize=4) 
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim((43740,44355))
-plt.ylim([-10, 990])
+plt.ylim([-10, 1010])
 plt.tight_layout()
 sns.despine()
 plt.show()
@@ -113,7 +113,7 @@ ptm_pattern_grouped_min_both3 = metric_min_both3.groupby(["mass_shift", "PTM pat
 
 xlabels = [int(item) for item in ptm_pattern_grouped_min_both.index.tolist()]
 
-fig = plt.figure(figsize=(8, 3.2))
+fig = plt.figure(figsize=(7., 2.3))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 

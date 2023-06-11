@@ -67,7 +67,7 @@ masses_error_noise, intensities_error_noise = data_simulation.create_mass_spectr
 
 title = ["Theoretical phosphorylation patterns", "Horizontal and vertical error + basal noise"]
 
-fig = plt.figure(figsize=(8, 2.2))
+fig = plt.figure(figsize=(9, 2.))
 gs = fig.add_gridspec(2, hspace=0)
 axes = gs.subplots(sharex=True, sharey=True)
 axes[0].plot(masses, intensities, color="0.3") 
@@ -76,7 +76,7 @@ axes[1].set_xlabel("mass (Da)")
 axes[1].set_ylabel("intensity (a.u.)")
 axes[0].set_title(title[0], pad=-5)
 axes[1].set_title(title[1], pad=-15)
-[axes[i].set_xlim([43600, 44220]) for i in range(2)]
+[axes[i].set_xlim([43625, 44180]) for i in range(2)]
 [axes[i].set_ylim([0, 1210]) for i in range(2)] 
 fig.tight_layout()
 sns.despine()
@@ -103,7 +103,7 @@ fmt = [False, True, False, False, False]
 cmap = sns.color_palette("ch:s=-.2,r=.6", as_cmap=True)
 
 for ix, m in enumerate(metric):
-    fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.4, 2.2))
+    fig, axn = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(1.5, 2.2))
     
     for i, ax in enumerate(axn.flat):
         pivot_df = performance_df[performance_df["basal_noise"]==basal_noise[i]].pivot("vertical_error", "horizontal_error", m)      
@@ -136,9 +136,9 @@ data_simulation.add_noise(horizontal_error_par=horizontal_error_par, basal_noise
                           vertical_error_par=vertical_error_par)
 masses, intensities = data_simulation.create_mass_spectrum(modform_distribution)
 
-fig = plt.figure(figsize=(8, 1.5))
+fig = plt.figure(figsize=(9, 1.4))
 plt.plot(masses, intensities, color="0.3") 
-plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".r", markersize=2) 
+plt.plot(modform_distribution["mass"]+unmodified_species_mass, modform_distribution["intensity"], ".", color="limegreen", markersize=4) 
 plt.xlabel("mass (Da)")
 plt.ylabel("intensity (a.u.)")
 plt.xlim([43640, 44090])
